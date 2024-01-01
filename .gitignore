@@ -1,0 +1,70 @@
+# Compiled source #
+###################
+*.com
+*.class
+*.dll
+*.exe
+*.o
+*.so
+
+# Packages #
+############
+# it's better to unpack these files and commit the raw source
+*.jar
+*.war
+*.ear
+
+# Logs and databases #
+######################
+*.log
+*.sql
+*.sqlite
+
+# OS generated files #
+######################
+.DS_Store
+.DS_Store?
+._* 
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# IDE specific files #
+######################
+.idea
+*.iml
+*.ipr
+*.iws
+.vscode
+.classpath
+.project
+.settings
+.springBeans
+.nb-gradle
+
+# Build files #
+###############
+target/
+out/
+build/
+bin/
+
+# Other files and folders to ignore #
+#####################################
+lib/
+temp/
+*.tmp
+*.bak
+*.swp
+*~
+appFiles/
+otherWay/
+savedFiles/
+.mvn/
+IronPdfEngine.2023.5.1.MacOS.x64/
+oldDBs/
+*.pdf
+.git/
+somewhere.mv.db
+somewhere.trace.db

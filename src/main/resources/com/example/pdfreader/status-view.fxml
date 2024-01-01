@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.TextArea?>
+<?import javafx.scene.layout.AnchorPane?>
+<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.text.Text?>
+
+<AnchorPane style="-fx-background-color: yellow;" xmlns="http://javafx.com/javafx/19" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.example.pdfreader.Controllers.StatusView">
+   <children>
+      <VBox layoutX="20.0" layoutY="30.0" prefHeight="200.0" AnchorPane.leftAnchor="10.0" AnchorPane.rightAnchor="10.0" AnchorPane.topAnchor="10.0">
+         <children>
+            <Text fx:id="txtFolderLocation" strokeType="OUTSIDE" strokeWidth="0.0" text="&lt;path to folder&gt;" />
+         </children>
+      </VBox>
+      <TextArea fx:id="txtAMemoryStatus" layoutX="30.0" layoutY="258.0" prefHeight="179.0" prefWidth="581.0" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" />
+   </children>
+</AnchorPane>

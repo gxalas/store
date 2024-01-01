@@ -1,0 +1,24 @@
+i will have very few pdfs in the folder
+i will add only the documents to the database
+
+- create a table with the errors and add the option to delete them:
+    - add more values at the dbError entity
+    - select option at the table, get selected items and delete them
+- check at the tracing if the document is already imported (at db) or
+    is waiting to be imported (at the queue)
+- create and test the listeners for adding errors:
+    - i should display next to the messages the errors
+
+THINGS TO CHECK:
+----------------
+- handle invoices view (when a file is saved at duplicated, etc)
+- handle the dates
+
+
+-------
+check sto serialization,
+pos na checkaro ta checksum... leipei teleios sto ena apo ta dio
+
+
+-- mallon na min vazo sto product view kathe fora pou epilegetai ena proion
+--

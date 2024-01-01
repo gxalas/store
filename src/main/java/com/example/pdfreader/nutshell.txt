@@ -1,0 +1,99 @@
+POS DOULEUEI MEXRI STIGMIS:
+1. Vriskoume to content tou arxeiou pdf
+2. Eksagoume kathe grammi tou contnent                      (DocLines)
+    i. stis periptoseis opou mia eggrafi perilamvanei perissoteres grammes xeirizetai
+        etsi oste ola ta dedomena na entaxthoun se mia grammi
+        ->to do: se mia periptosi ta dedomena ta agnooume, isos na ta prosthesoume stin grammi (afora tis proeleuseis)
+3. Metatrpoume ta dedomena pou exei kath grammi se eggrafes (DocEntries)
+
+- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+SIMANTIKO... tora gia kanoume export, kanoume meso tou maven
+                pame sto tab to maven kai kanoume prota CLEAN kai meta BUILD
+- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+EPISIS SIMANTIKO
+prepei otan kapoio arxeio den exei ginei sosta import, px den diavastike mia grammi i kati, na MIN mporei
+na ginei save-  giati allios den diorthonetai.
+ -> Ara tou vazoume kapoio flag kai simeionoume kapoio error, kai otan kanoume save den to sozoume
+ -> episis enimeronoume ma kpoio tropo
+ ->isos na mporoume na valoume kai delete doc:
+    -tha ginetai remove apo tin lista kai meta tha prepei na afaireitai kai to checksum
+
+
+DIORTHOSEIS & ELEGXOI:
+-- na sigoureuto oti an o traced folder einai adeios den petaei error to programma -> mallon pao na paro
+        antikeimeno apo tin traced lista kai auti einai adeia
+-- sti selida filter invoices, ta items to table den enimeronontai kai xreiazetai na kaneis allagi sto combo
+        box gia an ananeothei o pinakas
+-- moiazei to progress bar gia to importing from file na min douleuei
+-- tracing behaviour - na ftiaksoume tin simperifora tou tracing, pote tha ginetai klp
+-- na ftiakso ta initialisations se kathe childController
+-- na diorthoso to invalid sto analyze data flow tab
+    ->mporei na xreiazetai A. na vgalo ta peritta setDelegate mesa apo to initialize(controller)
+
+
+PROSTHIKES:
+--> na ftiakso ena page gia importing txts
+        -se auti tin selida tha prepei valo progress bars
+--> na diavazei apo ta possales ola ta arxeia pou periexoun sto onoma ti leksi possales, kai oxi mono ena arxeio
+        - mallon tha prepei na to kanoume oste sto fakelo txt na exoume arxeia gia import, opou tha exoume kai mia
+        epilogi sto menu "Import PosEntries".
+        - otan kanoume save, na sozei ta imported pos entries se ena arxeio, apo to opoio tha ginetai to load stin arxi
+        tis efarmogis
+        - kapos na ginetai enas elegxos sto kathe arxeio tou possales sto fakelo, etsi oste na dinetai mia enimerosi
+        gia tin xrisimotita tou arxeiou
+--> antistoixa na fortonoume kai ta retsales
+--> antistoixa tha prepei an kanoume ta items kai ta barcodes
+
+impo
+
+
+
+ALLAGES:
+-- den xreiazetai sta subclasses tou childController, na exoume inherited attributes
+    kai to parentDelegate kai to listManager -> stin teliki mporoume na pairnoume to list manager apo to parent delegate
+-- an ipologizoume to checksum during tracing, na to vgaloume apo ekei
+        sto tracing na exoume mono to metrima ton arxeion (?)
+
+        so, to checksum na to koitame mono prin
+        1. diadikasia pou diavazoume ton fakelo
+        2. diadikasia pou checkaroume poia apo ta arxeia pou einai sto fakelo
+        xreiazetai na diavastoun (checksums) & (path)
+        e. diadikasia eisagogis eggrafon
+
+- na ftiaksoume alli sinartisi pou tha ipologizei an ta arxeia sto fakelo einai
+        ola imported - i posa tha prepei na ginoun import
+
+- theoritika tha prepei na enoso to docline me to docEntries se kapoia fasi
+    -- pros to paron oxi, theoritika to docline einai kathe grammi tou pdf,
+        eno to docentry einai kathe entry tou eggrafou
+        (ena to docentry mporei na aplonetai se perrissotera doclines)
+
+
+
+Sistima:
+I efarmogi anoigei:
+    -> checkaroume posa arxeia einai sto folder
+    -> ksekiname to evaluate / tracing
+    -> anoigoume to koumpi load
+(xreiazetai na valoume elegxo gia otan pame na allaksoume to folder - an einai to tracing in progress?)
+(gia na min allaksei o fakelos tin ora pou paei na ginei to tracing)
+(etsi ki allios otan ksekinaei to tracing midinetai i lista vevaia, opote den einai oti tha glitosoume xrono stin teliki)
+(isos the prepei na valo mia leitourgia etsi oste na mporei na stamatisei i diadikasia tou tracing kata tin diarkeia tis)
+(stin periptosi pou gia paradeigma allaksei o fakelos pou mas endiaferei, i ginontai diafores allages ston fakelo pou mas endiaerei)
+
+An allaksei kati sto fakelo:
+    ->metrame ta arxeia pou vriskontai sto fakelo
+    ->ksekiname to tracing
+    ->anoigoume to koumpi gia to load
+
+Vazoume watcher sto folder:
+- metrame posa arxeia einai sto fakelo -> xoris checksum, apla to apothikeuoume se ena simeio
+- metrame posa arxeia einai gia import -> anagkastika me checksum kai ta vazoume sti lista ton traced
+-   an mpei kainourio arxeio sto fakelo :
+            ksana, metrame ta arxeia pou einai sto fakelo kai ananeonoume tin metavliti
+            checkaroume an to arxeio to kainourio einai na mpei sti lista tou import
+- an i lista traced den einai adeia, emfanizoume to koumpi tou import
+- to koumpi tou import, kanei process osa arxeia einai sto traced kai ta metaferei eite sto imported, eite sto failed
+
+
+

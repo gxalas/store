@@ -1,0 +1,63 @@
+<?xml version='1.0' encoding='utf-8'?>
+<!DOCTYPE hibernate-configuration PUBLIC
+        "-//Hibernate/Hibernate Configuration DTD 3.0//EN"
+        "http://www.hibernate.org/dtd/hibernate-configuration-3.0.dtd">
+
+<hibernate-configuration>
+    <session-factory>
+        <!-- Basic Database Connection Settings    " ;TRACE_LEVEL_FILE=2   "-->
+        <property name="hibernate.connection.driver_class">org.h2.Driver</property>
+        <property name="hibernate.connection.url">jdbc:h2:./somewhere</property>
+        <property name="hibernate.connection.username">sa</property>
+        <property name="hibernate.connection.password"></property>
+        <property name="hibernate.dialect">org.hibernate.dialect.H2Dialect</property>
+
+
+        <!-- SQL dialect -->
+        <property name="dialect">org.hibernate.dialect.H2Dialect</property>
+
+        <!-- Enable Hibernate's automatic session context management -->
+        <property name="current_session_context_class">thread</property>
+
+        <!-- Echo all executed SQL to stdout -->
+        <property name="show_sql">false</property>
+
+        <!-- Batch fetch size -->
+        <property name="hibernate.default_batch_fetch_size">250</property>
+
+        <!-- Update the database schema on startup -->
+        <property name="hibernate.hbm2ddl.auto">update</property>
+
+        <!-- HikariCP Connection Pool settings -->
+        <property name="hibernate.connection.provider_class">
+            org.hibernate.hikaricp.internal.HikariCPConnectionProvider
+        </property>
+        <property name="hibernate.hikari.connectionTimeout">30000</property> <!-- increased to 30 seconds -->
+        <property name="hibernate.hikari.minimumIdle">10</property> <!-- increased minimum idle connections -->
+        <property name="hibernate.hikari.maximumPoolSize">50</property> <!-- reduced max pool size to 50 -->
+        <property name="hibernate.hikari.idleTimeout">600000</property> <!-- increased idle timeout to 10 minutes -->
+        <property name="hibernate.hikari.poolName">HikariCP</property>
+
+
+
+        <!-- Annotated classes -->
+        <mapping class="com.example.pdfreader.Entities.Document"/>
+        <mapping class="com.example.pdfreader.Entities.Product"/>
+        <mapping class="com.example.pdfreader.DocEntry"/>
+        <mapping class="com.example.pdfreader.DAOs.PosEntryDAO"/>
+        <mapping class="com.example.pdfreader.DocumentErrors"/>
+        <mapping class="com.example.pdfreader.DAOs.DBError"/>
+        <mapping class="com.example.pdfreader.DTOs.ProductDTO"/>
+        <mapping class="com.example.pdfreader.PosEntry"/>
+        <mapping class="com.example.pdfreader.EntriesFile"/>
+        <mapping class="com.example.pdfreader.DAOs.EntriesFileDAO"/>
+        <mapping class="com.example.pdfreader.Entities.Supplier"/>
+        <mapping class="com.example.pdfreader.DAOs.SupplierDAO"/>
+        <mapping class="com.example.pdfreader.Helpers.SupplierProductRelation"/>
+        <mapping class="com.example.pdfreader.DAOs.SupplierProductRelationDAO"/>
+        <mapping class="com.example.pdfreader.Entities.Attributes.StoreBasedAttributes"/>
+
+
+
+    </session-factory>
+</hibernate-configuration>
