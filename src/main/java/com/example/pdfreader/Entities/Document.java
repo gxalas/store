@@ -1,8 +1,13 @@
 package com.example.pdfreader.Entities;
 
+import com.example.pdfreader.DAOs.DBErrorDAO;
+import com.example.pdfreader.DAOs.DocumentDAO;
+import com.example.pdfreader.DAOs.SupplierProductRelationDAO;
 import com.example.pdfreader.DocEntry;
 import com.example.pdfreader.DocumentErrors;
 import com.example.pdfreader.Helpers.ListManager;
+import com.example.pdfreader.Helpers.SupplierProductRelation;
+import com.example.pdfreader.MyCustomEvents.DBError.ErrorEventManager;
 import com.example.pdfreader.Sinartiseis.TextExtractions;
 import com.example.pdfreader.enums.ABInvoiceTypes;
 import com.example.pdfreader.enums.PromTypes;
@@ -11,10 +16,8 @@ import com.fasterxml.jackson.annotation.*;
 
 import java.io.File;
 import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.Calendar;
-import java.util.Date;
-import java.util.List;
+import java.util.*;
+import java.util.stream.Collectors;
 
 import jakarta.persistence.*;
 import org.hibernate.annotations.BatchSize;
@@ -307,5 +310,62 @@ public class Document {
 
     public Supplier getSupplier() {
         return supplier;
+    }
+
+    public static List<SupplierProductRelation> inferSupplier(List<SupplierProductRelation> currentRelations, Document newDoc){
+        if(newDoc.getType().compareTo(ABInvoiceTypes.TIMOLOGIO)!=0){
+            return Collections.emptyList();
+        }
+
+
+        // Load all relations and documents once at the beginning
+        List<SupplierProductRelation> newRelations= new ArrayList<>();
+        //List<Document> allDocuments = documentDAO.getAllDocuments();
+
+
+
+        //allDocuments = allDocuments.stream().filter(doc->doc.getType().compareTo(ABInvoiceTypes.TIMOLOGIO)==0).collect(Collectors.toList());
+        //System.out.println("there are "+allDocuments.size());
+        //System.out.println("the relations are "+allRelations.size());
+
+        // Convert relations to a Map for easy access
+        Map<Product, Set<Supplier>> productSupplierMap = currentRelations.stream()
+                .collect(Collectors.groupingBy(
+                        SupplierProductRelation::getProduct,
+                        Collectors.mapping(SupplierProductRelation::getSupplier, Collectors.toSet())
+                ));
+        //System.out.println("the size of product supplier map : "+allRelations.get(0).getProduct().getDescription()+"and the sups are"+productSupplierMap.get(allRelations.get(0).getProduct()).stream().toList().get(0).getName());
+
+        Map<Supplier, Integer> supplierFrequency = new HashMap<>();
+        for (Product product : newDoc.getProducts()) {
+            Set<Supplier> suppliers = productSupplierMap.getOrDefault(product, new HashSet<>());
+            for (Supplier supplier : suppliers) {
+                supplierFrequency.put(supplier, supplierFrequency.getOrDefault(supplier, 0) + 1);
+            }
+        }
+        // Find the most common supplier
+        Optional<Supplier> mostCommonSupplier = supplierFrequency.entrySet().stream()
+                .filter(entry -> entry.getValue() >= 1)
+                .max(Comparator.comparingInt(Map.Entry::getValue))
+                .map(Map.Entry::getKey);
+
+        if (mostCommonSupplier.isPresent()) {
+            Supplier supplier = mostCommonSupplier.get();
+            newDoc.setSupplier(supplier);
+
+            // Check and create new relations
+            for (Product product : newDoc.getProducts()) {
+                if (!productSupplierMap.containsKey(product) || !productSupplierMap.get(product).contains(supplier)) {
+                    SupplierProductRelation newRelation = new SupplierProductRelation(product, supplier);
+                    newRelations.add(newRelation);
+                    productSupplierMap.computeIfAbsent(product, k -> new HashSet<>()).add(supplier);
+                }
+            }
+        }
+        // Perform database updates
+        //documentDAO.updateDocuments(allDocuments);
+        // documentDAO.saveAll(allDocuments);
+        //relationDAO.saveAll(allRelations);
+        return newRelations;
     }
 }

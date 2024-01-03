@@ -1,12 +1,10 @@
 package com.example.pdfreader.Controllers;
 
-import com.example.pdfreader.DAOs.DBError;
-import com.example.pdfreader.DAOs.DBErrorDAO;
-import com.example.pdfreader.DAOs.DocumentDAO;
-import com.example.pdfreader.DAOs.HibernateUtil;
+import com.example.pdfreader.DAOs.*;
 import com.example.pdfreader.Entities.Document;
 import com.example.pdfreader.HelloController;
 import com.example.pdfreader.Helpers.ObservableQueue;
+import com.example.pdfreader.Helpers.SupplierProductRelation;
 import com.example.pdfreader.MyCustomEvents.DBError.DBErrorEvent;
 import com.example.pdfreader.MyCustomEvents.DBError.DBErrorListener;
 import com.example.pdfreader.MyCustomEvents.DBError.ErrorEventManager;
@@ -26,8 +24,10 @@ import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.text.Text;
 
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.Objects;
 
 public class InvoicesImportView extends ChildController{
     @FXML
@@ -208,21 +208,33 @@ public class InvoicesImportView extends ChildController{
         //int size = listManager.getTraced().size();
         int size = super.parentDelegate.listManager.getToImportQueue().size();
 
+        SupplierProductRelationDAO relationDAO = new SupplierProductRelationDAO();
+        List<SupplierProductRelation> currentRelations = relationDAO.findAll();
+        List<SupplierProductRelation> newRelations = new ArrayList<>();
+
         while (!super.parentDelegate.listManager.getToImportQueue().isEmpty()){
             updateProgressBarFolderLoading(size-super.parentDelegate.listManager.getToImportQueue().size()+1,size);
             Document newDoc = super.parentDelegate.listManager.getToImportQueue().poll();
             TextExtractions.process(newDoc,parentDelegate);
+            newRelations.addAll(Document.inferSupplier(currentRelations, newDoc));
             if(newDoc.getDocumentId().compareTo("9033568261")==0){
                 newDoc.addToErrorList("this is the one with the error");
             }
         }
 
+
+
         DBErrorDAO dbErrorDAO = new DBErrorDAO(new ErrorEventManager());
         DocumentDAO ddao = new DocumentDAO(dbErrorDAO);
         List<DBError> errors = ddao.saveDocuments(super.parentDelegate.listManager.getImported());
 
+
         // Log all errors in bulk
         dbErrorDAO.saveDBErrors(errors);
+
+        if(!newRelations.isEmpty()){
+            relationDAO.saveAll(newRelations);
+        }
 
         System.out.println("the imported are "+super.parentDelegate.listManager.getImported().size());
         super.parentDelegate.listManager.getImported().clear();
