@@ -3,6 +3,7 @@ package com.example.pdfreader.DAOs;
 import com.example.pdfreader.Entities.Product;
 import com.example.pdfreader.Entities.Supplier;
 import com.example.pdfreader.Helpers.SupplierProductRelation;
+import org.hibernate.HibernateException;
 import org.hibernate.Session;
 import org.hibernate.Transaction;
 import org.hibernate.query.Query;
@@ -32,10 +33,57 @@ public class SupplierProductRelationDAO {
         }
     }
 
+    /*
     public void saveAll(List<SupplierProductRelation> relations) {
         Transaction transaction = null;
         try (Session session = HibernateUtil.getSessionFactory().openSession()) {
             transaction = session.beginTransaction();
+
+            for (SupplierProductRelation relation : relations) {
+                Product product = relation.getProduct();
+                // Check if a product with the same 'master' value already exists
+                Product existingProduct = (Product) session.byNaturalId(Product.class)
+                        .using("master", product.getMaster())
+                        .load();
+                if (existingProduct != null) {
+                    // Use the existing product
+                    relation.setProduct(existingProduct);
+                } else if (!session.contains(product)) {
+                    // Save new product
+                    session.saveOrUpdate(product);
+                }
+
+                if (relation.getId() == null) {
+                    session.persist(relation);
+                } else {
+                    session.merge(relation);
+                }
+            }
+
+            transaction.commit();
+        } catch (HibernateException e) {
+            if (transaction != null) {
+                transaction.rollback();
+            }
+            e.printStackTrace();
+        }
+    }
+
+     */
+
+
+
+
+    public void saveAll(List<SupplierProductRelation> relations) {
+        Transaction transaction = null;
+        Session session = null;
+        try {
+            session = HibernateUtil.getSessionFactory().openSession();
+            transaction = session.beginTransaction();
+
+            int batchSize = 50; // Example batch size
+            int i = 0;
+
             for (SupplierProductRelation relation : relations) {
                 if (relation.getId() == null) {
                     session.persist(relation); // For new entities
@@ -43,20 +91,32 @@ public class SupplierProductRelationDAO {
                     session.merge(relation); // For updating existing entities
                 }
 
-                // Optionally flush and clear the session periodically to control memory usage
-                // if (i % batchSize == 0) { // batch size, e.g., 20, 50...
-                //     session.flush();
-                //     session.clear();
-                // }
+                // Batch processing
+                if (i % batchSize == 0) {
+                    session.flush();
+                    session.clear();
+                }
+                i++;
             }
+
             transaction.commit();
         } catch (Exception e) {
-            if (transaction != null) {
+            if (transaction != null && transaction.isActive()) {
                 transaction.rollback();
             }
             e.printStackTrace();
+            // Consider logging the exception with more details here
+        } finally {
+            if (session != null && session.isOpen()) {
+                session.close();
+            }
         }
+
     }
+
+
+
+
 
     public void saveAllRelations(List<SupplierProductRelation> relations, List<Supplier> suppliersToSaveFirst) {
         Transaction transaction = null;

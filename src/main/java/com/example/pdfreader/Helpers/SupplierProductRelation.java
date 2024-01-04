@@ -5,6 +5,8 @@ import com.example.pdfreader.Entities.Supplier;
 import jakarta.persistence.*;
 import org.hibernate.annotations.Cascade;
 
+import static org.hibernate.annotations.CascadeType.PERSIST;
+
 @Entity
 public class SupplierProductRelation {
     @Id

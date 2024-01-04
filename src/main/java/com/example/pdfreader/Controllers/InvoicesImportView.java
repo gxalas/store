@@ -210,6 +210,8 @@ public class InvoicesImportView extends ChildController{
 
         SupplierProductRelationDAO relationDAO = new SupplierProductRelationDAO();
         List<SupplierProductRelation> currentRelations = relationDAO.findAll();
+
+
         List<SupplierProductRelation> newRelations = new ArrayList<>();
 
         while (!super.parentDelegate.listManager.getToImportQueue().isEmpty()){
@@ -217,6 +219,7 @@ public class InvoicesImportView extends ChildController{
             Document newDoc = super.parentDelegate.listManager.getToImportQueue().poll();
             TextExtractions.process(newDoc,parentDelegate);
             newRelations.addAll(Document.inferSupplier(currentRelations, newDoc));
+            currentRelations.addAll(newRelations);
             if(newDoc.getDocumentId().compareTo("9033568261")==0){
                 newDoc.addToErrorList("this is the one with the error");
             }
@@ -227,11 +230,10 @@ public class InvoicesImportView extends ChildController{
         DBErrorDAO dbErrorDAO = new DBErrorDAO(new ErrorEventManager());
         DocumentDAO ddao = new DocumentDAO(dbErrorDAO);
         List<DBError> errors = ddao.saveDocuments(super.parentDelegate.listManager.getImported());
-
-
-        // Log all errors in bulk
-        dbErrorDAO.saveDBErrors(errors);
-
+        if(!errors.isEmpty()){
+            dbErrorDAO.saveDBErrors(errors);
+        }
+        System.out.println("the total new relations to be saved is "+newRelations.size());
         if(!newRelations.isEmpty()){
             relationDAO.saveAll(newRelations);
         }

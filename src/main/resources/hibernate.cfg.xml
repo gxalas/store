@@ -34,7 +34,7 @@
         </property>
         <property name="hibernate.hikari.connectionTimeout">30000</property> <!-- increased to 30 seconds -->
         <property name="hibernate.hikari.minimumIdle">10</property> <!-- increased minimum idle connections -->
-        <property name="hibernate.hikari.maximumPoolSize">50</property> <!-- reduced max pool size to 50 -->
+        <property name="hibernate.hikari.maximumPoolSize">100</property> <!-- reduced max pool size to 50 -->
         <property name="hibernate.hikari.idleTimeout">600000</property> <!-- increased idle timeout to 10 minutes -->
         <property name="hibernate.hikari.poolName">HikariCP</property>
 

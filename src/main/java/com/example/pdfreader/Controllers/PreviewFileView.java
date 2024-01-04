@@ -1,14 +1,12 @@
 package com.example.pdfreader.Controllers;
 
 import com.example.pdfreader.Controllers.States.PreviewFileViewState;
-import com.example.pdfreader.DAOs.DBErrorDAO;
-import com.example.pdfreader.DAOs.DocEntryDAO;
-import com.example.pdfreader.DAOs.DocumentDAO;
-import com.example.pdfreader.DAOs.HibernateUtil;
+import com.example.pdfreader.DAOs.*;
 import com.example.pdfreader.DTOs.DocEntryDTO;
 import com.example.pdfreader.DocEntry;
 import com.example.pdfreader.Entities.Document;
 import com.example.pdfreader.Entities.Product;
+import com.example.pdfreader.Entities.Supplier;
 import com.example.pdfreader.HelloController;
 import com.example.pdfreader.Helpers.ListManager;
 import com.example.pdfreader.Helpers.MyTask;
@@ -82,6 +80,8 @@ public class PreviewFileView extends ChildController {
     private MyTask loadDocuments;
 
     private List<Document> dbDocuments= new ArrayList<Document>();
+
+
 
     private final DocumentsImportedListener myListener = new DocumentsImportedListener() {
         @Override
@@ -348,11 +348,8 @@ public class PreviewFileView extends ChildController {
                     Task<Void> loadItems = new Task<Void>() {
                         @Override
                         protected Void call() throws Exception {
-                            long start = System.nanoTime();
-                            List<DocEntryDTO> loadedEntries = dedao.getDocEntriesByDocument(item);
-                            long end = System.nanoTime();
-                            System.out.println("execution time is : "+(end-start)/1_000_000.00);
-                            obsDocEntries.setAll(loadedEntries);
+                            DocEntryDAO docEntryDAO = new DocEntryDAO();
+                            obsDocEntries.setAll(docEntryDAO.getDocEntriesByDocument(item));
                             return null;
                         }
                     };
@@ -582,6 +579,10 @@ public class PreviewFileView extends ChildController {
             @Override
             public void changed(ObservableValue<? extends DocEntryDTO> observableValue, DocEntryDTO docEntry, DocEntryDTO t1) {
                 if(t1!=null){
+                    SupplierDAO supplierDAO = new SupplierDAO();
+                    supplierDAO.getSuppliersByProduct(t1.getDocEntry().getProduct()).forEach(item->{
+                        System.out.println(item.getName()+"\n");
+                    });
                     if(t1.getDocEntry().getErrorLogs()!=null && !t1.getDocEntry().getErrorLogs().isEmpty()){
                         errorTxt.setText(t1.getDocEntry().getErrorLogs().get(0));
                         return;

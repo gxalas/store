@@ -4,15 +4,18 @@ package com.example.pdfreader.DAOs;
 import com.example.pdfreader.Entities.Product;
 import com.example.pdfreader.Entities.Supplier;
 import com.example.pdfreader.Helpers.SupplierProductRelation;
+import org.hibernate.HibernateException;
 import org.hibernate.Session;
 import org.hibernate.Transaction;
 import org.hibernate.query.Query;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 import java.util.stream.Collectors;
 
 public class SupplierDAO {
+    private static final Logger logger = LoggerFactory.getLogger(SupplierDAO.class);
 
     public Supplier findById(Long id) {
         try (Session session = HibernateUtil.getSessionFactory().openSession()) {
@@ -127,18 +130,43 @@ public class SupplierDAO {
             return 0;
         }
     }
-    public List<String> getSupplierNamesForProduct(Product product) {
+
+    public List<Supplier> getSuppliersByProduct(Product product) {
+        logger.info("Fetching suppliers for product: {}", product);
+
+        List<Supplier> suppliers = new ArrayList<>();
         try (Session session = HibernateUtil.getSessionFactory().openSession()) {
             Query<SupplierProductRelation> query = session.createQuery(
                     "FROM SupplierProductRelation WHERE product = :product", SupplierProductRelation.class);
             query.setParameter("product", product);
             List<SupplierProductRelation> relations = query.list();
-            return relations.stream()
-                    .map(relation -> relation.getSupplier().getName()) // Assuming Supplier class has getName method
-                    .collect(Collectors.toList());
+
+            for (SupplierProductRelation relation : relations) {
+                suppliers.add(relation.getSupplier());
+            }
         } catch (Exception e) {
-            e.printStackTrace();
-            return Collections.emptyList();
+            logger.error("Exception in getSuppliersByProduct", e);
         }
+        return suppliers;
+    }
+    public Map<Long, String> getSupplierNamesForProducts(List<Product> products) {
+        logger.info("Fetching supplier names for products");
+        Map<Long, String> supplierNamesMap = new HashMap<>();
+        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+            for (Product product : products) {
+                Query<SupplierProductRelation> query = session.createQuery(
+                        "FROM SupplierProductRelation WHERE product.id = :productId", SupplierProductRelation.class);
+                query.setParameter("productId", product.getId());
+                List<SupplierProductRelation> relations = query.list();
+
+                String supplierNames = relations.stream()
+                        .map(relation -> relation.getSupplier().getName())
+                        .collect(Collectors.joining(", "));
+                supplierNamesMap.put(product.getId(), supplierNames);
+            }
+        } catch (Exception e) {
+            logger.error("Exception in getSupplierNamesForProducts", e);
+        }
+        return supplierNamesMap;
     }
 }

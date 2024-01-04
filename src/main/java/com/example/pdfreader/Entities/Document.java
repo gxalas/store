@@ -316,17 +316,12 @@ public class Document {
         if(newDoc.getType().compareTo(ABInvoiceTypes.TIMOLOGIO)!=0){
             return Collections.emptyList();
         }
+        if(newDoc.getDocumentId().compareTo("9033568261")==0){
+            System.out.println("- - - - - - this is the document in question - - - - - ");
+        }
 
-
-        // Load all relations and documents once at the beginning
         List<SupplierProductRelation> newRelations= new ArrayList<>();
-        //List<Document> allDocuments = documentDAO.getAllDocuments();
 
-
-
-        //allDocuments = allDocuments.stream().filter(doc->doc.getType().compareTo(ABInvoiceTypes.TIMOLOGIO)==0).collect(Collectors.toList());
-        //System.out.println("there are "+allDocuments.size());
-        //System.out.println("the relations are "+allRelations.size());
 
         // Convert relations to a Map for easy access
         Map<Product, Set<Supplier>> productSupplierMap = currentRelations.stream()
@@ -353,19 +348,47 @@ public class Document {
             Supplier supplier = mostCommonSupplier.get();
             newDoc.setSupplier(supplier);
 
+            int a =0;
+
+
             // Check and create new relations
             for (Product product : newDoc.getProducts()) {
-                if (!productSupplierMap.containsKey(product) || !productSupplierMap.get(product).contains(supplier)) {
-                    SupplierProductRelation newRelation = new SupplierProductRelation(product, supplier);
-                    newRelations.add(newRelation);
-                    productSupplierMap.computeIfAbsent(product, k -> new HashSet<>()).add(supplier);
+                if(newDoc.getDocumentId().compareTo("9033568261")==0){
+                    if(productSupplierMap.get(product)!=null){
+                        System.out.println("suppliers for this product are: "+product.getDescription()+" the name "+productSupplierMap.get(product).stream().toList().get(0).getName());
+                    }else {
+                        System.out.println("suppliers for this product are: "+product.getDescription()+"0 ");
+                    }
                 }
+                try {
+                    if (!productSupplierMap.containsKey(product) || !productSupplierMap.get(product).contains(supplier)) {
+                        SupplierProductRelation newRelation = new SupplierProductRelation(product, supplier);
+                        newRelations.add(newRelation);
+                        productSupplierMap.computeIfAbsent(product, k -> new HashSet<>()).add(supplier);
+                    }
+
+                } catch (Exception e){
+                    System.out.println("we caught an exception");
+                    e.printStackTrace();
+                }
+
             }
         }
         // Perform database updates
         //documentDAO.updateDocuments(allDocuments);
         // documentDAO.saveAll(allDocuments);
         //relationDAO.saveAll(allRelations);
+        if(!newRelations.isEmpty()){
+            System.out.println("new relations to be added - - - - - -  - :"+newRelations.size());
+            System.out.println("the description "+newRelations.get(0).getProduct().getDescription());
+            System.out.println("the supp "+newRelations.get(0).getSupplier().getName());
+        }
+
+        if(newDoc.getDocumentId().compareTo("9033568261")==0){
+            System.out.println("the relations created fot this document are :"+newRelations.size());
+            System.out.println("- - - - - - this is the document in question - - - - - ");
+        }
+
         return newRelations;
     }
 }

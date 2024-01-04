@@ -58,24 +58,22 @@ public class DocumentDAO {
             Transaction transaction = null;
             Session session = null;
             try {
-                session = sessionFactory.openSession();
+                session = HibernateUtil.getSessionFactory().openSession();
                 transaction = session.beginTransaction();
 
                 for (DocEntry entry : document.getEntries()) {
                     Product entryProduct = entry.getProduct();
+
+                    // Check if a Product with the same master value already exists
                     Product managedProduct = (Product) session.bySimpleNaturalId(Product.class)
                             .load(entryProduct.getMaster());
 
                     if (managedProduct != null) {
+                        // Use the existing Product entity
                         entry.setProduct(managedProduct);
                     } else {
-                        // Check if the entryProduct is a detached entity
-                        if (entryProduct.getMaster() != null) {
-                            managedProduct = (Product) session.merge(entryProduct);
-                            entry.setProduct(managedProduct);
-                        } else {
-                            session.persist(entryProduct);
-                        }
+                        // Persist the new Product entity
+                        session.persist(entryProduct);
                     }
                 }
 
@@ -85,7 +83,6 @@ public class DocumentDAO {
                 if (transaction != null && transaction.isActive()) {
                     transaction.rollback();
                 }
-
                 DBError dbError = new DBError();
                 dbError.setErrorMessage(e.getMessage());
                 dbError.setTimestamp(new Date());
@@ -93,8 +90,6 @@ public class DocumentDAO {
                         "docId: "+document.getDocumentId()+" " +
                         "\n "+document.getPath());
                 errors.add(dbError);
-                System.out.println("before stack trace");
-                System.err.println("before stack trace");
                 e.printStackTrace();
             } finally {
                 if (session != null && session.isOpen()) {
