@@ -93,6 +93,9 @@ public class DocEntry {
         this.product = tempProduct;
 
         if(getProduct()!=null){
+            if(docLine.description.contains("PAL MAL ΚΟΚΚΙΝΟ")){
+                System.out.println("at docLine");
+            }
             getProduct().setDescription(docLine.description.trim());
             getProduct().setMaster(docLine.getRetEan());
         }

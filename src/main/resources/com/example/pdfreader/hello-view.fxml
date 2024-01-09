@@ -12,7 +12,6 @@
 <?import javafx.scene.layout.VBox?>
 <?import javafx.scene.text.Text?>
 
-
 <AnchorPane prefHeight="600.0" prefWidth="800.0" xmlns="http://javafx.com/javafx/19" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.example.pdfreader.HelloController">
    <children>
       <SplitPane dividerPositions="0.8489974937343359" pickOnBounds="false" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
@@ -53,7 +52,13 @@
                                       <items>
                                         <MenuItem fx:id="actImportTxts" mnemonicParsing="false" text="Import Txts" />
                                           <MenuItem fx:id="actProductsPage" mnemonicParsing="false" text="Prodcuts Page" />
+                                      </items>
+                                    </Menu>
+                                    <Menu mnemonicParsing="false" text="Suppliers">
+                                      <items>
+                                        <MenuItem fx:id="actSuppOverview" mnemonicParsing="false" text="Suppliers Overview" />
                                           <MenuItem fx:id="actSuppConfig" mnemonicParsing="false" text="Suppliers Configuration" />
+                                          <MenuItem fx:id="actProductSuppliers" mnemonicParsing="false" text="Product &lt;-&gt; Suppliers" />
                                       </items>
                                     </Menu>
                                     <Menu mnemonicParsing="false" text="Database">

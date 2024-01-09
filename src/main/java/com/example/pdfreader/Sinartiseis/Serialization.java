@@ -280,6 +280,16 @@ public class Serialization {
                      savePosEntries(posEntries);
                      return null;
                  });
+
+                 processAndSavePosEntries.addEventHandler(WorkerStateEvent.WORKER_STATE_FAILED, new EventHandler<WorkerStateEvent>() {
+                     @Override
+                     public void handle(WorkerStateEvent workerStateEvent) {
+                         Throwable exception = workerStateEvent.getSource().getException();
+                         System.out.println("Error occurred: " + exception.getMessage());
+                         exception.printStackTrace();
+                     }
+                 });
+
                  controller.listManager.addTaskToActiveList(
                          "Handling Pos File",
                          "Processing and Saving Pos Entry Files",
@@ -372,13 +382,39 @@ public class Serialization {
                 //String unit = line.substring(95,96);
                 //String status = line.substring(96,97);
                 if(productMap.get(master)!=null){
+                    StoreBasedAttributes sba = new StoreBasedAttributes();
+                    sba.setStore(store);
+                    sba.setHope(hope);
+                    sba.setDepartment(dept);
 
+
+                    boolean exists = false;
+
+                    if(!productMap.get(master).getStoreBasedAttributes().isEmpty()){
+                        System.out.println("^ ^ ^");
+                        for(int j=0;j<productMap.get(master).getStoreBasedAttributes().size();j++){
+                            if(productMap.get(master).getStoreBasedAttributes().get(j).getStore().compareTo(sba.getStore())==0){
+                                productMap.get(master).getStoreBasedAttributes().get(j).setHope(sba.getHope());
+                                productMap.get(master).getStoreBasedAttributes().get(j).setFamily(sba.getFamily());
+                                productMap.get(master).getStoreBasedAttributes().get(j).setDepartment(sba.getDepartment());
+                                exists = true;
+                                break;
+                            }
+                        }
+                    }
+
+                    if(!exists){
+                        productMap.get(master).getStoreBasedAttributes().add(sba);
+                    }
+
+                    /*
                     if (!productMap.get(master).checkHopeCode(hope)){
                         StoreBasedAttributes storeBasedAttributes = new StoreBasedAttributes(hope,store);
                         storeBasedAttributes.setDepartment(dept);
                         productMap.get(master).getStoreBasedAttributes().add(storeBasedAttributes);
 
                     }
+                     */
 
                     //productMap.get(master).setHopeCode(hope);
                 }
@@ -433,6 +469,9 @@ public class Serialization {
                         if (products.get(temp.getMaster())!=null){
                             temp.setProduct(products.get(temp.getMaster()));
                             if (!products.get(temp.getMaster()).getDescriptions().contains(temp.description)){
+                                if(temp.getDescription().contains("PAL MAL ΚΟΚΚΙΝΟ")){
+                                    System.out.println("this is at Serialization "+storeName.getName()+" "+file.getPath());
+                                }
                                 products.get(temp.getMaster()).setDescription(temp.getDescription());
                                 toUpdate.add(products.get(temp.getMaster()));
                             }

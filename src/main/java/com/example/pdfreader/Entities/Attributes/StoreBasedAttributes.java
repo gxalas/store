@@ -54,7 +54,6 @@ public class StoreBasedAttributes {
 
     public void setHope(String hope) {
         this.hope = hope;
-        setFamily("0");
         if(hope.length()!=7 && hope.length()>2){
             //System.out.println("i found a hope less than 7 "+ hope.length()+" "+ hope+);
             StringBuilder sb = new StringBuilder();
@@ -90,7 +89,7 @@ public class StoreBasedAttributes {
     }
 
     public void setFamily(String family) {
-        System.out.println(" - - - ^ ^ ^  ^ ^ ^ ^ ^ ^ ^ ^ ^ ^^ "+family+ " // "+hope);
+        //System.out.println(" - - - ^ ^ ^  ^ ^ ^ ^ ^ ^ ^ ^ ^ ^^ "+family+ " // "+hope);
         this.family = family;
     }
     // Getters and setters...

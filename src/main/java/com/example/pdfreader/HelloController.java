@@ -73,7 +73,6 @@ public class HelloController {
     public MenuItem actGC;
     @FXML
     public MenuItem actSelectFolder;
-
     @FXML
     public MenuItem actImportInvoices;
     @FXML
@@ -88,12 +87,16 @@ public class HelloController {
     public MenuItem actImportTxts;
     public MenuItem actResultsOverview;
     public MenuItem actSuppConfig;
+    public MenuItem actFilterInvoices;
+    public MenuItem actProductSuppliers;
+    public MenuItem actSuppOverview;
     public DirectoryChooser directoryChooser = new DirectoryChooser();
     @FXML
     public AnchorPane parentContainer;
     public ObservableList<String> txtAMemoryStatusList = FXCollections.observableArrayList();
     public ChildController currentChild;
-    public MenuItem actFilterInvoices;
+
+
     private ExecutorService executorService = Executors.newCachedThreadPool();
     private final Task<Void> watcher = new Task<Void>() {
         @Override
@@ -419,6 +422,8 @@ public class HelloController {
         actResultsOverview.setOnAction(actionEvent -> loadController("results-view.fxml"));
         actSuppConfig.setOnAction(actionEvent -> loadController("suppliers-config-view.fxml"));
         actImportTxts.setOnAction(actionEvent -> loadController("import-txts-view.fxml"));
+        actProductSuppliers.setOnAction(actionEvent -> loadController("product-supplier-relations.fxml"));
+        actSuppOverview.setOnAction(actionEvent -> loadController("supplier-overview.fxml"));
 
     }
     public void addWatcherToInvoicesFolder(){

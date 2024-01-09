@@ -38,12 +38,18 @@ public class Product {
 
     public Product(ListManager listManager,String productCode,String description,String master){
         this.code = productCode;
+        if(description.contains("PAL MAL ΚΟΚΚΙΝΟ")){
+            System.out.println("at Product");
+        }
         setDescription(description);
         this.master = master;
         //listManager.putProductToMap(this);
     }
     public Product(String description, String master){
         this.master = master;
+        if(description.contains("PAL MAL ΚΟΚΚΙΝΟ")){
+            System.out.println("at other product");
+        }
         setDescription(description);
         //listManager.putProductToMap(this);
     }
@@ -67,6 +73,11 @@ public class Product {
         return "";
     }
     public void setDescription(String description){
+        if(description.contains("PAL MAL ΚΟΚΚΙΝΟ")){
+            System.out.println("\n\n\n\n\n");
+            System.out.println("we found pal mal red");
+            System.out.println("\n\n\n\n\n");
+        }
         if(!this.descriptions.contains(description.trim())){
             this.descriptions.add(description.trim());
         }
@@ -147,7 +158,12 @@ public class Product {
         if (this == obj) return true;
         if (obj == null || getClass() != obj.getClass()) return false;
         Product product = (Product) obj;
-        return Objects.equals(id, product.id); // Assuming 'id' is the unique identifier
+        if (Objects.equals(master, product.master)){
+            if(!Objects.equals(id, product.id)){
+                System.out.println(" ** we have different id "+product.master+" ids : "+((Product) obj).id+" :: "+product.id);
+            }
+        }
+        return Objects.equals(master, product.master); // Assuming 'id' is the unique identifier
     }
 
     @Override

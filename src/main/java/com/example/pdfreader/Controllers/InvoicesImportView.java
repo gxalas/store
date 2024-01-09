@@ -205,12 +205,10 @@ public class InvoicesImportView extends ChildController{
     public void processFiles() {
         super.parentDelegate.listManager.fetchChecksums();
         super.parentDelegate.listManager.loadProductHashMap();
-        //int size = listManager.getTraced().size();
         int size = super.parentDelegate.listManager.getToImportQueue().size();
 
         SupplierProductRelationDAO relationDAO = new SupplierProductRelationDAO();
         List<SupplierProductRelation> currentRelations = relationDAO.findAll();
-
 
         List<SupplierProductRelation> newRelations = new ArrayList<>();
 
@@ -218,6 +216,10 @@ public class InvoicesImportView extends ChildController{
             updateProgressBarFolderLoading(size-super.parentDelegate.listManager.getToImportQueue().size()+1,size);
             Document newDoc = super.parentDelegate.listManager.getToImportQueue().poll();
             TextExtractions.process(newDoc,parentDelegate);
+            if(newDoc.getDocumentId().compareTo("9033568261")==0){
+                System.out.println("the document in focus is going to be checked for supplier");
+                System.out.println("the current relations are : "+currentRelations.size());
+            }
             newRelations.addAll(Document.inferSupplier(currentRelations, newDoc));
             currentRelations.addAll(newRelations);
             if(newDoc.getDocumentId().compareTo("9033568261")==0){

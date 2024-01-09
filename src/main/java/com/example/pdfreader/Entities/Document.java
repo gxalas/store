@@ -312,35 +312,55 @@ public class Document {
         return supplier;
     }
 
-    public static List<SupplierProductRelation> inferSupplier(List<SupplierProductRelation> currentRelations, Document newDoc){
-        if(newDoc.getType().compareTo(ABInvoiceTypes.TIMOLOGIO)!=0){
+    public static List<SupplierProductRelation> inferSupplier(List<SupplierProductRelation> currentRelations, Document newDoc) {
+        if (newDoc.getType() != ABInvoiceTypes.TIMOLOGIO) {
             return Collections.emptyList();
         }
         if(newDoc.getDocumentId().compareTo("9033568261")==0){
-            System.out.println("- - - - - - this is the document in question - - - - - ");
+            System.out.println("this is the document in question");
+            System.out.println("the current relations are : "+currentRelations.size());
+            newDoc.getProducts().forEach(product->{
+                System.out.print("the product "+product.getDescription()+", ");
+                currentRelations.forEach(relation->{
+                    if(relation.getProduct().getMaster().compareTo(product.getMaster())==0){
+                        System.out.print(" a supplier is : "+relation.getSupplier().getName()+", ");
+                        System.out.println();
+                    }
+                });
+            });
         }
 
-        List<SupplierProductRelation> newRelations= new ArrayList<>();
 
+        List<SupplierProductRelation> newRelations = new ArrayList<>();
 
         // Convert relations to a Map for easy access
+        /*
         Map<Product, Set<Supplier>> productSupplierMap = currentRelations.stream()
                 .collect(Collectors.groupingBy(
                         SupplierProductRelation::getProduct,
                         Collectors.mapping(SupplierProductRelation::getSupplier, Collectors.toSet())
                 ));
-        //System.out.println("the size of product supplier map : "+allRelations.get(0).getProduct().getDescription()+"and the sups are"+productSupplierMap.get(allRelations.get(0).getProduct()).stream().toList().get(0).getName());
+         */
+
+
+        Map<Product,List<Supplier>> productSupplierMap  = currentRelations.stream()
+                .collect(Collectors.groupingBy(
+                        SupplierProductRelation::getProduct,
+                        Collectors.mapping(SupplierProductRelation::getSupplier, Collectors.toList())
+                ));
 
         Map<Supplier, Integer> supplierFrequency = new HashMap<>();
-        for (Product product : newDoc.getProducts()) {
-            Set<Supplier> suppliers = productSupplierMap.getOrDefault(product, new HashSet<>());
+        for (DocEntry entry : newDoc.getEntries()) {
+            Product product = entry.getProduct();
+            List<Supplier> suppliers = productSupplierMap.getOrDefault(product,new ArrayList<>());
             for (Supplier supplier : suppliers) {
                 supplierFrequency.put(supplier, supplierFrequency.getOrDefault(supplier, 0) + 1);
             }
         }
+        //System.out.println();
+
         // Find the most common supplier
         Optional<Supplier> mostCommonSupplier = supplierFrequency.entrySet().stream()
-                .filter(entry -> entry.getValue() >= 1)
                 .max(Comparator.comparingInt(Map.Entry::getValue))
                 .map(Map.Entry::getKey);
 
@@ -348,45 +368,31 @@ public class Document {
             Supplier supplier = mostCommonSupplier.get();
             newDoc.setSupplier(supplier);
 
-            int a =0;
+            for (DocEntry entry : newDoc.getEntries()) {
+                Product product = entry.getProduct();
+                if(!productSupplierMap.containsKey(product)){
 
-
-            // Check and create new relations
-            for (Product product : newDoc.getProducts()) {
-                if(newDoc.getDocumentId().compareTo("9033568261")==0){
-                    if(productSupplierMap.get(product)!=null){
-                        System.out.println("suppliers for this product are: "+product.getDescription()+" the name "+productSupplierMap.get(product).stream().toList().get(0).getName());
-                    }else {
-                        System.out.println("suppliers for this product are: "+product.getDescription()+"0 ");
-                    }
-                }
-                try {
-                    if (!productSupplierMap.containsKey(product) || !productSupplierMap.get(product).contains(supplier)) {
+                    System.out.println("new relation at doc "+newDoc.getDocumentId()+"for product "+product.getDescription()+", and supplier "+supplier.getName()+" .");
+                    SupplierProductRelation newRelation = new SupplierProductRelation(product, supplier);
+                    newRelations.add(newRelation);
+                    productSupplierMap.computeIfAbsent(product, k -> new ArrayList<>()).add(supplier);
+                } else {
+                    if (!productSupplierMap.get(product).contains(supplier)) {
+                        System.out.println("new relation at doc "+newDoc.getDocumentId()+"for product "+product.getDescription()+", and supplier "+supplier.getName()+" .");
                         SupplierProductRelation newRelation = new SupplierProductRelation(product, supplier);
                         newRelations.add(newRelation);
-                        productSupplierMap.computeIfAbsent(product, k -> new HashSet<>()).add(supplier);
+                        productSupplierMap.computeIfAbsent(product, k -> new ArrayList<>()).add(supplier);
                     }
-
-                } catch (Exception e){
-                    System.out.println("we caught an exception");
-                    e.printStackTrace();
                 }
-
             }
         }
-        // Perform database updates
-        //documentDAO.updateDocuments(allDocuments);
-        // documentDAO.saveAll(allDocuments);
-        //relationDAO.saveAll(allRelations);
-        if(!newRelations.isEmpty()){
-            System.out.println("new relations to be added - - - - - -  - :"+newRelations.size());
-            System.out.println("the description "+newRelations.get(0).getProduct().getDescription());
-            System.out.println("the supp "+newRelations.get(0).getSupplier().getName());
-        }
 
+        if (!newRelations.isEmpty()) {
+            System.out.println("New relations to be added: " + newRelations.size());
+        }
         if(newDoc.getDocumentId().compareTo("9033568261")==0){
-            System.out.println("the relations created fot this document are :"+newRelations.size());
-            System.out.println("- - - - - - this is the document in question - - - - - ");
+            System.out.println("the document in question ending processing");
+            System.out.println("the new relations for the document are : "+newRelations.size());
         }
 
         return newRelations;

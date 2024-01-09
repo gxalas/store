@@ -41,10 +41,14 @@ public class HelloApplication extends Application {
 
         stage.show();
 
-
-        //DatabaseOverviewView dbc = (DatabaseOverviewView) mainController.currentChild;
-        //dbc.em = em;
         mainController.loadController("database-overview-view.fxml");
+
+        /*
+         * - settingsTask
+         * |- docCheckSums
+         *      |- trace
+         *      |- readTxtFiles
+         */
 
         MyTask settingsTask = new MyTask(()->{
             Serialization.createFolderIfNotExists("appFiles/saved");
@@ -53,29 +57,30 @@ public class HelloApplication extends Application {
             //Serialization.loadFileWithProgress(fxmlLoader.getController());
             return null;
         });
+
         MyTask trace = new MyTask(()->{
             TextExtractions.traceFolder(Paths.get(SySettings.PATH_TO_FOLDER.getPath()).toFile(),fxmlLoader.getController()); //find the files that can be imported
             return null;
         });
+
         MyTask fetchDocumentChecksums = new MyTask(()->{
             listManager.fetchChecksums();
             return null;
         });
-        /*
 
-         */
         MyTask readTxtFilesTask = new MyTask(()->{
             Serialization.readTxtFiles(fxmlLoader.getController());                 //load the saved sales
             return null;
         });
 
+        /**
+         * temporarily shutting down
+         */
 
-            listManager.addTaskToActiveList(
-                    "import setting",
-                    "reading the current folder for documents",
-                    settingsTask);
-
-
+        //listManager.addTaskToActiveList(
+        //        "import setting",
+        //        "reading the current folder for documents",
+        //        settingsTask);
 
         fetchDocumentChecksums.addEventHandler(WorkerStateEvent.WORKER_STATE_SUCCEEDED, new EventHandler<WorkerStateEvent>() {
             @Override
@@ -91,10 +96,9 @@ public class HelloApplication extends Application {
                         "Reading the Txt Files",
                         readTxtFilesTask
                 );
-
-
             }
         });
+
         settingsTask.addEventHandler(WorkerStateEvent.WORKER_STATE_SUCCEEDED, new EventHandler<WorkerStateEvent>() {
             @Override
             public void handle(WorkerStateEvent workerStateEvent) {
