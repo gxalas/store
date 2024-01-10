@@ -29,7 +29,6 @@ public class ListManager {
     private final HashMap<String,Product> productHashMap = new HashMap<>();
     private List<String> checksums = new ArrayList<>();
     private final ObservableList<MyTask> activeTasksList = FXCollections.observableArrayList();
-    private final ObservableList<MyThreads> finishedTasksList = FXCollections.observableArrayList();
     private List<String> fileChecksums = new ArrayList<>();
 
     public ListManager(){
@@ -130,9 +129,6 @@ public class ListManager {
 
 
 
-    }
-    public ObservableList<MyThreads> getFinishedTasksList(){
-        return finishedTasksList;
     }
 
 

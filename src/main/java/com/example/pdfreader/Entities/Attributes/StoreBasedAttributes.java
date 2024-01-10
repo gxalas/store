@@ -14,7 +14,6 @@ public class StoreBasedAttributes {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-
     @Column(name = "hope")
     private String hope = "";
     @Column(name = "department")
@@ -24,8 +23,8 @@ public class StoreBasedAttributes {
     @Enumerated(EnumType.STRING)
     @Column(name = "store")
     private StoreNames store = StoreNames.PERISTERI;
-
-
+    @Column(name="masterCode")
+    private String masterCode;
 
     public StoreBasedAttributes(){}
     public StoreBasedAttributes(String hope, StoreNames store){
@@ -93,6 +92,14 @@ public class StoreBasedAttributes {
     public void setFamily(String family) {
         //System.out.println(" - - - ^ ^ ^  ^ ^ ^ ^ ^ ^ ^ ^ ^ ^^ "+family+ " // "+hope);
         this.family = family;
+    }
+
+    public String getMasterCode(){
+        return this.masterCode;
+    }
+
+    public void setMasterCode(String master){
+        this.masterCode = master;
     }
     // Getters and setters...
 }

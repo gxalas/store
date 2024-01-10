@@ -53,7 +53,6 @@ public class EntriesFile {
 
     private static void getTxtFilesRecursive(File folder, List<File> txtFiles) {
         File[] files = folder.listFiles();
-
         if (files != null) {
             for (File file : files) {
                 if (file.isFile() && file.getName().toLowerCase().endsWith(".txt")) {

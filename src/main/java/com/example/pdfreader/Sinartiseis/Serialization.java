@@ -257,8 +257,6 @@ public class Serialization {
                         readingFiles);
             }
         });
-
-
     }
     public static void processTxtFiles(Map<File, StoreNames>posSaleFiles, HelloController controller,List<Product> toCreate,List<Product> toUpdate, List<PosEntry> posEntries,Map<File, StoreNames> itemFiles){
          MyTask processAndSaveProducts = new MyTask(()->{
@@ -342,7 +340,6 @@ public class Serialization {
         PosEntryDAO posEntryDAO = new PosEntryDAO();
         System.out.println("Saving POS entries "+posEntries.size());
         posEntryDAO.savePosEntries(posEntries);
-
     }
 
     public static void extractItemsLines(File file,StoreNames store){
