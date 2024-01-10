@@ -97,6 +97,7 @@ public class HelloController {
     public ChildController currentChild;
 
 
+
     private ExecutorService executorService = Executors.newCachedThreadPool();
     private final Task<Void> watcher = new Task<Void>() {
         @Override
@@ -424,6 +425,7 @@ public class HelloController {
         actImportTxts.setOnAction(actionEvent -> loadController("import-txts-view.fxml"));
         actProductSuppliers.setOnAction(actionEvent -> loadController("product-supplier-relations.fxml"));
         actSuppOverview.setOnAction(actionEvent -> loadController("supplier-overview.fxml"));
+
 
     }
     public void addWatcherToInvoicesFolder(){

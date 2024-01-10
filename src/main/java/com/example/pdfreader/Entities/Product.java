@@ -16,9 +16,16 @@ public class Product {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    /**
+     * this i think i have to remove
+     */
     @Column(name = "code")
     private String code;
 
+    /**
+     * this will be changed
+     * it will be the invoice description
+     */
     @ElementCollection (fetch = FetchType.EAGER)
     @CollectionTable(
             name = "product_descriptions",
@@ -27,10 +34,20 @@ public class Product {
     @Column(name = "description")
     private List<String> descriptions = new ArrayList<>();
 
+    /**
+     * this will be moved
+     * to the store based
+     * attributes
+     */
+
     @Column(name = "master", nullable = false)
     @NaturalId
     private String master;
 
+    /**
+     * this will be changed to a map
+     * that a store will link to sba
+     */
     @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
     private List<StoreBasedAttributes> storeBasedAttributes = new ArrayList<>();
 
@@ -43,7 +60,6 @@ public class Product {
         }
         setDescription(description);
         this.master = master;
-        //listManager.putProductToMap(this);
     }
     public Product(String description, String master){
         this.master = master;

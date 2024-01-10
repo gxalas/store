@@ -25,6 +25,8 @@ public class StoreBasedAttributes {
     @Column(name = "store")
     private StoreNames store = StoreNames.PERISTERI;
 
+
+
     public StoreBasedAttributes(){}
     public StoreBasedAttributes(String hope, StoreNames store){
         setHope(hope.trim());

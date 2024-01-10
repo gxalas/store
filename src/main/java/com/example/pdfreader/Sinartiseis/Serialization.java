@@ -211,6 +211,7 @@ public class Serialization {
             controller.listManager.loadProductHashMap();
             return null;
         });
+
         controller.listManager.addTaskToActiveList(
                  "loading products hash",
                  "hash map of products",
@@ -222,7 +223,6 @@ public class Serialization {
             @Override
             public void handle(WorkerStateEvent workerStateEvent) {
                 MyTask readingFiles = new MyTask(()->{
-
                     File parentFolder = folderPath.toFile();
                     if (parentFolder.exists() && parentFolder.isDirectory()) {
                         controller.listManager.loadFileChecksums();
@@ -239,7 +239,6 @@ public class Serialization {
                                                 if (f.getName().toLowerCase().contains("items")) {
                                                     itemFiles.put(f, storeName);
                                                 } else if (f.getName().toLowerCase().contains("possales")) {
-                                                    System.out.println(" - - - - - - - - - - - - - - - - -  pos sale file "+f.getPath());
                                                     posSaleFiles.put(f, storeName);
                                                 }
                                             }
@@ -308,19 +307,10 @@ public class Serialization {
 
     private static void processItemFile(File itemFile, StoreNames storeName, HelloController controller) {
         String fChecksum = TextExtractions.calculateChecksum(itemFile);
-        //if (!controller.listManager.getFileChecksums().contains(fChecksum)) {
-            System.out.println("extracting items file : "+itemFile.getName());
-            extractItemsLines(itemFile,storeName);
-            EntriesFileDAO entriesFileDAO = new EntriesFileDAO(HibernateUtil.getSessionFactory());
-            entriesFileDAO.saveEntriesFile(new EntriesFile(itemFile.getPath(), fChecksum));
-        //} else {
-            //System.out.println("\n\n");
-            //System.out.println("item file already existing ++++++++++++++++++++++++++++");
-            //System.out.println("\n\n");
-        //}
-
-        // Add your logic for extracting items here
-        // For example, extractItemsLines(itemFile, storeName);
+        System.out.println("extracting items file : "+itemFile.getName());
+        extractItemsLines(itemFile,storeName);
+        EntriesFileDAO entriesFileDAO = new EntriesFileDAO(HibernateUtil.getSessionFactory());
+        entriesFileDAO.saveEntriesFile(new EntriesFile(itemFile.getPath(), fChecksum));
     }
     private static void processPosSaleFile(File posSaleFile, StoreNames storeName, HelloController controller, List<Product> toCreate, List<Product> toUpdate, List<PosEntry> posEntries) {
         String fChecksum = TextExtractions.calculateChecksum(posSaleFile);
