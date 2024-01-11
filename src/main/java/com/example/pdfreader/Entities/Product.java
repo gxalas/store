@@ -46,12 +46,7 @@ public class Product {
 
 
 
-    @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.EAGER)
-    @JoinTable(
-            name = "products_store_based_attributes",
-            joinColumns = @JoinColumn(name = "product_id"),
-            inverseJoinColumns = @JoinColumn(name = "attributes_id")
-    )
+    @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, fetch = FetchType.EAGER)
     @MapKeyEnumerated(EnumType.STRING)
     @MapKeyColumn(name = "store_name")
     private Map<StoreNames,StoreBasedAttributes> attributes = new HashMap<>();

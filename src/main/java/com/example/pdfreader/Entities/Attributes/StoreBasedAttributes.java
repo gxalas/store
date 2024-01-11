@@ -28,6 +28,9 @@ public class StoreBasedAttributes {
     private String masterCode;
     @Column(name="description")
     private String description;
+    @ManyToOne
+    @JoinColumn(name = "product_id", nullable = false)
+    private Product product;
 
     public StoreBasedAttributes(){}
     public StoreBasedAttributes(String hope, StoreNames store){
@@ -111,6 +114,10 @@ public class StoreBasedAttributes {
 
     public String getDescription() {
         return description;
+    }
+
+    public void setProduct(Product product) {
+        this.product = product;
     }
 
     // Getters and setters...

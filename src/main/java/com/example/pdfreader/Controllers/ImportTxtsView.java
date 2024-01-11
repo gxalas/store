@@ -108,24 +108,11 @@ public class ImportTxtsView extends ChildController{
                     }
                 });
 
-        ProductDAO productDAO = new ProductDAO();
-        Product product = new Product();
-        product.setDescription("test description");
-        product.setMaster("masterTempo");
 
-        StoreBasedAttributes sba = new StoreBasedAttributes();
-        sba.setStore(StoreNames.PERISTERI);
-        sba.setDescription("a new test sba description");
-        sba.setHope("1203434");
-        sba.setDepartment("12");
-        sba.setMasterCode("0101010101");
 
-        product.getAttributes().put(sba.getStore(),sba);
+        //testLoadProductsFromDatabase();
+        testAddRandomProduct();
 
-        System.out.println("the store based attributes are "+product.getAttributes().size());
-
-        //
-        productDAO.saveProduct(product);
 
         //product.set
         //the other thing that we would like to add is the possale check that i think we already
@@ -137,6 +124,36 @@ public class ImportTxtsView extends ChildController{
 
 
 
+
+    }
+
+    private void testAddRandomProduct(){
+        ProductDAO productDAO = new ProductDAO();
+        Product product = new Product();
+        product.setDescription("test description");
+        product.setMaster("masterTempo");
+
+        StoreBasedAttributes sba = new StoreBasedAttributes();
+        sba.setProduct(product);
+        sba.setStore(StoreNames.PERISTERI);
+        sba.setDescription("a new test sba description");
+        sba.setHope("1203434");
+        sba.setDepartment("12");
+        sba.setMasterCode("0101010101");
+
+        product.getAttributes().put(sba.getStore(),sba);
+
+        System.out.println("the store based attributes are "+product.getAttributes().size());
+
+
+        productDAO.saveProduct(product);
+    }
+
+    private void testLoadProductsFromDatabase(){
+        ProductDAO productDAO = new ProductDAO();
+
+        List<Product> products = productDAO.getAllProducts();
+        System.out.println("the products are "+products.size()+" and its description are "+products.get(0).getAttributes().get(StoreNames.PERISTERI).getDescription());
 
     }
     public void getFilesFromFolder(){
