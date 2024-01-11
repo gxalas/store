@@ -3,6 +3,8 @@ package com.example.pdfreader.DAOs;
 import com.example.pdfreader.DTOs.ProductDTO;
 import com.example.pdfreader.Entities.Attributes.StoreBasedAttributes;
 import com.example.pdfreader.Entities.Product;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.EntityTransaction;
 import org.hibernate.NaturalIdLoadAccess;
 import org.hibernate.Session;
 import org.hibernate.Transaction;
@@ -25,16 +27,16 @@ public class ProductDAO {
     }
 
     public void saveProduct(Product product) {
-        Transaction transaction = null;
-        try (Session session = sessionFactory.openSession()) {
-            transaction = session.beginTransaction();
+       Session session = sessionFactory.openSession();
+        EntityTransaction transaction = session.beginTransaction();
+        try {
             session.persist(product);
             transaction.commit();
-        } catch (Exception e) {
-            if (transaction != null) {
+        } catch (RuntimeException e) {
+            if (transaction.isActive()) {
                 transaction.rollback();
             }
-            e.printStackTrace();
+            throw e;
         }
     }
 

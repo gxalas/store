@@ -1,6 +1,7 @@
 package com.example.pdfreader.Entities.Attributes;
 
 
+import com.example.pdfreader.Entities.Product;
 import com.example.pdfreader.enums.StoreNames;
 import jakarta.persistence.*;
 
@@ -25,6 +26,8 @@ public class StoreBasedAttributes {
     private StoreNames store = StoreNames.PERISTERI;
     @Column(name="masterCode")
     private String masterCode;
+    @Column(name="description")
+    private String description;
 
     public StoreBasedAttributes(){}
     public StoreBasedAttributes(String hope, StoreNames store){
@@ -101,6 +104,15 @@ public class StoreBasedAttributes {
     public void setMasterCode(String master){
         this.masterCode = master;
     }
+
+    public void setDescription(String description) {
+        this.description = description;
+    }
+
+    public String getDescription() {
+        return description;
+    }
+
     // Getters and setters...
 }
 

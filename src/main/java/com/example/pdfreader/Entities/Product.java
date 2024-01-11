@@ -2,6 +2,7 @@ package com.example.pdfreader.Entities;
 
 import com.example.pdfreader.Entities.Attributes.StoreBasedAttributes;
 import com.example.pdfreader.Helpers.ListManager;
+import com.example.pdfreader.enums.ConflictStates;
 import com.example.pdfreader.enums.StoreNames;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
@@ -41,15 +42,24 @@ public class Product {
      */
 
     @Column(name = "master", nullable = false)
-    @NaturalId
     private String master;
 
-    /**
-     * this will be changed to a map
-     * that a store will link to sba
-     */
-    @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
-    private List<StoreBasedAttributes> storeBasedAttributes = new ArrayList<>();
+
+
+    @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.EAGER)
+    @JoinTable(
+            name = "products_store_based_attributes",
+            joinColumns = @JoinColumn(name = "product_id"),
+            inverseJoinColumns = @JoinColumn(name = "attributes_id")
+    )
+    @MapKeyEnumerated(EnumType.STRING)
+    @MapKeyColumn(name = "store_name")
+    private Map<StoreNames,StoreBasedAttributes> attributes = new HashMap<>();
+    @Column(name = "state")
+    private ConflictStates state = ConflictStates.PENDING;
+
+    @Column(name = "description")
+    private String invDescription;
 
 
 
@@ -121,12 +131,15 @@ public class Product {
     }
 
     public List<StoreBasedAttributes> getStoreBasedAttributes() {
-        return storeBasedAttributes;
+        return attributes.values().stream().toList();
     }
 
-    public void setHopeCodes(List<StoreBasedAttributes> hopecodes) {
+    /*public void setHopeCodes(List<StoreBasedAttributes> hopecodes) {
         this.storeBasedAttributes = hopecodes;
     }
+
+
+     */
 
     public Long getId() {
         return id;
@@ -134,7 +147,7 @@ public class Product {
     public boolean  checkHopeCode(String hope){
         //System.out.println("chcking hope "+hope);
         try {
-            for (StoreBasedAttributes storeBasedAttributes : this.storeBasedAttributes){
+            for (StoreBasedAttributes storeBasedAttributes : this.attributes.values()){
                 if (storeBasedAttributes.getHope().trim().compareTo(hope.trim())==0){
                     return true;
                 }
@@ -187,5 +200,40 @@ public class Product {
         return Objects.hash(id);
     }
 
+    public Map<StoreNames,StoreBasedAttributes> getAttributes() {
+        return attributes;
+    }
 
+    public String getDepartment(){
+        String department = "-1";
+        if(!attributes.isEmpty()){
+            for(StoreBasedAttributes sba : attributes.values()){
+                if(department.compareTo("-1")!=0){
+                    if(department.compareTo(sba.getDepartment())!=0){
+                        state = ConflictStates.CONFLICT;
+                        System.out.println("- - - - WE HAVE DIFFERENT \n" +
+                                "DEPARTMENTS AT THE ATTRIBUTES\n" +
+                                "OF A PRODUCT - - - -");
+                        return "-2";
+                    }
+                }
+                department = sba.getDepartment();
+            }
+            return department;
+        } else {
+            return "-1";
+        }
+
+
+
+
+    }
+
+    public void setInvDescription (String description){
+        this.invDescription = description;
+    }
+
+    public String getInvDescription() {
+        return invDescription;
+    }
 }

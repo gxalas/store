@@ -8,14 +8,10 @@ import com.example.pdfreader.Entities.Attributes.StoreBasedAttributes;
 import com.example.pdfreader.Entities.Product;
 import com.example.pdfreader.EntriesFile;
 import com.example.pdfreader.HelloController;
-import com.example.pdfreader.Helpers.ListManager;
-import com.example.pdfreader.Helpers.MyTask;
 import com.example.pdfreader.PosEntry;
 import com.example.pdfreader.Sinartiseis.Serialization;
 import com.example.pdfreader.Sinartiseis.TextExtractions;
 import com.example.pdfreader.enums.StoreNames;
-import javafx.concurrent.WorkerStateEvent;
-import javafx.event.EventHandler;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -25,6 +21,8 @@ import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class ImportTxtsView extends ChildController{
     List<Product> toCreate = new ArrayList<>();
@@ -36,6 +34,8 @@ public class ImportTxtsView extends ChildController{
     @Override
     public void initialize(HelloController hc) {
         System.out.println("importing text is here");
+
+
         readingTxtFilesLogic();
 
     }
@@ -74,10 +74,66 @@ public class ImportTxtsView extends ChildController{
 
          */
 
-        parentDelegate.listManager.loadFileChecksums();
+        //parentDelegate.listManager.loadFileChecksums();
+
 
         getFilesFromFolder();
-        processTxtFiles();
+
+        AtomicInteger fileNum = new AtomicInteger();
+        Arrays.stream(StoreNames.values()).toList().forEach(
+                store->{
+                    List<File> itemTxts = new ArrayList<>();
+                    List<File> posTxts = new ArrayList<>();
+                    itemFiles.forEach((f,s)->{
+                        if(s.compareTo(store)!=0){
+                            return;
+                        }
+                        itemTxts.add(f);
+                    });
+                    posSaleFiles.forEach((fi,st)->{
+                        if(st.compareTo(store)!=0){
+                            return;
+                        }
+                        posTxts.add(fi);
+                    });
+                    if(!itemTxts.isEmpty()&&!posTxts.isEmpty()){
+                        itemTxts.forEach(txt->{
+                            System.out.println("processing "+txt.getName()+" for store "+store);
+                        });
+                        posTxts.forEach(txt->{
+                            System.out.println("processing "+txt.getName()+" for store "+store);
+                        });
+                    } else {
+                        System.out.println("- - - - not all type of files found for store "+store);
+                    }
+                });
+
+        ProductDAO productDAO = new ProductDAO();
+        Product product = new Product();
+        product.setDescription("test description");
+        product.setMaster("masterTempo");
+
+        StoreBasedAttributes sba = new StoreBasedAttributes();
+        sba.setStore(StoreNames.PERISTERI);
+        sba.setDescription("a new test sba description");
+        sba.setHope("1203434");
+        sba.setDepartment("12");
+        sba.setMasterCode("0101010101");
+
+        product.getAttributes().put(sba.getStore(),sba);
+
+        System.out.println("the store based attributes are "+product.getAttributes().size());
+
+        //
+        productDAO.saveProduct(product);
+
+        //product.set
+        //the other thing that we would like to add is the possale check that i think we already
+        //have implemented, cause in the item txt file we do not need to implement this, we want to
+        //update
+
+
+
 
 
 
@@ -118,6 +174,10 @@ public class ImportTxtsView extends ChildController{
         for (Map.Entry<File, StoreNames> entry : itemFiles.entrySet()) {
             processItemFile(entry.getKey(), entry.getValue());
         }
+
+        //the other thing we would like to implement is
+        //
+
         savePosEntries(posEntries);
 
     }
@@ -214,9 +274,75 @@ public class ImportTxtsView extends ChildController{
         EntriesFileDAO entriesFileDAO = new EntriesFileDAO(HibernateUtil.getSessionFactory());
         entriesFileDAO.saveEntriesFile(new EntriesFile(itemFile.getPath(), fChecksum));
     }
-    public static void extractItemsLines(File file,StoreNames store){
+    public void extractItemsLines(File file,StoreNames store){
+
+        //Map<String,Product> productMap = productDAO.getAllProductsAsMap();
+        Map<String,Product> barcodeToProduct = new HashMap<>(); //add a method to get the map from a DAO
+
+        String previousLine="";
+        String previousMaster="";
+        String newline="";
+        ArrayList<String>barcodes = new ArrayList<>();
+        StoreBasedAttributes sba = new StoreBasedAttributes();
+        StoreBasedAttributes previousSba = new StoreBasedAttributes();
+
+        try (BufferedReader br = new BufferedReader(new FileReader(file, Charset.forName("ISO-8859-7")))) {
+            while (((newline = br.readLine()) != null) && (newline.length()>7)) { //to length megalitero tou 7 thelei allo elengxo
+                String master = newline.substring(0, 11).trim();
+                String hope = newline.substring(11,18).trim();
+                String description = newline.substring(18, 53);
+                String dept = newline.substring(92,95).trim();
+                String barcode = newline.substring(79,92).trim();
+
+                if(master.compareTo(previousMaster)==0) {
+                    barcodes.add(barcode);
+                } else {
+                    sba = new StoreBasedAttributes();
+                    sba.setDescription(description);
+                    sba.setDepartment(dept);
+                    sba.setMasterCode(master);
+                    sba.setHope(hope);
+
+                    findProduct(barcodeToProduct,barcodes,previousSba,store);
+                    /*
+                    after the previous function we will have either updated
+                    an existing product or added a new on to the map
+                     */
+
+
+
+
+                    previousSba = sba;
+                }
+
+
+                previousLine = newline;
+                previousMaster = master;
+
+
+                //String kouta = line.substring(53, 60);
+                //String fpaCode = line.substring(60, 61);
+                //String costPrice = line.substring(61,70);
+                //String salePrice = line.substring(70,78);
+                //String availability = line.substring(78, 79);
+
+                //String unit = line.substring(95,96);
+                //String status = line.substring(96,97);
+                }
+            } catch (IOException ex) {
+            throw new RuntimeException(ex);
+        //System.out.println("saving hopeCodes");
+        //productDAO.updateProducts(productMap.values().stream().toList());
+        //System.out.println("hopeCodes saved");
+        } catch (Exception e){
+            System.out.println("error at trying to read lines at "+file.getName());
+            e.printStackTrace();
+        }
+
+
         ProductDAO productDAO = new ProductDAO();
         Map<String,Product> productMap = productDAO.getAllProductsAsMap();
+
         try (BufferedReader br = new BufferedReader(new FileReader(file, Charset.forName("ISO-8859-7")))) {
             String line ;
             while (((line = br.readLine()) != null) && (line.length()>7)) { //to length megalitero tou 7 thelei allo elengxo
@@ -233,7 +359,7 @@ public class ImportTxtsView extends ChildController{
                 //String unit = line.substring(95,96);
                 //String status = line.substring(96,97);
                 if(productMap.get(master)!=null){
-                    StoreBasedAttributes sba = new StoreBasedAttributes();
+                    sba = new StoreBasedAttributes();
                     sba.setStore(store);
                     sba.setHope(hope);
                     sba.setDepartment(dept);
@@ -262,6 +388,61 @@ public class ImportTxtsView extends ChildController{
             System.out.println("something failed");
             throw new RuntimeException(e);
         }
+    }
+
+    private void findProduct(Map<String,Product> barToMap,List<String> barcodes,StoreBasedAttributes sba,StoreNames store) {
+        List<Product> matchingProducts = new ArrayList<>();
+        int matches = 0;
+        for(String barcode:barcodes){
+            if(barToMap.get(barcode)!=null){
+                matches++;
+                if(!matchingProducts.contains(barToMap.get(barcode))){
+                    matchingProducts.add(barToMap.get(barcode));
+                }
+            }
+        }
+        if(matchingProducts.size()>1){
+            //conflict
+            return;
+        }
+
+        if(matchingProducts.size()==1&&barcodes.size()>1&&matches==1){
+            //possible conflict
+            return;
+        }
+        if(matchingProducts.size()==1&&barcodes.size()==1){
+            Product matchingProduct = matchingProducts.get(0);
+            String matchingDepartment = matchingProduct.getDepartment();
+            if(Integer.parseInt(matchingDepartment.trim())<0){
+                //error
+                return;
+            }
+            if(matchingDepartment.compareTo(sba.getDepartment())==0){
+                //inferred
+                return;
+            }
+            if(matchingDepartment.compareTo(sba.getDepartment())!=0){
+                //conflict
+                return;
+            }
+            System.out.println("- - - - \n" +
+                    "shouldn't reach this part of the code\n" +
+                    "something wrong with handling cases of depts\n" +
+                    "- - - - ");
+            return;
+        }
+        if(matchingProducts.size()==1&&matches>1){
+            //safe
+            return;
+        }
+        if(matchingProducts.isEmpty()){
+            //new Product
+            return;
+        }
+        System.out.println("- - - - - \n" +
+                "something is wrong with finding the product \n" +
+                "a case has slept "+sba.getDescription()+" @ "+store.getName()+"\n" +
+                "- - - - ");
     }
 
 
