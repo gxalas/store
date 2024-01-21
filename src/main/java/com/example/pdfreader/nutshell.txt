@@ -97,3 +97,126 @@ Vazoume watcher sto folder:
 
 
 
+-> if matches == 0
+    => create new product
+    - add barcodes to the product
+    - add sba to the product
+-> else if matches == 1
+    => if sba.getFamily.compareTo("930")!=0
+        // the Sba is not a "930"
+        if (matchingProducts.get(0).getFams.contains(sba.getFam())){
+            // the sba and the matching product are at the same family
+            // we assume that if the same barcode is at the same family we are safe
+            => matchingProducts.get(0).ADD(sba)
+        } else {
+            // the non 930 sba is not the same family with the matching product
+            => CONFLICT
+        }
+    => else
+    // the sba is a 930
+        => if (matchingProducts.get(0).getFamily.compareTo("930")!=0
+            //the one match is not a 930
+            => CONFLICT
+        else
+            //the one match is also a 930 - do we have a conflict
+            => matchingProduct.addSba(sba)
+            // i think we are, we can add a last check while we add the sba to the product
+-> else matches > 2
+    // now we have more that one barcode that returns product
+    if (matchingProducts.size()==1){
+        //we have multiple matches to the same product so we are safe
+        matchingProducts.get(0).addSba(sba);
+    } else if (matchingProducts.size()>1){
+       //we have multiple matches to different products
+       //some of the barcodes return different products between them
+       //the case of amico: when the winston barcodes have be defined, then the amico will return one product, that is a 930 (probably, if it is system store, add a checj
+    }
+
+
+
+StoreBasedAttributes
+
+case Conflict
+save the sba to the static conflict list
+is it a static list or a map like this (sba -> listofProducts)
+make it a map so we can retrieve all the products that are in conflict
+so, if the sba is in conflict we add it to the static map
+
+when the sba is safe we add it we do: matchedProduct.addSba(sba)
+but we need to update the barcodeToProduct also, so list.foreach(bar->barToPro.put(bar,matchingProduct)
+
+when we add
+Product pro =  new Product()
+pro.setDescription(sba.getDescription);
+pro.addSba(sba);
+
+
+
+
+
+PRODUCT
+
+
+
+
+
+
+public void addSba(StoreBasedAttributes sba){
+    //if an sba from the same store already exists:
+    if (attributes(sba.getStore)!=null){
+        if (haveCommon( attributes(sba.getStore).getBarcodes, sba.getBarcodes ){
+            attributes.put(sba.getStore, sba);
+        } else {
+            //possible error
+
+        }
+
+    }
+}
+
+public List<String> getFams (){
+    attributes.values.foreach(sba -> {
+        if (!list.contains(sba.getFamily()){
+            list.add(sba.getFamily())
+        }
+        return list;
+    }
+}
+
+THE BARCODES are they stores at the sba's or are they stored at the product level,
+it seems easier to check and handle
+
+so, we scan the items file and we add all the sbas to the product, if no sba with the store
+is present
+if we find (the first run) an sba conflicting, we add the conflicting sba to the
+static list of the product class with all the conflicting sba's
+
+(in the second run of an item we will always find at least one marching product
+
+
+
+
+so the problematic cases are the 930's from two different stores
+
+we have from 290 a product with an sba, when we run at 1047 we will get
+the matching product from the barcode map, when we test the sba we will
+not find an sba at the product so we will at the sba to the product
+-- the problem is that we will have multiple records with the same barcodes (we can try to fix this)
+
+product
+- product A
+--attributes
+    <0290, barcode A>
+    <1047, barcode A>
+
+- amico
+-- attributes
+    <>
+
+
+product
+
+
+
+
+

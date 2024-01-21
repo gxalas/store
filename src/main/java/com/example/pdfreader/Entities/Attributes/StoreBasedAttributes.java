@@ -5,6 +5,9 @@ import com.example.pdfreader.Entities.Product;
 import com.example.pdfreader.enums.StoreNames;
 import jakarta.persistence.*;
 
+import java.util.ArrayList;
+import java.util.List;
+
 
 /*
 Product Class attribute
@@ -28,9 +31,20 @@ public class StoreBasedAttributes {
     private String masterCode;
     @Column(name="description")
     private String description;
-    @ManyToOne
-    @JoinColumn(name = "product_id", nullable = false)
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "product_id",nullable = true)
     private Product product;
+
+    @ElementCollection (fetch = FetchType.EAGER)
+    @CollectionTable(
+            name = "sba_barcodes",
+            joinColumns = @JoinColumn(name = "store_based_attributes_id")
+    )
+    @Column(name = "barcodes")
+    private List<String> barcodes = new ArrayList<>();
+
+    @Column(name="has_conflict")
+    private boolean hasConflict=false;
 
     public StoreBasedAttributes(){}
     public StoreBasedAttributes(String hope, StoreNames store){
@@ -119,6 +133,22 @@ public class StoreBasedAttributes {
     public void setProduct(Product product) {
         this.product = product;
     }
+    public Product getProduct(){
+        return product;
+    }
+
+    public List<String> getBarcodes(){
+        return this.barcodes;
+    }
+
+    public boolean getHasConflict() {
+        return hasConflict;
+    }
+
+    public void setHasConflict(boolean hasConflict) {
+        this.hasConflict = hasConflict;
+    }
+
 
     // Getters and setters...
 }

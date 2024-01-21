@@ -16,27 +16,79 @@ import java.util.*;
 public class ProductDAO {
 
     private static SessionFactory sessionFactory;
+    private static EntityManager entityManager;
     private static final int BATCH_SIZE = 50; // You can adjust this size based on your requirements
 
     static {
         try {
             sessionFactory = HibernateUtil.getSessionFactory();
+            entityManager = HibernateUtil.getEntityManagerFactory().createEntityManager();
         } catch (Throwable ex) {
             throw new ExceptionInInitializerError(ex);
         }
     }
 
     public void saveProduct(Product product) {
-       Session session = sessionFactory.openSession();
-        EntityTransaction transaction = session.beginTransaction();
+        EntityManager entityManager = sessionFactory.createEntityManager();
+        EntityTransaction transaction = entityManager.getTransaction();
         try {
-            session.persist(product);
+            transaction.begin();
+            entityManager.persist(product);
+            entityManager.flush();  // Ensure product is immediately persisted
             transaction.commit();
         } catch (RuntimeException e) {
             if (transaction.isActive()) {
                 transaction.rollback();
             }
             throw e;
+        } finally {
+            entityManager.close();
+        }
+    }
+    public void saveProducts(List<Product> products) {
+        EntityTransaction transaction = entityManager.getTransaction();
+        int batchSize = 50; // Adjust this size based on your environment and requirements
+
+        try {
+            transaction.begin();
+
+            for (int i = 0; i < products.size(); i++) {
+                entityManager.persist(products.get(i));
+
+                // Flush and clear the EntityManager in batches
+                if (i % batchSize == 0 && i > 0) {
+                    entityManager.flush();
+                    entityManager.clear();
+                }
+            }
+
+            entityManager.flush();
+            entityManager.clear();
+            transaction.commit();
+            System.out.println("saved products");
+        } catch (RuntimeException e) {
+            System.out.println("error at saving the products");
+            if (transaction != null && transaction.isActive()) {
+                transaction.rollback();
+            }
+            throw e;
+        }
+    }
+
+    public void updateProduct(Product product) {
+        Session session = sessionFactory.openSession();
+        Transaction tx = null;
+        try {
+            tx = session.beginTransaction();
+            session.merge(product); // Use merge instead of persist
+            tx.commit();
+        } catch (RuntimeException e) {
+            if (tx != null && tx.isActive()) {
+                tx.rollback();
+            }
+            throw e;
+        } finally {
+            session.close();
         }
     }
 
