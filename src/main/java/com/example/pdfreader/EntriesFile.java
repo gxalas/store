@@ -64,4 +64,8 @@ public class EntriesFile {
             }
         }
     }
+
+    public String getChecksum() {
+        return checksum;
+    }
 }

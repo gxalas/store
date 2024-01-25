@@ -3,7 +3,9 @@ package com.example.pdfreader.Sinartiseis;
 import com.example.pdfreader.Entities.Document;
 import com.example.pdfreader.HelloController;
 
-public class Testers {
+public class HelpingFunctions {
+    public static Long start;
+    public static Long end;
     public static void printAllDocumentIds(HelloController controller){
         System.out.println(" - - - - PRINTING DOCUMENT IDS - - - -");
         for (Document doc:controller.listManager.getImported()){
@@ -19,6 +21,11 @@ public class Testers {
 
     public static boolean isNumeric(String text){
         return text.matches("\\d+");
+    }
+    private static void printTimeDiff(Long start,Long end,String text){
+        Double diff = (end-start)/1_000_000_000.0;
+        String d = String.format("%.3f", diff);
+        System.out.println(text+": "+d);
     }
 
 }

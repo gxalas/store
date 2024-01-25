@@ -1,13 +1,12 @@
 package com.example.pdfreader.TypesOfDocuments;
 
-import com.example.pdfreader.DAOs.ProductDAO;
 import com.example.pdfreader.DocEntry;
 import com.example.pdfreader.DocLine;
 import com.example.pdfreader.Entities.Document;
 import com.example.pdfreader.HelloApplication;
 import com.example.pdfreader.HelloController;
 import com.example.pdfreader.Helpers.ListManager;
-import com.example.pdfreader.Sinartiseis.Testers;
+import com.example.pdfreader.Sinartiseis.HelpingFunctions;
 import com.example.pdfreader.Sinartiseis.TextExtractions;
 import com.example.pdfreader.enums.ABInvoiceTypes;
 import com.example.pdfreader.enums.PromTypes;
@@ -293,7 +292,7 @@ public class ABUsualInvoice {
         if(doc.getDocumentId()==null){
             System.err.println("the document id of the file "+doc.getPath()+"is null");
             return false;
-        } else if (!Testers.isNumeric(doc.getDocumentId())){
+        } else if (!HelpingFunctions.isNumeric(doc.getDocumentId())){
             System.err.println("the document id of the file "+doc.getPath()+"is null");
             return false;
         } else {

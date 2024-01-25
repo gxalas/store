@@ -1,19 +1,28 @@
 package com.example.pdfreader.Entities.Attributes;
 
 
+import com.example.pdfreader.Controllers.ImportTxtsView;
+import com.example.pdfreader.DAOs.HibernateUtil;
 import com.example.pdfreader.Entities.Product;
 import com.example.pdfreader.enums.StoreNames;
 import jakarta.persistence.*;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 
 /*
 Product Class attribute
  */
 @Entity
-@Table(name = "store_based_attributes")
+@Table(name = "store_based_attributes", indexes = {
+        @Index(name = "idx_master_code", columnList = "masterCode"),
+        @Index(name = "idx_store", columnList = "store"),
+        @Index(name = "idx_department", columnList = "department"),
+        @Index(name = "idx_product_id", columnList = "product_id")
+})
 public class StoreBasedAttributes {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -42,6 +51,13 @@ public class StoreBasedAttributes {
     )
     @Column(name = "barcodes")
     private List<String> barcodes = new ArrayList<>();
+    @ElementCollection (fetch = FetchType.EAGER)
+    @CollectionTable(
+            name = "sba_conflicting_barcodes",
+            joinColumns = @JoinColumn(name = "store_based_attributes_id")
+    )
+    @Column(name = "conflicting_barcodes")
+    private List<String> conflictingBarcodes = new ArrayList<>();
 
     @Column(name="has_conflict")
     private boolean hasConflict=false;
@@ -81,6 +97,7 @@ public class StoreBasedAttributes {
             sb.append("0".repeat(Math.max(0, 7 - hope.length())));
             sb.append(hope);
             setFamily(sb.substring(0,3));
+            this.hope = sb.toString();
         } else if (hope.length()<2){
             setFamily("0");
         } else if (hope.length()==7){
@@ -148,6 +165,36 @@ public class StoreBasedAttributes {
     public void setHasConflict(boolean hasConflict) {
         this.hasConflict = hasConflict;
     }
+
+    public List<String> getConflictingBarcodes() {
+        return conflictingBarcodes;
+    }
+
+    public void fixConflictingBarcode(String barcode){
+        if(getBarcodes().contains(barcode)){
+            getBarcodes().remove(barcode);
+            if(getConflictingBarcodes().contains(barcode)){
+                System.out.println("the barcode already exists on the conflicting list");
+            } else {
+                getConflictingBarcodes().add(barcode);
+            }
+        } else {
+            System.out.println("there is an error ");
+        }
+    }
+
+    public boolean areEqual(StoreBasedAttributes sba){
+
+        if(sba.getStore().compareTo(this.store)!=0){
+            return false;
+        }
+        if(sba.getMasterCode().compareTo(this.masterCode)!=0){
+            return false;
+        }
+        return true;
+    }
+
+
 
 
     // Getters and setters...

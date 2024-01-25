@@ -5,6 +5,7 @@ import com.example.pdfreader.Entities.Attributes.StoreBasedAttributes;
 import com.example.pdfreader.Entities.Product;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.EntityTransaction;
+import jakarta.persistence.TypedQuery;
 import org.hibernate.NaturalIdLoadAccess;
 import org.hibernate.Session;
 import org.hibernate.Transaction;
@@ -53,6 +54,10 @@ public class ProductDAO {
             transaction.begin();
 
             for (int i = 0; i < products.size(); i++) {
+                if(products.get(i)==null){
+                    System.err.println("a null product attempted to get saved at position "+i);
+                    continue;
+                }
                 entityManager.persist(products.get(i));
 
                 // Flush and clear the EntityManager in batches

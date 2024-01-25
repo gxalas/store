@@ -62,7 +62,7 @@ public class PosEntry {
     private String shaCode;
 
 
-    static int counter = 10;
+    static int counter = 1;
 
 
     public PosEntry(){}
@@ -70,11 +70,11 @@ public class PosEntry {
 
     public PosEntry(String line, StoreNames store){
         this.storeName = store;
-        date = retDate(line);
-        master = line.substring(8,19);
-        description = line.substring(19, 54);
-        fpaCode = line.substring(54,55);
-        box = line.substring(55,62);
+        this.date = retDate(line);
+        this.master = line.substring(8,19);
+        this.description = line.substring(19, 54);
+        this.fpaCode = line.substring(54,55);
+        this.box = line.substring(55,62);
         try {
             this.money = new BigDecimal(line.substring(62, 72).trim());
         } catch (NumberFormatException e) {
@@ -193,7 +193,7 @@ public class PosEntry {
                 hexString.append(hex);
             }
             if (counter>0){
-                System.out.println(t+" : "+hexString.toString());
+                System.out.println("this is for sha encoding test"+t+" : "+hexString.toString());
                 counter--;
             }
 

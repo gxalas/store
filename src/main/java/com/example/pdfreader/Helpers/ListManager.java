@@ -113,14 +113,18 @@ public class ListManager {
         String text = "adding an item "+activeTasksList.size();
         System.out.println(text);
 
-        if(activeTasksList.size()>10){
-            for(int i=activeTasksList.size()-1;i>5;i--){
-                if(activeTasksList.get(i).getMyState().compareTo(MyTaskState.COMPLETED)==0){
-                    System.out.println("removing "+i);
-                    activeTasksList.remove(i);
+        Platform.runLater(()->{
+            if(activeTasksList.size()>10){
+                for(int i=activeTasksList.size()-1;i>5;i--){
+                    if(activeTasksList.get(i).getMyState().compareTo(MyTaskState.COMPLETED)==0){
+                        System.out.println("removing "+i);
+
+                        activeTasksList.remove(i);
+                    }
                 }
             }
-        }
+        });
+
 
         Platform.runLater(()->{
             System.out.println(text);
