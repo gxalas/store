@@ -13,6 +13,7 @@ import com.example.pdfreader.MyCustomEvents.DocumentsImportedEvent;
 import com.example.pdfreader.MyCustomEvents.DocumentsImportedListener;
 import com.example.pdfreader.MyCustomEvents.TracingFolderEvent;
 import com.example.pdfreader.MyCustomEvents.TracingFolderListener;
+import com.example.pdfreader.Sinartiseis.ProcessingTxtFiles;
 import com.example.pdfreader.Sinartiseis.Serialization;
 import com.example.pdfreader.Sinartiseis.TextExtractions;
 import com.example.pdfreader.enums.SySettings;
@@ -61,6 +62,7 @@ public class HelloController {
     public IntegerProperty numFilesInFolder = new SimpleIntegerProperty(0);
     public DoubleProperty percentOfTracing = new SimpleDoubleProperty(0.0);
     public ListManager listManager;
+    private boolean tracingActive = false;
     @FXML
     public MenuItem actSaveFile;
     @FXML
@@ -115,6 +117,20 @@ public class HelloController {
     public ProductViewState productViewState;
     public SuppliersConfigState suppliersConfigState;
 
+    private TracingFolderListener setTheBoolean = new TracingFolderListener() {
+        @Override
+        public void tracingFolderStarts(TracingFolderEvent evt) {
+            System.out.println("the tracing ended says hello controller");
+            tracingActive = true;
+        }
+
+        @Override
+        public void tracingFolderEnds(TracingFolderEvent evt) {
+            System.out.println("the tracing ended says the hello controller");
+            tracingActive = false;
+        }
+    };
+
 
     @FXML
     public void initialize(){
@@ -144,6 +160,8 @@ public class HelloController {
         // Timeline to manage the display and wait logic
         notificationTimeline = new Timeline(new KeyFrame(Duration.seconds(5), event -> displayNextMessage()));
         notificationTimeline.setCycleCount(Timeline.INDEFINITE);
+
+        addTracingFolderListeners(setTheBoolean);
 
 
     }
@@ -274,12 +292,7 @@ public class HelloController {
     public void setListManager(ListManager manager) {
         this.listManager = manager;
         initActiveTaskListView();
-
     }
-
-
-
-
 
     protected EventListenerList docsImportedListeners = new EventListenerList();
     public void addDocumentProcessedListener(DocumentsImportedListener listener) {
@@ -403,7 +416,7 @@ public class HelloController {
                 Task<Void> trace = new Task<>() {
                     @Override
                     protected Void call() {
-                        TextExtractions.traceFolder(Paths.get(SySettings.PATH_TO_FOLDER.getPath()).toFile(), getControllerObject());
+                        ProcessingTxtFiles.traceFolder(Paths.get(SySettings.PATH_TO_FOLDER.getPath()).toFile(), getControllerObject());
                         return null;
                     }
                 };
@@ -606,5 +619,8 @@ public class HelloController {
             }
         });
         soundThread.start();
+    }
+    public boolean isThereActiveTracing(){
+        return tracingActive;
     }
 }

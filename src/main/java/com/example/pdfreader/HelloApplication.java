@@ -2,6 +2,8 @@ package com.example.pdfreader;
 
 import com.example.pdfreader.Helpers.ListManager;
 import com.example.pdfreader.Helpers.MyTask;
+import com.example.pdfreader.Sinartiseis.HelpingFunctions;
+import com.example.pdfreader.Sinartiseis.ProcessingTxtFiles;
 import com.example.pdfreader.Sinartiseis.Serialization;
 import com.example.pdfreader.Sinartiseis.TextExtractions;
 import com.example.pdfreader.enums.SySettings;
@@ -52,15 +54,15 @@ public class HelloApplication extends Application {
          */
 
         MyTask settingsTask = new MyTask(()->{
-            Serialization.createFolderIfNotExists("appFiles/saved");
-            Serialization.loadSettings();                                           //load the paths for where the documents are
-            //Serialization.loadChecksums(fxmlLoader.getController());                //load the saved checksums
-            //Serialization.loadFileWithProgress(fxmlLoader.getController());
+            HelpingFunctions.createFileIfNotExists("appFiles/saved");
+            ProcessingTxtFiles.loadSettings();                                 //load the paths for where the documents are
             return null;
         });
 
         MyTask trace = new MyTask(()->{
-            TextExtractions.traceFolder(Paths.get(SySettings.PATH_TO_FOLDER.getPath()).toFile(),fxmlLoader.getController()); //find the files that can be imported
+            ProcessingTxtFiles.traceFolder(Paths.get(
+                    SySettings.PATH_TO_FOLDER.getPath()).toFile(),
+                    fxmlLoader.getController());                                //find the files that can be imported
             return null;
         });
 
@@ -70,7 +72,7 @@ public class HelloApplication extends Application {
         });
 
         MyTask readTxtFilesTask = new MyTask(()->{
-            Serialization.readTxtFiles(fxmlLoader.getController());                 //load the saved sales
+            //Serialization.readTxtFiles(fxmlLoader.getController());                 //load the saved sales
             return null;
         });
 
@@ -78,10 +80,11 @@ public class HelloApplication extends Application {
          * temporarily shutting down
          */
 
-        //listManager.addTaskToActiveList(
-        //        "import setting",
-        //        "reading the current folder for documents",
-        //        settingsTask);
+
+        listManager.addTaskToActiveList(
+                "import setting",
+                "reading the current folder for documents",
+                settingsTask);
 
         fetchDocumentChecksums.addEventHandler(WorkerStateEvent.WORKER_STATE_SUCCEEDED, new EventHandler<WorkerStateEvent>() {
             @Override

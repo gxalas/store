@@ -109,9 +109,10 @@ public class ProductDAO {
     public Product getProductByMasterCode(String masterCode) {
         Product product = null;
         try (Session session = sessionFactory.openSession()) {
-            NaturalIdLoadAccess<Product> naturalIdLoadAccess = session.byNaturalId(Product.class);
-            naturalIdLoadAccess.using("master", masterCode);
-            product = naturalIdLoadAccess.load();
+            String hql = "FROM Product WHERE master = :masterCode";
+            Query<Product> query = session.createQuery(hql, Product.class);
+            query.setParameter("masterCode", masterCode);
+            product = query.uniqueResult();
         } catch (Exception e) {
             e.printStackTrace();
             // Handle exception

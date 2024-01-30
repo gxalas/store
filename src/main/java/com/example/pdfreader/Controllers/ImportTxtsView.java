@@ -40,7 +40,7 @@ public class ImportTxtsView extends ChildController{
     public Button btnAdd;
     public Button btnMatch;
     public Button btnCalcPos;
-    public Text txtPosErrors;
+    public Text txtPosErrors ;
     private ObservableList<StoreBasedAttributes> obsAllSbas = FXCollections.observableArrayList();
     private ObservableList<Product> obsAllProducts = FXCollections.observableArrayList();
     public TableView<StoreBasedAttributes> tableSbas;
@@ -60,7 +60,6 @@ public class ImportTxtsView extends ChildController{
     private ObservableList<StoreBasedAttributes> obsSbaConflicts = FXCollections.observableArrayList();
     public TableView<Product> tableMatchingProducts = new TableView<>();
     private ObservableList<Product> obsMatchingProducts = FXCollections.observableArrayList();
-
     public TableView<StoreBasedAttributes> tableMatchingSbas = new TableView<>();
     private ObservableList<StoreBasedAttributes> obsMatchingSbas = FXCollections.observableArrayList();
     private Map<String,ProductWithAttributes> barcodeToProductWithAttributes = new HashMap<>();
@@ -112,64 +111,6 @@ public class ImportTxtsView extends ChildController{
             }
         });
 
-        btnCalcPos.setOnAction(new EventHandler<ActionEvent>() {
-            @Override
-            public void handle(ActionEvent actionEvent) {
-
-                MyTask updatePosEntries = new MyTask(()->{
-                    AtomicInteger noProduct = new AtomicInteger(0);
-                    AtomicInteger yesProduct = new AtomicInteger(0);
-
-                    StoreBasedAttributesDAO storeBasedAttributesDAO = new StoreBasedAttributesDAO();
-                    Map<StoreNames, Map<String,StoreBasedAttributes>> sbaMap = storeBasedAttributesDAO.getSbaMap();
-
-                    PosEntryDAO posEntryDAO = new PosEntryDAO();
-                    List<PosEntry> posEntries = posEntryDAO.getAllPosEntries();
-
-                    List<PosEntry> toSavePos = new ArrayList<>();
-
-                    System.out.println("the pos entries at the database are "+posEntries.size());
-                    posEntries.forEach(pos->{
-                        if(pos.getProduct()==null){
-                            if(sbaMap.get(pos.getStoreName())!=null){
-                                if(sbaMap.get(pos.getStoreName()).get(pos.getMaster())!=null){
-                                    if(sbaMap.get(pos.storeName).get(pos.getMaster()).getProduct()!=null){
-                                        pos.setProduct(sbaMap.get(pos.storeName).get(pos.getMaster()).getProduct());
-                                        toSavePos.add(pos);
-                                        yesProduct.getAndIncrement();
-                                    } else {
-                                        noProduct.getAndIncrement();
-                                    }
-                                } else {
-                                    noProduct.getAndIncrement();
-                                }
-                            }else {
-                                noProduct.getAndIncrement();
-                            }
-                        } else {
-                            yesProduct.getAndIncrement();
-                        }
-                    });
-                    posEntryDAO = new PosEntryDAO();
-                    txtPosErrors.setText("the pos Entries with no product are "+noProduct.get());
-                    System.out.println("the yes product is "+yesProduct.get());
-                    System.out.println("The to save pos are "+toSavePos.size());
-                    posEntryDAO.savePosEntries(toSavePos);
-                    return null;
-                });
-
-                parentDelegate.listManager.addTaskToActiveList(
-                        "updating pos entries",
-                        "trying to add product to pos entries that have no pos entries",
-                        updatePosEntries
-                );
-
-
-
-
-
-            }
-        });
     }
 
 
@@ -217,7 +158,6 @@ public class ImportTxtsView extends ChildController{
 
     }
     public void readingTxtFilesLogic(){
-
         parentDelegate.listManager.loadFileChecksums();
         getFilesFromFolder();
         readFiles();
@@ -226,6 +166,7 @@ public class ImportTxtsView extends ChildController{
         savePosEntries();
 
         initTables();
+        initButtons();
         loadContent();
         System.out.println("- - - - -  logic ending - - - ");
     }
@@ -637,6 +578,155 @@ public class ImportTxtsView extends ChildController{
         initTableMatchingSbas();
         initTableFilteredSbas();
     }
+    private void initButtons(){
+        btnAdd.setOnAction(new EventHandler<ActionEvent>() {
+            @Override
+            public void handle(ActionEvent actionEvent) {
+                if(tableMatchingProducts.getItems().size()!=1){
+                    System.err.println("more than one products on the table");
+                    return;
+                }
+                Product product = tableMatchingProducts.getItems().get(0);
+                if(tableSbaConflicts.getSelectionModel().getSelectedItem()==null){
+                    System.err.println(" you have not selected a conflicting sba");
+                    return;
+                }
+                StoreBasedAttributes sba = tableSbaConflicts.getSelectionModel().getSelectedItem();
+                sba.setProduct(product);
+                StoreBasedAttributesDAO storeBasedAttributesDAO = new StoreBasedAttributesDAO();
+                List<StoreBasedAttributes> saveSba = new ArrayList<>();
+                saveSba.add(sba);
+                storeBasedAttributesDAO.updateStoreBasedAttributes(saveSba);
+                System.out.println("the sba has been saved");
+
+                MyTask loadAllSbas = new MyTask(()->{
+                    obsAllSbas.setAll(storeBasedAttributesDAO.getAllStoreBasedAttributes());
+                    return null;
+                });
+
+                parentDelegate.listManager.addTaskToActiveList(
+                        "Reloading the Sbas",
+                        "getting all the store based attributes from the database",
+                        loadAllSbas);
+
+            }
+        });
+        btnMatch.setOnAction(new EventHandler<ActionEvent>() {
+            @Override
+            public void handle(ActionEvent actionEvent) {
+                if(tableSbaConflicts.getSelectionModel().getSelectedItem()==null){
+                    System.err.println("you have not selected a conflicting sba");
+                    return;
+                }
+                if(tableMatchingProducts.getSelectionModel().getSelectedItem()==null){
+                    System.err.println("You have not selected a Product to add");
+                    return;
+                }
+                if (tableMatchingSbas.getItems().isEmpty()){
+                    System.err.println("the selected products has no sbas to take");
+                    return;
+                }
+                StoreBasedAttributes sba = tableSbaConflicts.getSelectionModel().getSelectedItem();
+                Product product = tableMatchingProducts.getSelectionModel().getSelectedItem();
+                List<String> keepBars = new ArrayList<>();
+                List<String> confBars = new ArrayList<>();
+                tableMatchingSbas.getItems().forEach(mSba->{
+                    mSba.getBarcodes().forEach(bar->{
+                        if(!keepBars.contains(bar)){
+                            keepBars.add(bar);
+                        }
+                    });
+                });
+                sba.getBarcodes().forEach(bar->{
+                    if(!keepBars.contains(bar)){
+                        confBars.add(bar);
+                    }
+                });
+                sba.getBarcodes().clear();
+                sba.getBarcodes().addAll(keepBars);
+                sba.getConflictingBarcodes().addAll(confBars);
+                sba.setProduct(product);
+
+
+                StoreBasedAttributesDAO storeBasedAttributesDAO = new StoreBasedAttributesDAO();
+                List<StoreBasedAttributes> oldsbas = new ArrayList<>();
+                oldsbas.add(sba);
+                storeBasedAttributesDAO.updateStoreBasedAttributes(oldsbas);
+
+                StoreBasedAttributesDAO storeBasedAttributesDAO2 = new StoreBasedAttributesDAO();
+                MyTask loadAllSbas = new MyTask(()->{
+                    obsAllSbas.setAll(storeBasedAttributesDAO2.getAllStoreBasedAttributes());
+                    return null;
+                });
+
+                parentDelegate.listManager.addTaskToActiveList(
+                        "loading all sbs",
+                        "getting all the store based attributes from the database",
+                        loadAllSbas);
+
+
+            }
+        });
+        btnCalcPos.setOnAction(new EventHandler<ActionEvent>() {
+            @Override
+            public void handle(ActionEvent actionEvent) {
+
+                MyTask updatePosEntries = new MyTask(()->{
+                    AtomicInteger noProduct = new AtomicInteger(0);
+                    AtomicInteger yesProduct = new AtomicInteger(0);
+
+                    StoreBasedAttributesDAO storeBasedAttributesDAO = new StoreBasedAttributesDAO();
+                    Map<StoreNames, Map<String,StoreBasedAttributes>> sbaMap = storeBasedAttributesDAO.getSbaMap();
+
+                    PosEntryDAO posEntryDAO = new PosEntryDAO();
+                    List<PosEntry> posEntries = posEntryDAO.getAllPosEntries();
+
+                    List<PosEntry> toSavePos = new ArrayList<>();
+
+                    System.out.println("the pos entries at the database are "+posEntries.size());
+                    posEntries.forEach(pos->{
+                        if(pos.getProduct()==null){
+                            if(sbaMap.get(pos.getStoreName())!=null){
+                                if(sbaMap.get(pos.getStoreName()).get(pos.getMaster())!=null){
+                                    if(sbaMap.get(pos.storeName).get(pos.getMaster()).getProduct()!=null){
+                                        pos.setProduct(sbaMap.get(pos.storeName).get(pos.getMaster()).getProduct());
+                                        toSavePos.add(pos);
+                                        yesProduct.getAndIncrement();
+                                    } else {
+                                        noProduct.getAndIncrement();
+                                    }
+                                } else {
+                                    noProduct.getAndIncrement();
+                                }
+                            }else {
+                                noProduct.getAndIncrement();
+                            }
+                        } else {
+                            yesProduct.getAndIncrement();
+                        }
+                    });
+                    posEntryDAO = new PosEntryDAO();
+                    txtPosErrors.setText("the pos Entries with no product are "+noProduct.get());
+                    System.out.println("the yes product is "+yesProduct.get());
+                    System.out.println("The to save pos are "+toSavePos.size());
+                    posEntryDAO.savePosEntries(toSavePos);
+                    return null;
+                });
+
+                parentDelegate.listManager.addTaskToActiveList(
+                        "updating pos entries",
+                        "trying to add product to pos entries that have no pos entries",
+                        updatePosEntries
+                );
+
+
+
+
+
+            }
+        });
+
+    }
     private void initTableSBA(){
         TableColumn<StoreBasedAttributes,String> barcodeCol = new TableColumn<>("barcodes");
         barcodeCol.setCellValueFactory(cellData->{
@@ -860,94 +950,7 @@ public class ImportTxtsView extends ChildController{
             }
         });
 
-        btnAdd.setOnAction(new EventHandler<ActionEvent>() {
-            @Override
-            public void handle(ActionEvent actionEvent) {
-                if(tableMatchingProducts.getItems().size()!=1){
-                    System.err.println("more than one products on the table");
-                    return;
-                }
-                Product product = tableMatchingProducts.getItems().get(0);
-                if(tableSbaConflicts.getSelectionModel().getSelectedItem()==null){
-                    System.err.println(" you have not selected a conflicting sba");
-                    return;
-                }
-                StoreBasedAttributes sba = tableSbaConflicts.getSelectionModel().getSelectedItem();
-                sba.setProduct(product);
-                StoreBasedAttributesDAO storeBasedAttributesDAO = new StoreBasedAttributesDAO();
-                List<StoreBasedAttributes> saveSba = new ArrayList<>();
-                saveSba.add(sba);
-                storeBasedAttributesDAO.updateStoreBasedAttributes(saveSba);
-                System.out.println("the sba has been saved");
 
-                MyTask loadAllSbas = new MyTask(()->{
-                    obsAllSbas.setAll(storeBasedAttributesDAO.getAllStoreBasedAttributes());
-                    return null;
-                });
-
-                parentDelegate.listManager.addTaskToActiveList(
-                        "Reloading the Sbas",
-                        "getting all the store based attributes from the database",
-                        loadAllSbas);
-
-            }
-        });
-        btnMatch.setOnAction(new EventHandler<ActionEvent>() {
-            @Override
-            public void handle(ActionEvent actionEvent) {
-                if(tableSbaConflicts.getSelectionModel().getSelectedItem()==null){
-                    System.err.println("you have not selected a conflicting sba");
-                    return;
-                }
-                if(tableMatchingProducts.getSelectionModel().getSelectedItem()==null){
-                    System.err.println("You have not selected a Product to add");
-                    return;
-                }
-                if (tableMatchingSbas.getItems().isEmpty()){
-                    System.err.println("the selected products has no sbas to take");
-                    return;
-                }
-                StoreBasedAttributes sba = tableSbaConflicts.getSelectionModel().getSelectedItem();
-                Product product = tableMatchingProducts.getSelectionModel().getSelectedItem();
-                List<String> keepBars = new ArrayList<>();
-                List<String> confBars = new ArrayList<>();
-                tableMatchingSbas.getItems().forEach(mSba->{
-                    mSba.getBarcodes().forEach(bar->{
-                        if(!keepBars.contains(bar)){
-                            keepBars.add(bar);
-                        }
-                    });
-                });
-                sba.getBarcodes().forEach(bar->{
-                    if(!keepBars.contains(bar)){
-                        confBars.add(bar);
-                    }
-                });
-                sba.getBarcodes().clear();
-                sba.getBarcodes().addAll(keepBars);
-                sba.getConflictingBarcodes().addAll(confBars);
-                sba.setProduct(product);
-
-
-                StoreBasedAttributesDAO storeBasedAttributesDAO = new StoreBasedAttributesDAO();
-                List<StoreBasedAttributes> oldsbas = new ArrayList<>();
-                oldsbas.add(sba);
-                storeBasedAttributesDAO.updateStoreBasedAttributes(oldsbas);
-
-                StoreBasedAttributesDAO storeBasedAttributesDAO2 = new StoreBasedAttributesDAO();
-                MyTask loadAllSbas = new MyTask(()->{
-                    obsAllSbas.setAll(storeBasedAttributesDAO2.getAllStoreBasedAttributes());
-                    return null;
-                });
-
-                parentDelegate.listManager.addTaskToActiveList(
-                        "loading all sbs",
-                        "getting all the store based attributes from the database",
-                        loadAllSbas);
-
-
-            }
-        });
     }
     private void initTableMatchingSbas(){
         TableColumn<StoreBasedAttributes,String> descCol = new TableColumn<>("description");

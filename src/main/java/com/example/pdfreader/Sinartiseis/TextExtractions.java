@@ -151,43 +151,7 @@ public class TextExtractions {
         return null;  // return null if no match is found
     }
 
-    public static synchronized void traceFolder(File directory,HelloController hc){
-        TracingFolderEvent tfe = new TracingFolderEvent(hc);
-        hc.fireStartTracingFolder(tfe);
-        Serialization.createFileIfNotExists(directory.getPath());
 
-        hc.listManager.getFailed().clear();
-        hc.listManager.getChecksums().clear();
-        hc.listManager.fetchChecksums();
-        filetracing(directory,hc);
-
-        System.out.println("the files in folder "+hc.listManager.getFilesInFolderQueue().size());
-        hc.numFilesInFolder.set(hc.listManager.getFilesInFolderQueue().size());
-
-
-        int i=0;
-        while (!hc.listManager.getFilesInFolderQueue().isEmpty()){
-            i++;
-            File tempFile = hc.listManager.getFilesInFolderQueue().poll();
-            TextExtractions.checkFile(tempFile,hc.listManager);
-            hc.percentOfTracing.set((double) i / hc.numFilesInFolder.get());
-        }
-        hc.fireEndTracingFolder(tfe);
-    }
-
-
-    public static void filetracing(File directory, HelloController hc){
-        File[] files = directory.listFiles();
-        if (files != null) {
-            for (File file : files) {
-                if (file.isDirectory()) {
-                    filetracing(file, hc);
-                } else {
-                    hc.listManager.addToFilesInFolder(file);
-                }
-            }
-        }
-    }
 
     public static void checkFile(File file, ListManager listManager){
         if(!file.getName().toLowerCase().endsWith(".pdf")){

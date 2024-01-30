@@ -36,7 +36,7 @@ import java.io.IOException;
 
 public class Serialization {
     public static final Path checksumsPath = Paths.get("appFiles/saved/checksums.txt");
-    public static final Path settingsPath = Paths.get("appFiles/saved/settings.txt");
+
     public static final Path txtFolderPath = Paths.get("appFiles/txts");
     public static final String FILE_PATH = "appFiles/saved/data.json";
     public static final String FILE_PRODUCTS_PATH = "appFiles/saved/products.txt";
@@ -60,7 +60,7 @@ public class Serialization {
         module.addDeserializer(ObservableList.class, new ObservableListDeserializer());
         objectMapper.registerModule(module);
 
-        createFileIfNotExists(FILE_PATH);
+        HelpingFunctions.createFileIfNotExists(FILE_PATH);
         File file = new File(FILE_PATH);
 
         StringBuilder content = new StringBuilder();
@@ -133,76 +133,12 @@ public class Serialization {
 
 
     public static void readTxtFiles(HelloController controller){
-        long start = System.nanoTime();
+        HelpingFunctions.setStartTime();
         extractTxtFile(txtFolderPath,controller);
-        long end = System.nanoTime();
-        System.out.println("^^ it took "+(end-start)/1_000_000.00+" to load the pos Sales");
+        HelpingFunctions.setEndAndPrint("extracting Invoices");
     }
 
-    /*
     public static void extractTxtFile(Path folderPath, HelloController controller) {
-        List<Product> toUpdate = new ArrayList<>();
-        List<Product> toCreate = new ArrayList<>();
-        List<PosEntry> posEntries = new ArrayList<>();
-
-        //List<File> posToProcess  = new ArrayList<>();
-
-        controller.listManager.loadProductHashMap();
-        File parentFolder = folderPath.toFile();
-        // Check if parentFolder is a directory and exists
-        if (parentFolder.exists() && parentFolder.isDirectory()) {
-            // Get a list of all files and folders within parentFolder
-            controller.listManager.loadFileChecksums();
-            File[] filesAndFolders = parentFolder.listFiles();
-            if (filesAndFolders != null) {
-                for (File file : filesAndFolders) {
-                    // Check if it's a directory and matches the folderName
-                    for(StoreNames storeName : StoreNames.values()){
-                        if (file.isDirectory() && file.getName().compareTo(storeName.getDescription())==0){
-                            List<File> txtFiles = EntriesFile.getTxtFilesInFolder(file.getPath());
-                            System.out.println("the size of files is "+txtFiles.size()+" "+file.getPath());
-                            for(File f:txtFiles){
-                                System.out.println("checking this file : "+f.getName());
-                                if (f.getName().toLowerCase().contains("possales")){
-                                    String fChecksum = TextExtractions.calculateChecksum(f);
-                                    if (!controller.listManager.getFileChecksums().contains(fChecksum)) {
-                                        System.out.println("extracting pos sales file for " + storeName.getDescription() + " & store name " + storeName.getName());
-                                        posEntries.addAll(extractPosEntries(storeName, f,controller.listManager.getProductHashMap(),toCreate,toUpdate));
-                                        EntriesFileDAO entriesFileDAO = new EntriesFileDAO(HibernateUtil.getSessionFactory());
-                                        entriesFileDAO.saveEntriesFile(new EntriesFile(f.getPath(),fChecksum));
-                                    } else {
-                                        System.out.println("the file : "+f.getName()+" already exists");
-                                    }
-                                } else if (f.getName().toLowerCase().contains("items")){
-                                    String fChecksum = TextExtractions.calculateChecksum(f);
-                                    System.out.println("extracting items file : "+f.getName());
-                                    extractItemsLines(f,storeName);
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-        ProductDAO productDAO = new ProductDAO();
-        System.out.println("saving new products "+toCreate.size()+" "+ controller.listManager.getProductHashMap().size());
-        productDAO.addNewProducts(toCreate);
-        System.out.println("updating  products");
-        productDAO.updateProducts(toUpdate);
-        PosEntryDAO posEntryDAO = new PosEntryDAO();
-        System.out.println(" - - - - - -saving pos entries - - - - - - - ");
-
-        posEntryDAO.savePosEntries(posEntries);
-        System.out.println(" - - - - - -saved pos entries - - - - - - - ");
-    }
-     */
-
-
-
-
-
-
-     public static void extractTxtFile(Path folderPath, HelloController controller) {
         List<Product> toCreate = new ArrayList<>();
         List<Product> toUpdate = new ArrayList<>();
         List<PosEntry> posEntries = new ArrayList<>();
@@ -494,7 +430,7 @@ public class Serialization {
     }
 
     public static void saveSySettings(){
-        try (BufferedWriter writer = new BufferedWriter(new FileWriter(Serialization.settingsPath.toFile().getPath()))) {
+        try (BufferedWriter writer = new BufferedWriter(new FileWriter(ProcessingTxtFiles.settingsPath.toFile().getPath()))) {
             for (SySettings setting : SySettings.values()) {
                 writer.write(setting.name()+","+setting.getPath());
                 writer.newLine();
@@ -505,54 +441,4 @@ public class Serialization {
         }
     }
 
-    /*
-    Here we try to load the folder path for
-    where the pdfs are stored
-     */
-    public static void loadSettings(){
-        List<SySettings> settings = new ArrayList<>();
-        createFileIfNotExists(settingsPath.toFile().getPath());
-        try (BufferedReader reader = new BufferedReader(new FileReader(settingsPath.toFile().getPath()))) {
-            String line;
-            while ((line = reader.readLine()) != null) {
-                String[] parts = line.split(",");
-                SySettings setting = SySettings.fromName(parts[0],parts[1]);
-                settings.add(setting);
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
-        // Print the read colors
-        for (SySettings color : settings) {
-            System.out.println(color.name() + ": " + color.getPath());
-        }
-    }
-
-    public static void createFileIfNotExists(String filePath) {
-        Path path = Paths.get(filePath);
-        if (!Files.exists(path)) {
-            //System.out.println(filePath+" not exists");
-            try {
-                Files.createFile(path); // This will create the file.
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        } else {
-            //System.out.println(filePath+" exists");
-        }
-    }
-    public static void createFolderIfNotExists(String filePath) {
-        Path path = Paths.get(filePath);
-        if (!Files.exists(path)) {
-            try {
-                Files.createDirectory(path);
-
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        } else {
-            //System.out.println(filePath+" exists");
-        }
-    }
 }

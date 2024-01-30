@@ -56,11 +56,13 @@ public class Product {
         if(description.contains("PAL MAL ΚΟΚΚΙΝΟ")){
             System.out.println("at Product");
         }
+        this.invDescription = description;
         setDescription(description);
         this.master = master;
     }
     public Product(String description, String master){
         this.master = master;
+        this.invDescription = description;
         if(description.contains("PAL MAL ΚΟΚΚΙΝΟ")){
             System.out.println("at other product");
         }

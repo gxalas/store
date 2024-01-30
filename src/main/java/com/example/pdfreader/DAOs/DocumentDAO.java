@@ -64,9 +64,11 @@ public class DocumentDAO {
                 for (DocEntry entry : document.getEntries()) {
                     Product entryProduct = entry.getProduct();
 
-                    // Check if a Product with the same master value already exists
-                    Product managedProduct = (Product) session.bySimpleNaturalId(Product.class)
-                            .load(entryProduct.getMaster());
+                    // HQL query to check if a Product with the same master value already exists
+                    String hql = "FROM Product WHERE master = :master";
+                    Query<Product> query = session.createQuery(hql, Product.class);
+                    query.setParameter("master", entryProduct.getMaster());
+                    Product managedProduct = query.uniqueResult();
 
                     if (managedProduct != null) {
                         // Use the existing Product entity
@@ -87,8 +89,8 @@ public class DocumentDAO {
                 dbError.setErrorMessage(e.getMessage());
                 dbError.setTimestamp(new Date());
                 dbError.setDescription("@ importing Document - duplicate(?) \n " +
-                        "docId: "+document.getDocumentId()+" " +
-                        "\n "+document.getPath());
+                        "docId: " + document.getDocumentId() + " " +
+                        "\n " + document.getPath());
                 errors.add(dbError);
                 e.printStackTrace();
             } finally {

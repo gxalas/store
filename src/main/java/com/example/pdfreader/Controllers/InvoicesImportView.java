@@ -3,6 +3,7 @@ package com.example.pdfreader.Controllers;
 import com.example.pdfreader.DAOs.*;
 import com.example.pdfreader.Entities.Document;
 import com.example.pdfreader.HelloController;
+import com.example.pdfreader.Helpers.MyTask;
 import com.example.pdfreader.Helpers.ObservableQueue;
 import com.example.pdfreader.Helpers.SupplierProductRelation;
 import com.example.pdfreader.MyCustomEvents.DBError.DBErrorEvent;
@@ -12,6 +13,7 @@ import com.example.pdfreader.MyCustomEvents.DocumentsImportedListener;
 import com.example.pdfreader.MyCustomEvents.DocumentsImportedEvent;
 import com.example.pdfreader.MyCustomEvents.TracingFolderEvent;
 import com.example.pdfreader.MyCustomEvents.TracingFolderListener;
+import com.example.pdfreader.Sinartiseis.ProcessingTxtFiles;
 import com.example.pdfreader.Sinartiseis.TextExtractions;
 import javafx.application.Platform;
 import javafx.beans.property.SimpleStringProperty;
@@ -19,6 +21,8 @@ import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
 import javafx.collections.ListChangeListener;
 import javafx.concurrent.Task;
+import javafx.concurrent.WorkerStateEvent;
+import javafx.event.EventHandler;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
@@ -86,7 +90,6 @@ public class InvoicesImportView extends ChildController{
     public final TracingFolderListener tracingFolderListener = new TracingFolderListener() {
         @Override
         public void tracingFolderStarts(TracingFolderEvent evt) {
-            //listManager.getTraced().clear();
             btnLoadFolder.setVisible(false);
             System.out.println(" the tracing folder started ");
         }
@@ -178,75 +181,15 @@ public class InvoicesImportView extends ChildController{
         return (T)this;
     }
     public void initLoadFolderButton(){
+
         btnLoadFolder.setOnAction(actionEvent -> {
+            ProcessingTxtFiles.loadDocuments(parentDelegate,this);
             btnLoadFolder.setVisible(false);
-            Task<Void> task = new Task<Void>() {
-                @Override
-                protected Void call() {
-                    processFiles();
-                    return null;
-                }
-            };
-            task.setOnFailed(event -> {
-                Throwable exception = task.getException();
-                if (exception != null) {
-                    System.err.println("Background task failed:");
-                    exception.printStackTrace();
-                }
-            });
-            // Start the background task
-            Thread thread = new Thread(task);
-            thread.setDaemon(true); // Make the thread a daemon thread to avoid blocking the application from exiting
-            thread.start();
         });
         btnLoadFolder.setVisible(!super.parentDelegate.listManager.getToImportQueue().isEmpty());
     }
 
-    public void processFiles() {
-        super.parentDelegate.listManager.fetchChecksums();
-        super.parentDelegate.listManager.loadProductHashMap();
-        int size = super.parentDelegate.listManager.getToImportQueue().size();
 
-        SupplierProductRelationDAO relationDAO = new SupplierProductRelationDAO();
-        List<SupplierProductRelation> currentRelations = relationDAO.findAll();
-
-        List<SupplierProductRelation> newRelations = new ArrayList<>();
-
-        while (!super.parentDelegate.listManager.getToImportQueue().isEmpty()){
-            updateProgressBarFolderLoading(size-super.parentDelegate.listManager.getToImportQueue().size()+1,size);
-            Document newDoc = super.parentDelegate.listManager.getToImportQueue().poll();
-            TextExtractions.process(newDoc,parentDelegate);
-            if(newDoc.getDocumentId().compareTo("9033568261")==0){
-                System.out.println("the document in focus is going to be checked for supplier");
-                System.out.println("the current relations are : "+currentRelations.size());
-            }
-            newRelations.addAll(Document.inferSupplier(currentRelations, newDoc));
-            currentRelations.addAll(newRelations);
-            if(newDoc.getDocumentId().compareTo("9033568261")==0){
-                newDoc.addToErrorList("this is the one with the error");
-            }
-        }
-
-
-
-        DBErrorDAO dbErrorDAO = new DBErrorDAO(new ErrorEventManager());
-        DocumentDAO ddao = new DocumentDAO(dbErrorDAO);
-        List<DBError> errors = ddao.saveDocuments(super.parentDelegate.listManager.getImported());
-        if(!errors.isEmpty()){
-            dbErrorDAO.saveDBErrors(errors);
-        }
-        System.out.println("the total new relations to be saved is "+newRelations.size());
-        if(!newRelations.isEmpty()){
-            relationDAO.saveAll(newRelations);
-        }
-
-        System.out.println("the imported are "+super.parentDelegate.listManager.getImported().size());
-        super.parentDelegate.listManager.getImported().clear();
-        super.parentDelegate.listManager.getProductHashMap().clear();
-        super.parentDelegate.listManager.getChecksums().clear();
-
-        super.parentDelegate.fireDocumentProcessedEvent(new DocumentsImportedEvent(this));
-    }
     public void updateProgressBarFolderLoading(int count, int totalFiles) {
         double progress = (double) count / totalFiles;
         Platform.runLater(() -> {
