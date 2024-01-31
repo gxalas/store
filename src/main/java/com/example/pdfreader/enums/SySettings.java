@@ -1,8 +1,12 @@
 package com.example.pdfreader.enums;
 
+import com.example.pdfreader.Sinartiseis.ProcessingTxtFiles;
 import javafx.beans.property.SimpleStringProperty;
 
+import java.io.BufferedWriter;
 import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -10,6 +14,8 @@ import java.util.Arrays;
 
 public enum SySettings {
     PATH_TO_FOLDER("appfiles/pdfs");
+    public static final Path txtFolderPath = Paths.get("appFiles/txts");
+    public static final Path settingsPath = Paths.get("appFiles/saved/settings.txt");
     public SimpleStringProperty path = new SimpleStringProperty("appfiles/pdfs");
 
     SySettings(String path){
@@ -37,5 +43,17 @@ public enum SySettings {
     }
     public void setPath(String path){
         this.path.set(path);
+    }
+
+    public static void saveSySettings(){
+        try (BufferedWriter writer = new BufferedWriter(new FileWriter(settingsPath.toFile().getPath()))) {
+            for (SySettings setting : SySettings.values()) {
+                writer.write(setting.name()+","+setting.getPath());
+                writer.newLine();
+            }
+            System.out.println("the settings.txt file has been written");
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 }

@@ -70,7 +70,7 @@ public class ListManager {
         ProductDAO productDAO = new ProductDAO();
         List<Product> productList = productDAO.getAllProducts();
         for(Product product : productList){
-            productHashMap.put(product.getMaster(),product);
+            productHashMap.put(product.getInvmaster(),product);
         }
         System.out.println("- - - - - - - - - -the product map is being initialized - - - - - - - - - - - - "+productHashMap.size());
     }
@@ -100,7 +100,7 @@ public class ListManager {
         return this.productHashMap;
     }
     public void addToProductHashMap(Product product){
-        productHashMap.put(product.getMaster(),product);
+        productHashMap.put(product.getInvmaster(),product);
     }
 
     public ObservableList<MyTask> getActiveTasksList(){

@@ -11,6 +11,7 @@ import com.example.pdfreader.PosEntry;
 import com.example.pdfreader.Sinartiseis.Serialization;
 import com.example.pdfreader.Sinartiseis.TextExtractions;
 import com.example.pdfreader.enums.StoreNames;
+import com.example.pdfreader.enums.SySettings;
 import javafx.beans.property.ReadOnlyStringWrapper;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
@@ -40,6 +41,7 @@ public class ImportTxtsView extends ChildController{
     public Button btnAdd;
     public Button btnMatch;
     public Button btnCalcPos;
+    public Button btnLoadTxt;
     public Text txtPosErrors ;
     private ObservableList<StoreBasedAttributes> obsAllSbas = FXCollections.observableArrayList();
     private ObservableList<Product> obsAllProducts = FXCollections.observableArrayList();
@@ -158,13 +160,6 @@ public class ImportTxtsView extends ChildController{
 
     }
     public void readingTxtFilesLogic(){
-        parentDelegate.listManager.loadFileChecksums();
-        getFilesFromFolder();
-        readFiles();
-        Set<StoreBasedAttributes> sbasToSave = getProductsToPosAndSbas();
-        saveStoreBasedAttributes(sbasToSave.stream().toList());
-        savePosEntries();
-
         initTables();
         initButtons();
         loadContent();
@@ -319,7 +314,7 @@ public class ImportTxtsView extends ChildController{
         });
     }
     public void getFilesFromFolder(){
-        File parentFolder = Serialization.txtFolderPath.toFile();
+        File parentFolder = SySettings.txtFolderPath.toFile();
         if (parentFolder.exists() && parentFolder.isDirectory()) {
             File[] filesAndFolders = parentFolder.listFiles();
             if (filesAndFolders != null) {
@@ -442,8 +437,6 @@ public class ImportTxtsView extends ChildController{
         * in case of hard conflict we have to be able to view :
         the SBA without a product assigned
         the possible products that are more than 1 (in case of hard conflicts)
-
-
         */
 
         if(matchingProducts.isEmpty()){
@@ -535,9 +528,10 @@ public class ImportTxtsView extends ChildController{
             dbSbaMap.computeIfAbsent(sba.getStore(), k -> new HashMap<>());
             dbSbaMap.get(sba.getStore()).put(sba.getMasterCode(),sba);
         });
+        dbSbas.clear();
+        dbSbas = null;
 
         List<StoreBasedAttributes> saveList=  new ArrayList<>();
-
         toSave.forEach(sba->{
             if(dbSbaMap.get(sba.getStore())!=null){
                 if(dbSbaMap.get(sba.getStore()).get(sba.getMasterCode())!=null){
@@ -555,15 +549,55 @@ public class ImportTxtsView extends ChildController{
             }
         });
 
+        ProductDAO productDAO = new ProductDAO();
+        List<Product> products = productDAO.getAllProducts();
+        Map<String,Product> mapProducts = new HashMap<>();
+
+        products.forEach(product->{
+            if(mapProducts.get(product.getInvmaster())!=null){
+                System.out.println("not expected while creating product map");
+            } else {
+                mapProducts.put(product.getInvmaster(),product);
+            }
+        });
+
+        AtomicInteger counter = new AtomicInteger();
+
+
+
         Set<Product> toSaveProducts = new HashSet<>();
+        Set<Product> toUpdProducts = new HashSet<>();
 
         saveList.forEach(sba->{
-            toSaveProducts.add(sba.getProduct());
+            if(sba.getFamily().compareTo("930")!=0){
+                if(mapProducts.get(sba.getMasterCode())!=null){
+                    sba.setProduct(mapProducts.get(sba.getMasterCode()));
+                    counter.getAndIncrement();
+                    toUpdProducts.add(sba.getProduct());
+                } else{
+                    toSaveProducts.add(sba.getProduct());
+                }
+            }else{
+                toSaveProducts.add(sba.getProduct());
+            }
         });
-        ProductDAO productDAO = new ProductDAO();
+
+        System.out.println("the moved products are "+counter);
+
+
+
+
+
+
+
+        productDAO = new ProductDAO();
 
         if(!toSaveProducts.isEmpty()){
-            productDAO.saveProducts(toSaveProducts.stream().toList());
+            try {
+                productDAO.saveProducts(toSaveProducts.stream().toList());
+            } catch (Exception e){
+                e.printStackTrace();
+            }
         }
         if(saveList.isEmpty()){
             return;
@@ -718,10 +752,25 @@ public class ImportTxtsView extends ChildController{
                         "trying to add product to pos entries that have no pos entries",
                         updatePosEntries
                 );
+            }
+        });
+        btnLoadTxt.setOnAction(new EventHandler<ActionEvent>() {
+            @Override
+            public void handle(ActionEvent actionEvent) {
+                MyTask readingFiles = new MyTask(()->{
+                    parentDelegate.listManager.loadFileChecksums();
+                    getFilesFromFolder();
+                    readFiles();
+                    Set<StoreBasedAttributes> sbasToSave = getProductsToPosAndSbas();
+                    saveStoreBasedAttributes(sbasToSave.stream().toList());
+                    savePosEntries();
+                    return null;
+                });
 
-
-
-
+                parentDelegate.listManager.addTaskToActiveList(
+                        "reading item and text",
+                        "reading the txt files",
+                        readingFiles);
 
             }
         });
@@ -789,7 +838,18 @@ public class ImportTxtsView extends ChildController{
             return new ReadOnlyStringWrapper(d);
         });
 
-        tableProducts.getColumns().setAll(productDescCol);
+        TableColumn<Product,String> masterCol = new TableColumn<>("master");
+        masterCol.setCellValueFactory(cellData->{
+            String i = cellData.getValue().getInvmaster();
+            return new ReadOnlyStringWrapper(i);
+        });
+        TableColumn<Product,String> codeCol = new TableColumn<>("code");
+        codeCol.setCellValueFactory(cellData->{
+            String c = cellData.getValue().getCode();
+            return new ReadOnlyStringWrapper(c);
+        });
+
+        tableProducts.getColumns().setAll(productDescCol,masterCol,codeCol);
         tableProducts.setItems(obsProductsTable);
 
 
@@ -1057,7 +1117,13 @@ public class ImportTxtsView extends ChildController{
             return new ReadOnlyStringWrapper(sb.toString());
         });
 
-        tableFilteredSbas.getColumns().setAll(descriptionCol,storeCol,departmentCol,hopeCol,barCol,conBarsCol);
+        TableColumn<StoreBasedAttributes,String> masterCol = new TableColumn<>("master");
+        masterCol.setCellValueFactory(cellData->{
+            String m = cellData.getValue().getMasterCode();
+            return new ReadOnlyStringWrapper(m);
+        });
+
+        tableFilteredSbas.getColumns().setAll(descriptionCol,storeCol,masterCol,departmentCol,hopeCol,barCol,conBarsCol);
         tableFilteredSbas.setItems(obsFilteredSbas);
     }
     private void refreshTableConflicts(){

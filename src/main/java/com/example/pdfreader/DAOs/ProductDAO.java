@@ -106,12 +106,12 @@ public class ProductDAO {
         }
     }
     // Method to get a product by its master code
-    public Product getProductByMasterCode(String masterCode) {
+    public Product getProductByMasterCode(String invmaster) {
         Product product = null;
         try (Session session = sessionFactory.openSession()) {
-            String hql = "FROM Product WHERE master = :masterCode";
+            String hql = "FROM Product WHERE invmaster = :invmaster";
             Query<Product> query = session.createQuery(hql, Product.class);
-            query.setParameter("masterCode", masterCode);
+            query.setParameter("invmaster", invmaster);
             product = query.uniqueResult();
         } catch (Exception e) {
             e.printStackTrace();
@@ -143,7 +143,7 @@ public class ProductDAO {
 
             // Populate the map with products
             for (Product product : products) {
-                productMap.put(product.getMaster(), product);
+                productMap.put(product.getInvmaster(), product);
             }
 
             return productMap;
@@ -173,8 +173,7 @@ public class ProductDAO {
                 ProductDTO dto = dtoMap.computeIfAbsent(product.getId(), id -> new ProductDTO());
                 dto.setId(product.getId());
                 dto.setCode(product.getCode());
-                dto.setMaster(product.getMaster());
-                dto.setDescriptions(product.getDescriptions());
+                dto.setMaster(product.getInvmaster());
                 dto.setDocumentCount(documentCount);
                 dto.getStoreBasedAttributes().add(storeBasedAttribute);
 

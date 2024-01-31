@@ -26,7 +26,7 @@ public class ProductSupplierRelationsView extends ChildController{
             if(txtFilter.getText().compareTo("")!=0){
                 List<SupplierProductRelation> temp = new ArrayList<>();
                 for(SupplierProductRelation spr:allRelations){
-                    if(spr.getProduct().getMaster().compareTo(txtFilter.getText())==0){
+                    if(spr.getProduct().getInvmaster().compareTo(txtFilter.getText())==0){
                         temp.add(spr);
                     }
                 }
@@ -39,7 +39,7 @@ public class ProductSupplierRelationsView extends ChildController{
         productDescCol.setCellValueFactory(cellData->{
             String d = " no product";
             if(cellData.getValue().getProduct()!=null){
-                d = cellData.getValue().getProduct().getDescription();
+                d = cellData.getValue().getProduct().getInvDescription();
             }
             return new ReadOnlyStringWrapper(d);
         });
@@ -48,7 +48,7 @@ public class ProductSupplierRelationsView extends ChildController{
         masterCol.setCellValueFactory(cellData->{
             String m = " no master";
             if(cellData.getValue().getProduct()!=null){
-                m = cellData.getValue().getProduct().getMaster();
+                m = cellData.getValue().getProduct().getInvmaster();
             }
             return new ReadOnlyStringWrapper(m);
         });

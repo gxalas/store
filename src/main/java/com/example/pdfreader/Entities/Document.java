@@ -320,9 +320,9 @@ public class Document {
             System.out.println("this is the document in question");
             System.out.println("the current relations are : "+currentRelations.size());
             newDoc.getProducts().forEach(product->{
-                System.out.print("the product "+product.getDescription()+", ");
+                System.out.print("the product "+product.getInvDescription()+", ");
                 currentRelations.forEach(relation->{
-                    if(relation.getProduct().getMaster().compareTo(product.getMaster())==0){
+                    if(relation.getProduct().getInvmaster().compareTo(product.getInvmaster())==0){
                         System.out.print(" a supplier is : "+relation.getSupplier().getName()+", ");
                         System.out.println();
                     }
@@ -372,13 +372,13 @@ public class Document {
                 Product product = entry.getProduct();
                 if(!productSupplierMap.containsKey(product)){
 
-                    System.out.println("new relation at doc "+newDoc.getDocumentId()+"for product "+product.getDescription()+", and supplier "+supplier.getName()+" .");
+                    System.out.println("new relation at doc "+newDoc.getDocumentId()+"for product "+product.getInvDescription()+", and supplier "+supplier.getName()+" .");
                     SupplierProductRelation newRelation = new SupplierProductRelation(product, supplier);
                     newRelations.add(newRelation);
                     productSupplierMap.computeIfAbsent(product, k -> new ArrayList<>()).add(supplier);
                 } else {
                     if (!productSupplierMap.get(product).contains(supplier)) {
-                        System.out.println("new relation at doc "+newDoc.getDocumentId()+"for product "+product.getDescription()+", and supplier "+supplier.getName()+" .");
+                        System.out.println("new relation at doc "+newDoc.getDocumentId()+"for product "+product.getInvDescription()+", and supplier "+supplier.getName()+" .");
                         SupplierProductRelation newRelation = new SupplierProductRelation(product, supplier);
                         newRelations.add(newRelation);
                         productSupplierMap.computeIfAbsent(product, k -> new ArrayList<>()).add(supplier);

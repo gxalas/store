@@ -456,7 +456,7 @@ public class PreviewFileView extends ChildController {
         TableColumn<DocEntryDTO,String> descriptionCol = new TableColumn<>("Description");
         descriptionCol.setCellValueFactory(cellData -> {
             Product product = cellData.getValue().getDocEntry().getProduct();
-            return new ReadOnlyStringWrapper(product.getDescription());
+            return new ReadOnlyStringWrapper(product.getInvDescription());
         });
         //descriptionCol.setCellValueFactory(new PropertyValueFactory<>("description"));
 

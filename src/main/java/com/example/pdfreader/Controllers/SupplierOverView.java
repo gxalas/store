@@ -59,7 +59,7 @@ public class SupplierOverView extends ChildController {
                     }
                     if(option.compareTo("null")==0){
                         counter.getAndIncrement();
-                        System.out.println("product with null department \n"+product.getDescription()+" "+product.getMaster());
+                        System.out.println("product with null department \n"+product.getInvDescription()+" "+product.getInvmaster());
                         System.out.println(" sbas "+product.getStoreBasedAttributes().isEmpty());
                     }
 
@@ -128,7 +128,7 @@ public class SupplierOverView extends ChildController {
     private void initSuppTable(){
         TableColumn<Product,String> descriptionCol = new TableColumn<>("description");
         descriptionCol.setCellValueFactory(cellData->{
-            String d = cellData.getValue().getDescription();
+            String d = cellData.getValue().getInvDescription();
             return new ReadOnlyStringWrapper(d);
         });
 

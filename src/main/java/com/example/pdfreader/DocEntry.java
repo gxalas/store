@@ -85,20 +85,13 @@ public class DocEntry {
     public DocEntry(DocLine docLine, ListManager listManager){
         this.listManager =listManager;
         document = docLine.document;
+
         Product tempProduct = listManager.getProductHashMap().get(docLine.getRetEan());
         if (tempProduct==null){
-            tempProduct = new Product(listManager,docLine.productId,docLine.description,docLine.getRetEan());
+            tempProduct = new Product(docLine.productId,docLine.description,docLine.getRetEan());
             listManager.addToProductHashMap(tempProduct);
         }
         this.product = tempProduct;
-
-        if(getProduct()!=null){
-            if(docLine.description.contains("PAL MAL ΚΟΚΚΙΝΟ")){
-                System.out.println("at docLine");
-            }
-            getProduct().setDescription(docLine.description.trim());
-            getProduct().setMaster(docLine.getRetEan());
-        }
 
         extractNumericValues(docLine);
         //product.addDocEntry(this);
@@ -119,7 +112,7 @@ public class DocEntry {
             }
 
             totalPrice = new BigDecimal(docline.numericValues.get(6));
-            if(product.getMaster().compareTo("0000")!=0) { //stin periptosi pou einai metaforika (den exoume boxes kai units) den tsekaroume tin praksi
+            if(product.getInvmaster().compareTo("0000")!=0) { //stin periptosi pou einai metaforika (den exoume boxes kai units) den tsekaroume tin praksi
                 if(units.multiply(unitPrice).setScale(2, RoundingMode.HALF_UP).compareTo(totalPrice)!=0){
                     addErrorLog("values "+units+" * "+unitPrice+" = "+totalPrice+" => "+units.multiply(unitPrice).setScale(2, RoundingMode.HALF_UP));
                 }
@@ -141,11 +134,11 @@ public class DocEntry {
     }
     @JsonIgnore
     public String getDescription(){
-        return product.getDescription();
+        return product.getInvDescription();
     }
 
     public String getProductMaster(){
-        return product.getMaster();
+        return product.getInvmaster();
     }
 
     @JsonIgnore

@@ -64,18 +64,24 @@ public class DocumentDAO {
                 for (DocEntry entry : document.getEntries()) {
                     Product entryProduct = entry.getProduct();
 
-                    // HQL query to check if a Product with the same master value already exists
-                    String hql = "FROM Product WHERE master = :master";
+                    // Check if a Product with the same master value already exists
+                    String hql = "FROM Product WHERE invmaster = :invmaster";
                     Query<Product> query = session.createQuery(hql, Product.class);
-                    query.setParameter("master", entryProduct.getMaster());
+                    query.setParameter("invmaster", entryProduct.getInvmaster());
                     Product managedProduct = query.uniqueResult();
 
                     if (managedProduct != null) {
-                        // Use the existing Product entity
+                        // The product exists in the database, so use the existing managed entity
                         entry.setProduct(managedProduct);
                     } else {
-                        // Persist the new Product entity
-                        session.persist(entryProduct);
+                        if(entryProduct.getId()==null){
+                            session.persist(entryProduct);
+                        }
+                        // The product does not exist in the database, so persist the new entity
+                        // Note: It's important that entryProduct does not reference any unsaved transient instances.
+
+                        // Now, entryProduct is managed and can be associated with entry
+                        entry.setProduct(entryProduct);
                     }
                 }
 

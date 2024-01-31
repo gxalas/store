@@ -124,6 +124,8 @@ public class InvoicesImportView extends ChildController{
     public void initialize(HelloController hc) {
         super.parentDelegate = hc;
 
+
+
         initLoadFolderButton();
         initDocumentsImportedTable();
         initFailedTable();

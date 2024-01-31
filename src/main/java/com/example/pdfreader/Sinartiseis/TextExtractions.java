@@ -192,20 +192,10 @@ public class TextExtractions {
         //we check and handle the case that the documented that has been sent
         //for process is a duplicate
         if (controller.listManager.getChecksums().contains(document.getChecksum())){
-            /*
-            Document toUpdDoc = Document.getDocumentByChecksum(controller.listManager,document.getChecksum());
-            if(toUpdDoc!=null){
-                toUpdDoc.updateDocumentsFile(document.getFilePath(),controller.listManager);
-            } else {
-                System.out.println("the checksum contains but cannot retrieve a document");
-            }
-            System.out.println("this file is duplicate:---> "+document.getFilePath());
-             */
             System.out.println("we found a duplicate file - need to added the code for how to handle it - - - - - - - - - - ");
             return;
         }
         controller.listManager.getChecksums().add(document.getChecksum());
-
 
         //we attempt to extract the contents of the document
         //if we fail the document goes to the failed list

@@ -141,7 +141,7 @@ public class DocLine {
     }
     public String getDescription(){
         if(product!=null){
-            return product.getDescription();
+            return product.getInvDescription();
         }
         return description;
     }

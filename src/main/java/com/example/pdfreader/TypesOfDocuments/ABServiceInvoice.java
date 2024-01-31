@@ -48,7 +48,7 @@ public class ABServiceInvoice {
         ProductDAO productDAO = new ProductDAO();
         Product product = productDAO.getProductByMasterCode("009");
         if(product==null){
-            product = new Product(controller.listManager,"009",lines[16],"009");
+            product = new Product("009",lines[16],"009");
         }
         entry.setProduct(product);
 
@@ -71,7 +71,7 @@ public class ABServiceInvoice {
         ProductDAO productDAO = new ProductDAO();
         Product product = productDAO.getProductByMasterCode("009");
         if(product==null){
-            product = new Product(controller.listManager,"009",lines[16],"009");
+            product = new Product("009",lines[16],"009");
         }
         entry.setProduct(product);
 

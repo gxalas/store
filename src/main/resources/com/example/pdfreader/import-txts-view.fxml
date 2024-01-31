@@ -45,11 +45,15 @@
                                  <children>
                                     <VBox AnchorPane.bottomAnchor="5.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="5.0" AnchorPane.topAnchor="5.0">
                                        <children>
-                                          <TextField fx:id="txtfProducts" maxWidth="150.0">
+                                          <HBox>
                                              <VBox.margin>
                                                 <Insets bottom="5.0" left="5.0" top="5.0" />
                                              </VBox.margin>
-                                          </TextField>
+                                             <children>
+                                                <TextField fx:id="txtfProducts" maxWidth="150.0" />
+                                                <Button fx:id="btnLoadTxt" mnemonicParsing="false" text="Load Txt" />
+                                             </children>
+                                          </HBox>
                                           <TableView fx:id="tableProducts">
                                             <columns>
                                               <TableColumn prefWidth="75.0" text="C1" />

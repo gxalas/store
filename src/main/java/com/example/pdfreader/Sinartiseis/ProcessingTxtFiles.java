@@ -2,11 +2,10 @@ package com.example.pdfreader.Sinartiseis;
 
 import com.example.pdfreader.Controllers.ChildController;
 import com.example.pdfreader.Controllers.InvoicesImportView;
-import com.example.pdfreader.DAOs.DBError;
-import com.example.pdfreader.DAOs.DBErrorDAO;
-import com.example.pdfreader.DAOs.DocumentDAO;
-import com.example.pdfreader.DAOs.SupplierProductRelationDAO;
+import com.example.pdfreader.DAOs.*;
+import com.example.pdfreader.Entities.Attributes.StoreBasedAttributes;
 import com.example.pdfreader.Entities.Document;
+import com.example.pdfreader.Entities.Product;
 import com.example.pdfreader.HelloController;
 import com.example.pdfreader.Helpers.MyTask;
 import com.example.pdfreader.Helpers.SupplierProductRelation;
@@ -25,10 +24,12 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class ProcessingTxtFiles {
-    public static final Path settingsPath = Paths.get("appFiles/saved/settings.txt");
+
 
     /*
     Here we try to load the folder path for
@@ -36,8 +37,8 @@ public class ProcessingTxtFiles {
     */
     public static void loadSettings(){
         List<SySettings> settings = new ArrayList<>();
-        HelpingFunctions.createFileIfNotExists(settingsPath.toFile().getPath());
-        try (BufferedReader reader = new BufferedReader(new FileReader(settingsPath.toFile().getPath()))) {
+        HelpingFunctions.createFileIfNotExists(SySettings.settingsPath.toFile().getPath());
+        try (BufferedReader reader = new BufferedReader(new FileReader(SySettings.settingsPath.toFile().getPath()))) {
             String line;
             while ((line = reader.readLine()) != null) {
                 String[] parts = line.split(",");
@@ -99,7 +100,6 @@ public class ProcessingTxtFiles {
             }
         }
     }
-
     public static void loadDocuments(HelloController helloController,InvoicesImportView invoicesImportView){
         MyTask loadDocuments = new MyTask(()->{
             processFiles(helloController,invoicesImportView);
@@ -124,6 +124,7 @@ public class ProcessingTxtFiles {
     public static void processFiles(HelloController parentDelegate, InvoicesImportView invoicesImportView) {
         parentDelegate.listManager.fetchChecksums();
         parentDelegate.listManager.loadProductHashMap();
+
         int size = parentDelegate.listManager.getToImportQueue().size();
 
         SupplierProductRelationDAO relationDAO = new SupplierProductRelationDAO();
@@ -133,24 +134,56 @@ public class ProcessingTxtFiles {
 
         while (!parentDelegate.listManager.getToImportQueue().isEmpty()){
             invoicesImportView.updateProgressBarFolderLoading(size-parentDelegate.listManager.getToImportQueue().size()+1,size);
+
             Document newDoc = parentDelegate.listManager.getToImportQueue().poll();
+
             TextExtractions.process(newDoc,parentDelegate);
+            /*
             if(newDoc.getDocumentId().compareTo("9033568261")==0){
                 System.out.println("the document in focus is going to be checked for supplier");
                 System.out.println("the current relations are : "+currentRelations.size());
             }
+            */
+
             newRelations.addAll(Document.inferSupplier(currentRelations, newDoc));
             currentRelations.addAll(newRelations);
+            /*
             if(newDoc.getDocumentId().compareTo("9033568261")==0){
                 newDoc.addToErrorList("this is the one with the error");
             }
+            */
         }
 
+        StoreBasedAttributesDAO storeBasedAttributesDAO = new StoreBasedAttributesDAO();
+        List<StoreBasedAttributes> sbas = storeBasedAttributesDAO.getAllStoreBasedAttributes();
 
+        Map<String,Product> mapProduct = new HashMap<>();
+        sbas.forEach(sba -> {
+            if(sba.getFamily().compareTo("930")!=0){
+                mapProduct.put(sba.getMasterCode(),sba.getProduct());
+            }
+        });
+
+        List<Document> toSaveDocuments = parentDelegate.listManager.getImported();
+        toSaveDocuments.forEach(doc->{
+            doc.getEntries().forEach(docEntry->{
+                if(mapProduct.get(docEntry.getProductMaster())!=null){
+                    docEntry.setProduct(mapProduct.get(docEntry.getProductMaster()));
+                }
+            });
+        });
+
+
+        newRelations.forEach(rel->{
+            if(mapProduct.get(rel.getProduct().getInvmaster())!=null){
+                rel.setProduct(mapProduct.get(rel.getProduct().getInvmaster()));
+            }
+        });
 
         DBErrorDAO dbErrorDAO = new DBErrorDAO(new ErrorEventManager());
         DocumentDAO ddao = new DocumentDAO(dbErrorDAO);
-        List<DBError> errors = ddao.saveDocuments(parentDelegate.listManager.getImported());
+
+        List<DBError> errors = ddao.saveDocuments(toSaveDocuments);
         if(!errors.isEmpty()){
             dbErrorDAO.saveDBErrors(errors);
         }

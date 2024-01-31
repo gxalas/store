@@ -48,31 +48,36 @@ public class PosEntryDAO {
             try {
                 tx = session.beginTransaction();
 
+                // Check if the Product of the PosEntry is transient and save it first
+                Product product = posEntry.getProduct();
+                if (product != null && product.getId() == null) {
+                    session.persist(product);
+                    // Now that the product is persisted, Hibernate can manage the cascade
+                }
+
                 if (posEntry.getId() == null) {
                     session.persist(posEntry);
                 } else {
                     session.merge(posEntry);
                 }
+
                 tx.commit();
             } catch (RuntimeException e) {
                 if (tx != null) {
                     tx.rollback();
                 }
                 System.out.println("- - - - -  error at duplicate :: saving pos entries - - - - -");
-                System.out.println(e.hashCode()+" . "+e.getCause()+" . "+e.getMessage());
+                System.out.println(e.hashCode() + " . " + e.getCause() + " . " + e.getMessage());
                 System.out.println("- - - - -  error at duplicate - - - - -");
-                System.out.println("hash "+posEntry.getShaCode());
-                System.out.println("store "+posEntry.storeName);
-                System.out.println("master "+posEntry.getMaster());
-                System.out.println("date "+posEntry.getDate());
-
-                // System.out.println("product"+ posEntry.getProduct());
-                // Log the error using a proper logging framework
-                // logger.error("Error saving PosEntry with hashCode {}: {}", posEntry.getHashCode(), e.getMessage());
-                // Continue with the next PosEntry
+                System.out.println("hash " + posEntry.getShaCode());
+                System.out.println("store " + posEntry.getStoreName()); // Make sure this is the correct way to access storeName
+                System.out.println("master " + posEntry.getMaster());
+                System.out.println("date " + posEntry.getDate());
+                // Log the error properly
+            } finally {
+                // Optionally clear the session to handle memory efficiently
+                session.clear();
             }
-            // Optionally clear the session to handle memory efficiently
-            session.clear();
         }
 
         session.close(); // Close the session after processing all entries

@@ -260,7 +260,7 @@ public class SuppliersConfigView extends ChildController{
                 List<String> list2 = new ArrayList<>();
                 sprList.forEach(value->{
                     list1.add(value.getSupplier().getName());
-                    list2.add(value.getProduct().getMaster());
+                    list2.add(value.getProduct().getInvmaster());
                     //System.out.println(+" + "+);
                 });
                 System.out.println(sprList.size());
@@ -522,7 +522,7 @@ public class SuppliersConfigView extends ChildController{
     private void initProductsTable() {
         TableColumn<ProductWithSupplierCount,String> descCol = new TableColumn<>("description");
         descCol.setCellValueFactory(cellData->{
-            String value = cellData.getValue().getProduct().getDescription();
+            String value = cellData.getValue().getProduct().getInvDescription();
             return new ReadOnlyStringWrapper(value);
         });
 
@@ -781,7 +781,7 @@ public class SuppliersConfigView extends ChildController{
     private boolean checkRelation(List<SupplierProductRelation> existing, SupplierProductRelation spr){
         for(SupplierProductRelation e : existing){
             if (e.getSupplier().getName().compareTo(spr.getSupplier().getName())==0){
-                if(e.getProduct().getMaster().compareTo(spr.getProduct().getMaster())==0){
+                if(e.getProduct().getInvmaster().compareTo(spr.getProduct().getInvmaster())==0){
                     return true;
                 }
             }

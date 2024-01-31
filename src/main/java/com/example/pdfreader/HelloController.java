@@ -348,17 +348,10 @@ public class HelloController {
             @Override
             public void handle(ActionEvent actionEvent) {
                 actSaveFile.setDisable(true);
-                try {
-                    Serialization.saveImported(getControllerObject());
-                    txtAMemoryStatusList.add("^ ^ ^ ^ ^ File Saved ^ ^ ^ ^ ^ ^ ->"+Calendar.getInstance().getTime()+"\n");
-                } catch (IOException e) {
-                    txtAMemoryStatusList.add(" - - - - - - - error at saving the invoices - - - - - - - -\n");
-                    enqueueMessage("Error at saving the Invoices");
-                    throw new RuntimeException(e);
-                }
+                System.out.println("delete this option");
                 actSaveFile.setDisable(false);
-                playSoundNotification();
-                enqueueMessage("Invoices saved");
+                //playSoundNotification();
+                //enqueueMessage("Invoices saved");
             }
         });
 
@@ -404,7 +397,7 @@ public class HelloController {
                 if (selectedDirectory != null) {
                     System.out.println("Selected folder: " + selectedDirectory.getAbsolutePath());
                     SySettings.PATH_TO_FOLDER.setPath(selectedDirectory.getPath());
-                    Serialization.saveSySettings();
+                    SySettings.saveSySettings();
                     Thread th = getThread();
                     th.start();
                 } else {
