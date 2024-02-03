@@ -44,6 +44,10 @@ public class ABServiceInvoice {
         //document.setStore(getStore(lines[17]));
         document.setPromType(PromTypes.AB);
         DocEntry entry = getRentEntry(lines);
+        //--8
+        entry.setMaster("rent - from service");
+        entry.setCode("rent code - from service");
+        controller.listManager.docEntriesDescriptions.put(entry.getMaster(),"rent inv wtf");
 
         ProductDAO productDAO = new ProductDAO();
         Product product = productDAO.getProductByMasterCode("009");
@@ -66,6 +70,11 @@ public class ABServiceInvoice {
         document.setStore(StoreNames.NONE);
         document.setPromType(PromTypes.AB);
         DocEntry entry = getRentEntry(lines);
+
+        //--8
+        entry.setMaster("rent - from service");
+        entry.setCode("rent code - from service");
+        controller.listManager.docEntriesDescriptions.put(entry.getMaster(),"pistotiko wtf");
 
 
         ProductDAO productDAO = new ProductDAO();
@@ -127,6 +136,7 @@ public class ABServiceInvoice {
                 break;
             }
         }
+
         return de;
     }
     private static void retDocumentSums(Document doc, DocEntry entry){

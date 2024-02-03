@@ -27,6 +27,11 @@ public class DocEntry {
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "document_id")
     private Document document;
+    @Column(name = "master")
+    private String master;
+
+    @Column(name = "code")
+    private String code;
 
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "product_id")
@@ -65,33 +70,23 @@ public class DocEntry {
     @Transient
     ListManager listManager;
 
-
-    // Assume that DocLine and listManager are part of the logic to create a DocEntry, which should not be needed as JPA will handle this.
-    // Remove or adapt constructor logic accordingly if needed.
-    public DocEntry(Document document, Product product, BigDecimal boxes, BigDecimal unitsPerBox,
-                    BigDecimal units, BigDecimal unitPrice, BigDecimal totalPrice,
-                    BigDecimal netValue, BigDecimal vatValue, BigDecimal vatPercent) {
-        this.document = document;
-        this.product = product;
-        this.boxes = boxes;
-        this.unitsPerBox = unitsPerBox;
-        this.units = units;
-        this.unitPrice = unitPrice;
-        this.totalPrice = totalPrice;
-        this.netValue = netValue;
-        this.vatValue = vatValue;
-        this.vatPercent = vatPercent;
-    }
     public DocEntry(DocLine docLine, ListManager listManager){
-        this.listManager =listManager;
-        document = docLine.document;
+        this.listManager = listManager;
+        this.document = docLine.document;
+        this.master = docLine.getRetEan();
+        this.code = docLine.productId;
+        listManager.docEntriesDescriptions.put(master,docLine.description);
 
+        /*
         Product tempProduct = listManager.getProductHashMap().get(docLine.getRetEan());
         if (tempProduct==null){
             tempProduct = new Product(docLine.productId,docLine.description,docLine.getRetEan());
             listManager.addToProductHashMap(tempProduct);
         }
         this.product = tempProduct;
+        */
+
+
 
         extractNumericValues(docLine);
         //product.addDocEntry(this);
@@ -112,7 +107,7 @@ public class DocEntry {
             }
 
             totalPrice = new BigDecimal(docline.numericValues.get(6));
-            if(product.getInvmaster().compareTo("0000")!=0) { //stin periptosi pou einai metaforika (den exoume boxes kai units) den tsekaroume tin praksi
+            if(master.compareTo("0000")!=0) { //stin periptosi pou einai metaforika (den exoume boxes kai units) den tsekaroume tin praksi
                 if(units.multiply(unitPrice).setScale(2, RoundingMode.HALF_UP).compareTo(totalPrice)!=0){
                     addErrorLog("values "+units+" * "+unitPrice+" = "+totalPrice+" => "+units.multiply(unitPrice).setScale(2, RoundingMode.HALF_UP));
                 }
@@ -132,18 +127,14 @@ public class DocEntry {
         }
         return errorLogs.isEmpty();
     }
-    @JsonIgnore
-    public String getDescription(){
-        return product.getInvDescription();
-    }
 
-    public String getProductMaster(){
-        return product.getInvmaster();
+    public String getMaster(){
+        return this.master;
     }
 
     @JsonIgnore
-    public String getProductCode(){
-        return product.getCode();
+    public String getCode(){
+        return this.code;
     }
     public BigDecimal getBoxes() {
         return boxes;
@@ -210,7 +201,11 @@ public class DocEntry {
     @JsonIgnore
     public Product getProduct() {
         if(this.product==null){
-            return new Product();
+            Product product1 = new Product();
+            product1.setInvmaster("error");
+            product1.setCode("error");
+            product1.setInvDescription("error");
+            return product1;
         }
         return product;
     }
@@ -239,4 +234,11 @@ public class DocEntry {
         this.product = product;
     }
 
+    public void setMaster(String master) {
+        this.master = master;
+    }
+
+    public void setCode(String c){
+        this.code = c;
+    }
 }

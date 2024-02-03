@@ -13,6 +13,7 @@ import com.example.pdfreader.MyCustomEvents.DBError.ErrorEventManager;
 import com.example.pdfreader.MyCustomEvents.DocumentsImportedEvent;
 import com.example.pdfreader.MyCustomEvents.TracingFolderEvent;
 import com.example.pdfreader.enums.SySettings;
+import javafx.application.Platform;
 import javafx.concurrent.WorkerStateEvent;
 import javafx.event.EventHandler;
 
@@ -23,10 +24,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 public class ProcessingTxtFiles {
 
@@ -60,7 +58,7 @@ public class ProcessingTxtFiles {
      * @param directory
      * @param hc
      */
-    public static synchronized void traceFolder(File directory, HelloController hc){
+    public static void traceFolder(File directory, HelloController hc){
         if(hc.isThereActiveTracing()){
             System.out.println("there is already an active tracing event");
             return;
@@ -78,7 +76,6 @@ public class ProcessingTxtFiles {
 
         hc.numFilesInFolder.set(hc.listManager.getFilesInFolderQueue().size());
 
-
         int i=0;
         while (!hc.listManager.getFilesInFolderQueue().isEmpty()){
             i++;
@@ -87,6 +84,7 @@ public class ProcessingTxtFiles {
             hc.percentOfTracing.set((double) i / hc.numFilesInFolder.get());
         }
         hc.fireEndTracingFolder(tfe);
+
     }
     public static void filetracing(File directory, HelloController hc){
         File[] files = directory.listFiles();
@@ -123,7 +121,9 @@ public class ProcessingTxtFiles {
     }
     public static void processFiles(HelloController parentDelegate, InvoicesImportView invoicesImportView) {
         parentDelegate.listManager.fetchChecksums();
-        parentDelegate.listManager.loadProductHashMap();
+
+
+        //parentDelegate.listManager.loadProductHashMap();
 
         int size = parentDelegate.listManager.getToImportQueue().size();
 
@@ -154,36 +154,80 @@ public class ProcessingTxtFiles {
             */
         }
 
+
+
+
         StoreBasedAttributesDAO storeBasedAttributesDAO = new StoreBasedAttributesDAO();
         List<StoreBasedAttributes> sbas = storeBasedAttributesDAO.getAllStoreBasedAttributes();
-
-        Map<String,Product> mapProduct = new HashMap<>();
+        Map<String,Product> productMap = new HashMap<>();
         sbas.forEach(sba -> {
             if(sba.getFamily().compareTo("930")!=0){
-                mapProduct.put(sba.getMasterCode(),sba.getProduct());
+                productMap.put(sba.getMasterCode(),sba.getProduct());
             }
         });
+
+        ProductDAO productDAO = new ProductDAO();
+        List<Product> productList = productDAO.getAllProducts();
+        productList.forEach(product -> {
+            if(product.getInvmaster()!=null){
+                productMap.put(product.getInvmaster(),product);
+            }
+        });
+        Set<Product> toSaveProducts = new HashSet<>();
+
 
         List<Document> toSaveDocuments = parentDelegate.listManager.getImported();
         toSaveDocuments.forEach(doc->{
             doc.getEntries().forEach(docEntry->{
-                if(mapProduct.get(docEntry.getProductMaster())!=null){
-                    docEntry.setProduct(mapProduct.get(docEntry.getProductMaster()));
+                if(productMap.get(docEntry.getMaster())!=null){
+                    docEntry.setProduct(productMap.get(docEntry.getMaster()));
+                    if(productMap.get(docEntry.getMaster()).getInvDescription().isEmpty()){
+                        System.err.println("here is the empty product that we are trying to save later "+docEntry.getMaster());
+                    }
+                } else {
+                    Product product = new Product();
+                    product.setInvmaster(docEntry.getMaster());
+                    String d = "";
+                    if(parentDelegate.listManager.docEntriesDescriptions.get(docEntry.getMaster())==null){
+                        System.out.println("here we have a null");
+                        d = "the null happened";
+                        System.out.println("the master"+docEntry.getMaster());
+
+                    } else {
+
+                        d = parentDelegate.listManager.docEntriesDescriptions.get(docEntry.getMaster());
+                    }
+
+                    product.setInvDescription(d);
+                    product.setCode(docEntry.getCode());
+                    docEntry.setProduct(product);
+                    toSaveProducts.add(product);
+                    productMap.put(product.getInvmaster(),product);
+
                 }
             });
         });
+        toSaveProducts.forEach(product -> {
+            if(product.getInvDescription().isEmpty()){
+                System.err.println("we are trying to save an empty product");
+            }
+        });
+
+        productDAO = new ProductDAO();
+        productDAO.saveProducts(toSaveProducts.stream().toList());
 
 
         newRelations.forEach(rel->{
-            if(mapProduct.get(rel.getProduct().getInvmaster())!=null){
-                rel.setProduct(mapProduct.get(rel.getProduct().getInvmaster()));
+            if(productMap.get(rel.getProduct().getInvmaster())!=null){
+                rel.setProduct(productMap.get(rel.getProduct().getInvmaster()));
             }
         });
 
         DBErrorDAO dbErrorDAO = new DBErrorDAO(new ErrorEventManager());
-        DocumentDAO ddao = new DocumentDAO(dbErrorDAO);
+        DocumentDAO documentDAO = new DocumentDAO(dbErrorDAO);
 
-        List<DBError> errors = ddao.saveDocuments(toSaveDocuments);
+        List<DBError> errors = documentDAO.saveDocuments(toSaveDocuments);
+
         if(!errors.isEmpty()){
             dbErrorDAO.saveDBErrors(errors);
         }
@@ -194,7 +238,8 @@ public class ProcessingTxtFiles {
 
         System.out.println("the imported are "+parentDelegate.listManager.getImported().size());
         parentDelegate.listManager.getImported().clear();
-        parentDelegate.listManager.getProductHashMap().clear();
+        //parentDelegate.listManager.getProductHashMap().clear();
+        parentDelegate.listManager.docEntriesDescriptions.clear();
         parentDelegate.listManager.getChecksums().clear();
 
         parentDelegate.fireDocumentProcessedEvent(new DocumentsImportedEvent(invoicesImportView));

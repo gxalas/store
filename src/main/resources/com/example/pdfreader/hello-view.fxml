@@ -4,7 +4,6 @@
 <?import javafx.scene.control.Menu?>
 <?import javafx.scene.control.MenuBar?>
 <?import javafx.scene.control.MenuItem?>
-<?import javafx.scene.control.ScrollPane?>
 <?import javafx.scene.control.SeparatorMenuItem?>
 <?import javafx.scene.control.SplitPane?>
 <?import javafx.scene.layout.AnchorPane?>
@@ -14,82 +13,78 @@
 
 <AnchorPane prefHeight="600.0" prefWidth="800.0" xmlns="http://javafx.com/javafx/19" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.example.pdfreader.HelloController">
    <children>
-      <SplitPane dividerPositions="0.8489974937343359" pickOnBounds="false" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
+      <SplitPane fx:id="splitPane" dividerPositions="0.8489974937343359" pickOnBounds="false" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
         <items>
           <AnchorPane minHeight="0.0" minWidth="0.0">
                <children>
-                  <ScrollPane fitToHeight="true" fitToWidth="true" hvalue="1.0" vvalue="1.0" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
-                     <content>
-                        <VBox>
+                  <VBox AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
+                     <children>
+                        <MenuBar prefHeight="30.0">
+                          <menus>
+                            <Menu mnemonicParsing="false" text="File">
+                              <items>
+                                    <MenuItem disable="true" mnemonicParsing="false" text="Unspecified Action" />
+                                    <Menu mnemonicParsing="false" text="Unspecified Menu">
+                                      <items>
+                                        <MenuItem mnemonicParsing="false" text="Action 1" />
+                                      </items>
+                                    </Menu>
+                                    <SeparatorMenuItem mnemonicParsing="false" />
+                                    <MenuItem fx:id="actSaveFile" mnemonicParsing="false" text="Save Invoices" />
+                              </items>
+                            </Menu>
+                            <Menu mnemonicParsing="false" text="Edit">
+                              <items>
+                                    <MenuItem fx:id="actSelectFolder" mnemonicParsing="false" text="Invoices Folder" />
+                              </items>
+                            </Menu>
+                              <Menu mnemonicParsing="false" text="Invoices">
+                                <items>
+                                    <MenuItem fx:id="actImportInvoices" mnemonicParsing="false" text="Import " />
+                                  <MenuItem fx:id="actPreviewInvoices" mnemonicParsing="false" text="Preview" />
+                                    <MenuItem fx:id="actFilterInvoices" mnemonicParsing="false" text="Filter " />
+                                </items>
+                              </Menu>
+                              <Menu mnemonicParsing="false" text="Products">
+                                <items>
+                                  <MenuItem fx:id="actImportTxts" mnemonicParsing="false" text="Import Txts" />
+                                    <MenuItem fx:id="actProductsPage" mnemonicParsing="false" text="Prodcuts Page" />
+                                </items>
+                              </Menu>
+                              <Menu mnemonicParsing="false" text="Suppliers">
+                                <items>
+                                  <MenuItem fx:id="actSuppOverview" mnemonicParsing="false" text="Suppliers Overview" />
+                                    <MenuItem fx:id="actSuppConfig" mnemonicParsing="false" text="Suppliers Configuration" />
+                                    <MenuItem fx:id="actProductSuppliers" mnemonicParsing="false" text="Product &lt;-&gt; Suppliers" />
+                                </items>
+                              </Menu>
+                              <Menu mnemonicParsing="false" text="Database">
+                                <items>
+                                  <MenuItem fx:id="actDbOverview" mnemonicParsing="false" text="Overview" />
+                                </items>
+                              </Menu>
+                              <Menu mnemonicParsing="false" text="Results">
+                                <items>
+                                  <MenuItem fx:id="actResultsOverview" mnemonicParsing="false" text="Overview" />
+                                </items>
+                              </Menu>
+                            <Menu mnemonicParsing="false" text="Help">
+                              <items>
+                                    <MenuItem fx:id="actGC" mnemonicParsing="false" text="Garbage Collection" />
+                                    <MenuItem fx:id="actMemoryStatus" mnemonicParsing="false" text="Print Memory Status" />
+                                    <MenuItem fx:id="actStatus" mnemonicParsing="false" text="Status" />
+                              </items>
+                            </Menu>
+                          </menus>
+                        </MenuBar>
+                        <HBox fx:id="infoStrip" alignment="CENTER" maxHeight="60.0" minHeight="30.0" prefHeight="50.0">
                            <children>
-                              <MenuBar prefHeight="30.0">
-                                <menus>
-                                  <Menu mnemonicParsing="false" text="File">
-                                    <items>
-                                          <MenuItem disable="true" mnemonicParsing="false" text="Unspecified Action" />
-                                          <Menu mnemonicParsing="false" text="Unspecified Menu">
-                                            <items>
-                                              <MenuItem mnemonicParsing="false" text="Action 1" />
-                                            </items>
-                                          </Menu>
-                                          <SeparatorMenuItem mnemonicParsing="false" />
-                                          <MenuItem fx:id="actSaveFile" mnemonicParsing="false" text="Save Invoices" />
-                                    </items>
-                                  </Menu>
-                                  <Menu mnemonicParsing="false" text="Edit">
-                                    <items>
-                                          <MenuItem fx:id="actSelectFolder" mnemonicParsing="false" text="Invoices Folder" />
-                                    </items>
-                                  </Menu>
-                                    <Menu mnemonicParsing="false" text="Invoices">
-                                      <items>
-                                          <MenuItem fx:id="actImportInvoices" mnemonicParsing="false" text="Import " />
-                                        <MenuItem fx:id="actPreviewInvoices" mnemonicParsing="false" text="Preview" />
-                                          <MenuItem fx:id="actFilterInvoices" mnemonicParsing="false" text="Filter " />
-                                      </items>
-                                    </Menu>
-                                    <Menu mnemonicParsing="false" text="Products">
-                                      <items>
-                                        <MenuItem fx:id="actImportTxts" mnemonicParsing="false" text="Import Txts" />
-                                          <MenuItem fx:id="actProductsPage" mnemonicParsing="false" text="Prodcuts Page" />
-                                      </items>
-                                    </Menu>
-                                    <Menu mnemonicParsing="false" text="Suppliers">
-                                      <items>
-                                        <MenuItem fx:id="actSuppOverview" mnemonicParsing="false" text="Suppliers Overview" />
-                                          <MenuItem fx:id="actSuppConfig" mnemonicParsing="false" text="Suppliers Configuration" />
-                                          <MenuItem fx:id="actProductSuppliers" mnemonicParsing="false" text="Product &lt;-&gt; Suppliers" />
-                                      </items>
-                                    </Menu>
-                                    <Menu mnemonicParsing="false" text="Database">
-                                      <items>
-                                        <MenuItem fx:id="actDbOverview" mnemonicParsing="false" text="Overview" />
-                                      </items>
-                                    </Menu>
-                                    <Menu mnemonicParsing="false" text="Results">
-                                      <items>
-                                        <MenuItem fx:id="actResultsOverview" mnemonicParsing="false" text="Overview" />
-                                      </items>
-                                    </Menu>
-                                  <Menu mnemonicParsing="false" text="Help">
-                                    <items>
-                                          <MenuItem fx:id="actGC" mnemonicParsing="false" text="Garbage Collection" />
-                                          <MenuItem fx:id="actMemoryStatus" mnemonicParsing="false" text="Print Memory Status" />
-                                          <MenuItem fx:id="actStatus" mnemonicParsing="false" text="Status" />
-                                    </items>
-                                  </Menu>
-                                </menus>
-                              </MenuBar>
-                              <HBox fx:id="infoStrip" alignment="CENTER" maxHeight="60.0" minHeight="30.0" prefHeight="50.0">
-                                 <children>
-                                    <Text fx:id="txtInfoMessage" strokeType="OUTSIDE" strokeWidth="0.0" text="A message from the Events" />
-                                 </children>
-                              </HBox>
-                              <AnchorPane fx:id="parentContainer" minHeight="200.0" minWidth="200.0" VBox.vgrow="ALWAYS" />
+                              <Text fx:id="txtInfoMessage" text="A message from the Events" />
                            </children>
-                        </VBox>
-                     </content>
-                  </ScrollPane>
+                        </HBox>
+                        <AnchorPane fx:id="parentContainer" minHeight="200.0" minWidth="200.0" VBox.vgrow="ALWAYS" />
+                     </children>
+                  </VBox>
                </children>
             </AnchorPane>
           <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="160.0" prefWidth="100.0">

@@ -7,11 +7,14 @@ import com.example.pdfreader.Entities.Product;
 import com.example.pdfreader.EntriesFile;
 import com.example.pdfreader.HelloController;
 import com.example.pdfreader.Helpers.MyTask;
+import com.example.pdfreader.MyCustomEvents.TracingFolderEvent;
+import com.example.pdfreader.MyCustomEvents.TracingFolderListener;
 import com.example.pdfreader.PosEntry;
 import com.example.pdfreader.Sinartiseis.Serialization;
 import com.example.pdfreader.Sinartiseis.TextExtractions;
 import com.example.pdfreader.enums.StoreNames;
 import com.example.pdfreader.enums.SySettings;
+import javafx.application.Platform;
 import javafx.beans.property.ReadOnlyStringWrapper;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
@@ -47,7 +50,7 @@ public class ImportTxtsView extends ChildController{
     private ObservableList<Product> obsAllProducts = FXCollections.observableArrayList();
     public TableView<StoreBasedAttributes> tableSbas;
     private ObservableList<StoreBasedAttributes> obsAllSbasTable = FXCollections.observableArrayList();
-    public TableView<Product> tableProducts;
+    public TableView<Product> tableProducts = new TableView<>();
     public TableView<StoreBasedAttributes> tableFilteredSbas = new TableView<>();
     private ObservableList<StoreBasedAttributes> obsFilteredSbas = FXCollections.observableArrayList();
     private ObservableList<Product> obsProductsTable = FXCollections.observableArrayList();
@@ -76,7 +79,16 @@ public class ImportTxtsView extends ChildController{
         obsAllSbasTable.setAll(obsAllSbas);
         refreshTableConflicts();
     };
-    private ListChangeListener<Product> allProductsListener = change -> obsProductsTable.setAll(obsAllProducts);
+    private ListChangeListener<Product> allProductsListener = change -> {
+        List<Product> someProducts = new ArrayList<>();
+        for(int i =0;i<20;i++){
+            someProducts.add(obsAllProducts.get(i));
+        }
+        Platform.runLater(()->{
+            obsProductsTable.setAll(someProducts);
+        });
+
+    };
     private ChangeListener<Product> filteringSbas = (observableValue, product, t1) -> {
         if(t1!=null){
             List<StoreBasedAttributes> filtered = new ArrayList<>();
@@ -93,6 +105,7 @@ public class ImportTxtsView extends ChildController{
 
     @Override
     public void initialize(HelloController hc) {
+
         System.out.println("importing text is here");
         this.parentDelegate = hc;
         readingTxtFilesLogic();
@@ -118,6 +131,7 @@ public class ImportTxtsView extends ChildController{
 
     @Override
     public void addMyListeners() {
+
         obsMatchingProducts.addListener(btnVisibilityListener);
         obsAllSbas.addListener(allSbasListener);
         obsAllProducts.addListener(allProductsListener);
@@ -126,6 +140,7 @@ public class ImportTxtsView extends ChildController{
 
     @Override
     public void removeListeners(HelloController hc) {
+
         obsMatchingProducts.removeListener(btnVisibilityListener);
         obsAllSbas.removeListener(allSbasListener);
         obsAllProducts.removeListener(allProductsListener);
@@ -160,9 +175,16 @@ public class ImportTxtsView extends ChildController{
 
     }
     public void readingTxtFilesLogic(){
+
+
         initTables();
         initButtons();
         loadContent();
+        /*
+
+        */
+
+
         System.out.println("- - - - -  logic ending - - - ");
     }
 
@@ -851,8 +873,6 @@ public class ImportTxtsView extends ChildController{
 
         tableProducts.getColumns().setAll(productDescCol,masterCol,codeCol);
         tableProducts.setItems(obsProductsTable);
-
-
 
     }
     private void initTableConflicts(){

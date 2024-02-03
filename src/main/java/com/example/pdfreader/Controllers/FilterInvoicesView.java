@@ -44,8 +44,7 @@ import java.time.ZoneId;
 import java.util.*;
 
 public class FilterInvoicesView extends ChildController{
-
-    private List<Document> dbDocuments= new ArrayList<Document>();
+    private List<Document> dbDocuments= new ArrayList<>();
     private final ObservableList<Document> obsFilteredDocs = FXCollections.observableArrayList(new ArrayList<>());
     private final ObservableList<DocEntry> obsFilteredEntries = FXCollections.observableArrayList(new ArrayList<>());
     private final BidiMap<StoreNames, Integer> storeMap = new DualHashBidiMap<>();
@@ -642,14 +641,14 @@ public class FilterInvoicesView extends ChildController{
         qEntryProductId.setCellValueFactory(cellData->{
             DocEntry dc = cellData.getValue();
             //Product p = listManager.getProduct(dc.getProductMaster());
-            return new ReadOnlyStringWrapper(dc.getProductCode());
+            return new ReadOnlyStringWrapper(dc.getCode());
         });
 
         TableColumn<DocEntry,String> qEntryDescription= new TableColumn<>("Description");
         qEntryDescription.setCellValueFactory(cellData -> {
             DocEntry entry = cellData.getValue();
             //Product product = listManager.getProduct(entry.getProductMaster());
-            return new ReadOnlyStringWrapper(entry.getDescription());
+            return new ReadOnlyStringWrapper(entry.getProduct().getInvDescription());
         });
         //qEntryDescription.setCellValueFactory(new PropertyValueFactory<>("description"));
 

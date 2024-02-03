@@ -10,10 +10,7 @@ import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 
 import java.io.File;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -26,10 +23,12 @@ public class ListManager {
     private final ObservableQueue<File> filesInFolderQueue = new ObservableQueue<>();
     private final ObservableQueue<Document> toImportQueue = new ObservableQueue<>();
     private final HashMap<UUID, PosEntry> posEntriesMap = new HashMap<>();
-    private final HashMap<String,Product> productHashMap = new HashMap<>();
+    //private final HashMap<String,Product> productHashMap = new HashMap<>();
     private List<String> checksums = new ArrayList<>();
     private final ObservableList<MyTask> activeTasksList = FXCollections.observableArrayList();
     private List<String> fileChecksums = new ArrayList<>();
+
+    public Map<String,String> docEntriesDescriptions = new HashMap<>();
 
     public ListManager(){
 
@@ -64,7 +63,7 @@ public class ListManager {
         System.out.println("no document found for the code :"+code);
         return null;
     }
-
+    /*
     public void loadProductHashMap(){
         productHashMap.clear();
         ProductDAO productDAO = new ProductDAO();
@@ -74,6 +73,16 @@ public class ListManager {
         }
         System.out.println("- - - - - - - - - -the product map is being initialized - - - - - - - - - - - - "+productHashMap.size());
     }
+    public HashMap<String,Product> getProductHashMap(){
+        return this.productHashMap;
+    }
+    public void addToProductHashMap(Product product){
+        productHashMap.put(product.getInvmaster(),product);
+    }
+
+     */
+
+
     public void fetchChecksums(){
         System.out.println("- - - - - - - - -  the checksums are being initialised - - - - - - - - - - ");
         DBErrorDAO dbErrorDAO = new DBErrorDAO(new ErrorEventManager());
@@ -96,12 +105,7 @@ public class ListManager {
     public void addChecksum(String checksum){
         checksums.add(checksum);
     }
-    public HashMap<String,Product> getProductHashMap(){
-        return this.productHashMap;
-    }
-    public void addToProductHashMap(Product product){
-        productHashMap.put(product.getInvmaster(),product);
-    }
+
 
     public ObservableList<MyTask> getActiveTasksList(){
         return activeTasksList;
@@ -134,6 +138,7 @@ public class ListManager {
 
 
     }
+
 
 
 

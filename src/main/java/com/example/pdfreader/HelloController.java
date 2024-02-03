@@ -9,6 +9,7 @@ import com.example.pdfreader.Entities.Document;
 import com.example.pdfreader.Helpers.ListManager;
 import com.example.pdfreader.Helpers.MyTask;
 import com.example.pdfreader.Helpers.MyTaskState;
+import com.example.pdfreader.Helpers.ObservableQueue;
 import com.example.pdfreader.MyCustomEvents.DocumentsImportedEvent;
 import com.example.pdfreader.MyCustomEvents.DocumentsImportedListener;
 import com.example.pdfreader.MyCustomEvents.TracingFolderEvent;
@@ -22,6 +23,7 @@ import javafx.application.Platform;
 import javafx.beans.binding.Bindings;
 import javafx.beans.property.*;
 import javafx.beans.value.ChangeListener;
+import javafx.beans.value.ObservableValue;
 import javafx.beans.value.WeakChangeListener;
 import javafx.collections.FXCollections;
 import javafx.collections.ListChangeListener;
@@ -57,11 +59,13 @@ import java.lang.management.MemoryMXBean;
 import java.lang.management.MemoryUsage;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.jar.JarOutputStream;
 
 public class HelloController {
     public IntegerProperty numFilesInFolder = new SimpleIntegerProperty(0);
     public DoubleProperty percentOfTracing = new SimpleDoubleProperty(0.0);
     public ListManager listManager;
+    public SplitPane splitPane;
     private boolean tracingActive = false;
     @FXML
     public MenuItem actSaveFile;
@@ -69,6 +73,7 @@ public class HelloController {
     public MenuItem actMemoryStatus;
     @FXML
     public MenuItem actGC;
+    public StringProperty sb = new SimpleStringProperty("");
     @FXML
     public MenuItem actSelectFolder;
     @FXML
@@ -97,19 +102,20 @@ public class HelloController {
 
 
     private ExecutorService executorService = Executors.newCachedThreadPool();
-    private final Task<Void> watcher = new Task<Void>() {
+    private Task<Void> watcher = new Task<Void>() {
         @Override
         protected Void call() throws Exception {
             addWatcherToInvoicesFolder();
             return null;
         }
     };
-    private final Thread watcherThread = new Thread(watcher);
+    private Thread watcherThread = new Thread(watcher);
     @FXML
     public HBox infoStrip;
     public Timeline timeline = new Timeline();
-    public Text txtInfoMessage;
-    public final Queue<String> messageQueue = new LinkedList<>();
+    @FXML
+    public Text txtInfoMessage = new Text("");
+    public ObservableQueue<String> messageQueue = new ObservableQueue<>();
     public ListView<MyTask> listActiveTasks;
     private Timeline notificationTimeline;
     public FilterInvoicesState filterInvoicesState;
@@ -120,14 +126,19 @@ public class HelloController {
     private TracingFolderListener setTheBoolean = new TracingFolderListener() {
         @Override
         public void tracingFolderStarts(TracingFolderEvent evt) {
-            System.out.println("the tracing ended says hello controller");
-            tracingActive = true;
+            System.out.println("the tracing starting says the hello controller");
+            Platform.runLater(()->{
+                tracingActive = true;
+            });
+
         }
 
         @Override
         public void tracingFolderEnds(TracingFolderEvent evt) {
             System.out.println("the tracing ended says the hello controller");
-            tracingActive = false;
+            Platform.runLater(()->{
+                tracingActive = false;
+            });
         }
     };
 
@@ -155,13 +166,56 @@ public class HelloController {
         timeline.setAutoReverse(true);
         timeline.setCycleCount(3);
 
+        txtInfoMessage.textProperty().bind(sb);
         //timeline.stop();
 
         // Timeline to manage the display and wait logic
         notificationTimeline = new Timeline(new KeyFrame(Duration.seconds(5), event -> displayNextMessage()));
         notificationTimeline.setCycleCount(Timeline.INDEFINITE);
 
+        sb.addListener(new ChangeListener<String>() {
+            @Override
+            public void changed(ObservableValue<? extends String> observableValue, String s, String t1) {
+                double originalWidth = splitPane.getWidth();
+                System.out.println("HERE WE ARE TRIGGERED");
+                // Adjust size to trigger layout pass
+                Platform.runLater(()->{
+                    // Reset to original size on the next pulse
+                    splitPane.setVisible(false);
+                    splitPane.setDisable(true);
+                    splitPane.setPrefWidth(originalWidth+1);
+                    splitPane.setDisable(false);
+                    splitPane.setVisible(true);
+                    splitPane.requestFocus();
+                    splitPane.requestLayout();
+                    splitPane.setDividerPosition(0,splitPane.getDividerPositions()[0]+0.01);
+
+                });
+
+
+
+            }
+        });
+
         addTracingFolderListeners(setTheBoolean);
+        messageQueue.addListener(new ObservableQueue.QueueListener<String>() {
+            @Override
+            public void elementAdded(String element) {
+                if (!notificationTimeline.getStatus().equals(Animation.Status.RUNNING)) {
+                    if (!messageQueue.isEmpty()) {
+                        String nextMessage = messageQueue.poll();
+                        sb.set(nextMessage);
+                    } else {
+                        sb.set(" ");
+                    }
+                }
+            }
+
+            @Override
+            public void elementRemoved(String element) {
+
+            }
+        });
 
 
     }
@@ -325,6 +379,7 @@ public class HelloController {
     }
     public void fireStartTracingFolder(TracingFolderEvent evt){
         Object[] listeners = tracingFolderListeners.getListenerList();
+        System.out.println("the listeners length is"+ listeners.length);
         for (int i = 0; i < listeners.length; i += 2) {
             if (listeners[i] == TracingFolderListener.class) {
                 ((TracingFolderListener) listeners[i+1]).tracingFolderStarts(evt);
@@ -338,9 +393,7 @@ public class HelloController {
                 ((TracingFolderListener) listeners[i+1]).tracingFolderEnds(evt);
             }
         }
-        Platform.runLater(()->{
-            enqueueMessage("tracing has ended");
-        });
+        enqueueMessage("tracing has ended");
     }
 
     private void initMenuItems() {
@@ -569,47 +622,61 @@ public class HelloController {
         });
 
     }
+    /*
     private void displayNextMessage() {
-        // Create a FadeTransition.
-        FadeTransition fadeTransition = new FadeTransition(Duration.seconds(0.8), txtInfoMessage);
-        fadeTransition.setFromValue(1.0); // Fully visible
-        fadeTransition.setToValue(0.0);   // Fully transparent
-        fadeTransition.setCycleCount(20);
-        fadeTransition.setAutoReverse(true);
-
-
-        // Start the animation.
-        fadeTransition.play();
         if (!messageQueue.isEmpty()) {
-            playSoundNotification();
-            String nextMessage = messageQueue.poll();  // Retrieve and remove the next message
-            txtInfoMessage.setText(nextMessage);  // Display the message
-            notificationTimeline.playFromStart();  // Wait for 5 seconds before the next message
-            timeline.play();
+            System.out.println("the current thread is "+Thread.currentThread().getName());
+            String nextMessage = messageQueue.poll();
+            txtInfoMessage.setText(nextMessage);
+            if (true)return;
+
+            FadeTransition fadeTransition = new FadeTransition(Duration.seconds(0.8), txtInfoMessage);
+            fadeTransition.setFromValue(1.0);
+            fadeTransition.setToValue(0.0);
+            fadeTransition.setCycleCount(1);
+            fadeTransition.play();
+
+            notificationTimeline.playFromStart();
+
+
+
+
+
         } else {
-            txtInfoMessage.setText("");  // No message to display
-            notificationTimeline.stop();  // Stop the timeline if no more messages are in the queue
+            txtInfoMessage.setText("");
+            notificationTimeline.stop();
+        }
+    }
+     */
+
+    private void displayNextMessage() {
+
+        if (!messageQueue.isEmpty()) {
+            String nextMessage = messageQueue.poll();
+            sb.set(nextMessage);
+        } else {
+            sb.set(" ");
         }
     }
 
     public void enqueueMessage(String message) {
-        Platform.runLater(()->{
-            messageQueue.add(message);
-            if (!notificationTimeline.getStatus().equals(Animation.Status.RUNNING)) {
-                // If the timeline is not running, start it
-                displayNextMessage();
-            }
-        });
+
+
+
+        messageQueue.add(message);
 
     }
     public void playSoundNotification(){
         Thread soundThread = new Thread(() -> {
+
             try (FileInputStream fis = new FileInputStream("appFiles/audio/notification-sound.mp3")) {
                 AdvancedPlayer player = new AdvancedPlayer(fis);
                 player.play();
             } catch (JavaLayerException | IOException e) {
                 e.printStackTrace();
             }
+
+
         });
         soundThread.start();
     }

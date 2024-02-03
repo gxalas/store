@@ -45,6 +45,7 @@ public class HelloApplication extends Application {
 
         //mainController.loadController("database-overview-view.fxml");
         mainController.loadController("import-txts-view.fxml");
+        //mainController.loadController("reading-txts-view.fxml");
 
         /*
          * - settingsTask
@@ -65,6 +66,14 @@ public class HelloApplication extends Application {
                     fxmlLoader.getController());                                //find the files that can be imported
             return null;
         });
+        trace.addEventHandler(WorkerStateEvent.WORKER_STATE_FAILED, new EventHandler<WorkerStateEvent>() {
+            @Override
+            public void handle(WorkerStateEvent workerStateEvent) {
+                System.out.println("the tracing failed");
+                System.out.println(workerStateEvent.getSource().getMessage());
+                workerStateEvent.getSource().getException().printStackTrace();
+            }
+        });
 
         MyTask fetchDocumentChecksums = new MyTask(()->{
             listManager.fetchChecksums();
@@ -76,9 +85,6 @@ public class HelloApplication extends Application {
             return null;
         });
 
-        /**
-         * temporarily shutting down
-         */
 
 
         listManager.addTaskToActiveList(

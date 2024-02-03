@@ -462,7 +462,7 @@ public class PreviewFileView extends ChildController {
 
         TableColumn<DocEntryDTO,String> masterCol = new TableColumn<>("Master");
         masterCol.setCellValueFactory(cellData->{
-            String master = cellData.getValue().getDocEntry().getProductMaster();
+            String master = cellData.getValue().getDocEntry().getMaster();
             return new ReadOnlyStringWrapper(master);
         });
         //masterCol.setCellValueFactory(new PropertyValueFactory<>("productMaster"));

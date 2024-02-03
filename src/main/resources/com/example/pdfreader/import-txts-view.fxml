@@ -50,7 +50,11 @@
                                                 <Insets bottom="5.0" left="5.0" top="5.0" />
                                              </VBox.margin>
                                              <children>
-                                                <TextField fx:id="txtfProducts" maxWidth="150.0" />
+                                                <TextField fx:id="txtfProducts" maxWidth="150.0">
+                                                   <HBox.margin>
+                                                      <Insets right="10.0" />
+                                                   </HBox.margin>
+                                                </TextField>
                                                 <Button fx:id="btnLoadTxt" mnemonicParsing="false" text="Load Txt" />
                                              </children>
                                           </HBox>

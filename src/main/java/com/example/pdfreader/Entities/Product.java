@@ -91,6 +91,9 @@ public class Product {
         }
     }
 
+    public void setInvmaster(String m){
+        this.invmaster = m;
+    }
 
     @Override
     public int hashCode() {
