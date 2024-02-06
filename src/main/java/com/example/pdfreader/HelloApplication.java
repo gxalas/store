@@ -3,9 +3,7 @@ package com.example.pdfreader;
 import com.example.pdfreader.Helpers.ListManager;
 import com.example.pdfreader.Helpers.MyTask;
 import com.example.pdfreader.Sinartiseis.HelpingFunctions;
-import com.example.pdfreader.Sinartiseis.ProcessingTxtFiles;
-import com.example.pdfreader.Sinartiseis.Serialization;
-import com.example.pdfreader.Sinartiseis.TextExtractions;
+import com.example.pdfreader.Sinartiseis.ImportPdfFiles;
 import com.example.pdfreader.enums.SySettings;
 import javafx.application.Application;
 import javafx.application.Platform;
@@ -56,12 +54,12 @@ public class HelloApplication extends Application {
 
         MyTask settingsTask = new MyTask(()->{
             HelpingFunctions.createFileIfNotExists("appFiles/saved");
-            ProcessingTxtFiles.loadSettings();                                 //load the paths for where the documents are
+            ImportPdfFiles.loadSettings();                                 //load the paths for where the documents are
             return null;
         });
 
         MyTask trace = new MyTask(()->{
-            ProcessingTxtFiles.traceFolder(Paths.get(
+            ImportPdfFiles.traceFolder(Paths.get(
                     SySettings.PATH_TO_FOLDER.getPath()).toFile(),
                     fxmlLoader.getController());                                //find the files that can be imported
             return null;

@@ -1,37 +1,26 @@
 package com.example.pdfreader.Controllers;
 
-import com.example.pdfreader.DAOs.*;
 import com.example.pdfreader.Entities.Document;
 import com.example.pdfreader.HelloController;
-import com.example.pdfreader.Helpers.MyTask;
 import com.example.pdfreader.Helpers.ObservableQueue;
-import com.example.pdfreader.Helpers.SupplierProductRelation;
 import com.example.pdfreader.MyCustomEvents.DBError.DBErrorEvent;
 import com.example.pdfreader.MyCustomEvents.DBError.DBErrorListener;
-import com.example.pdfreader.MyCustomEvents.DBError.ErrorEventManager;
 import com.example.pdfreader.MyCustomEvents.DocumentsImportedListener;
 import com.example.pdfreader.MyCustomEvents.DocumentsImportedEvent;
 import com.example.pdfreader.MyCustomEvents.TracingFolderEvent;
 import com.example.pdfreader.MyCustomEvents.TracingFolderListener;
-import com.example.pdfreader.Sinartiseis.ProcessingTxtFiles;
-import com.example.pdfreader.Sinartiseis.TextExtractions;
+import com.example.pdfreader.Sinartiseis.ImportPdfFiles;
 import javafx.application.Platform;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
 import javafx.collections.ListChangeListener;
-import javafx.concurrent.Task;
-import javafx.concurrent.WorkerStateEvent;
-import javafx.event.EventHandler;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.text.Text;
 
-import java.util.ArrayList;
 import java.util.Date;
-import java.util.List;
-import java.util.Objects;
 
 public class InvoicesImportView extends ChildController{
     @FXML
@@ -185,7 +174,7 @@ public class InvoicesImportView extends ChildController{
     public void initLoadFolderButton(){
 
         btnLoadFolder.setOnAction(actionEvent -> {
-            ProcessingTxtFiles.loadDocuments(parentDelegate,this);
+            ImportPdfFiles.loadDocuments(parentDelegate,this);
             btnLoadFolder.setVisible(false);
         });
         btnLoadFolder.setVisible(!super.parentDelegate.listManager.getToImportQueue().isEmpty());

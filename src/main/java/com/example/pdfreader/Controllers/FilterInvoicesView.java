@@ -110,11 +110,6 @@ public class FilterInvoicesView extends ChildController{
 
         //parentDelegate.listManager.getActiveTasksList().add(0, task);
 
-
-
-
-
-
         if (parentDelegate.filterInvoicesState == null){
             System.out.println("no state for filtering invoices");
         }
@@ -540,8 +535,12 @@ public class FilterInvoicesView extends ChildController{
 
 
         ObservableList<StoreNames> stores = FXCollections.observableArrayList(StoreNames.values());
-        StoreNames summary = StoreNames.ALL;
 
+
+
+
+        /*
+        StoreNames summary = StoreNames.ALL;
 
         filterSumTable.setRowFactory(tv -> {
             TableRow<StoreNames> row = new TableRow<>();
@@ -554,6 +553,10 @@ public class FilterInvoicesView extends ChildController{
             });
             return row;
         });
+         */
+
+
+
         filterSumTable.setItems(stores);
         filterSumTable.getColumns().setAll(storeNameCol,moneySpentColumn,moneyGotColumn,abDiffCol,
                 timTriCol,pisTimCol,triDiffCol,totalCol);

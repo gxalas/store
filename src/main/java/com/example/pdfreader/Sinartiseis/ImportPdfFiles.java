@@ -1,6 +1,5 @@
 package com.example.pdfreader.Sinartiseis;
 
-import com.example.pdfreader.Controllers.ChildController;
 import com.example.pdfreader.Controllers.InvoicesImportView;
 import com.example.pdfreader.DAOs.*;
 import com.example.pdfreader.Entities.Attributes.StoreBasedAttributes;
@@ -12,8 +11,8 @@ import com.example.pdfreader.Helpers.SupplierProductRelation;
 import com.example.pdfreader.MyCustomEvents.DBError.ErrorEventManager;
 import com.example.pdfreader.MyCustomEvents.DocumentsImportedEvent;
 import com.example.pdfreader.MyCustomEvents.TracingFolderEvent;
+import com.example.pdfreader.enums.StoreNames;
 import com.example.pdfreader.enums.SySettings;
-import javafx.application.Platform;
 import javafx.concurrent.WorkerStateEvent;
 import javafx.event.EventHandler;
 
@@ -21,12 +20,10 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.*;
 
-public class ProcessingTxtFiles {
+public class ImportPdfFiles {
+
 
 
     /*
@@ -165,6 +162,9 @@ public class ProcessingTxtFiles {
                 productMap.put(sba.getMasterCode(),sba.getProduct());
             }
         });
+        int temp = 0;
+
+        temp = productMap.size();
 
         ProductDAO productDAO = new ProductDAO();
         List<Product> productList = productDAO.getAllProducts();
@@ -173,7 +173,13 @@ public class ProcessingTxtFiles {
                 productMap.put(product.getInvmaster(),product);
             }
         });
+        if(productMap.size()!=temp){
+            System.out.println("\n\n\n\n we have a change at the map \n\n\n\n\n");
+        }
+
         Set<Product> toSaveProducts = new HashSet<>();
+        Set<Product> toUpdateProducts = new HashSet<>();
+        Set<StoreBasedAttributes> toSaveSbas = new HashSet<>();
 
 
         List<Document> toSaveDocuments = parentDelegate.listManager.getImported();
@@ -181,29 +187,38 @@ public class ProcessingTxtFiles {
             doc.getEntries().forEach(docEntry->{
                 if(productMap.get(docEntry.getMaster())!=null){
                     docEntry.setProduct(productMap.get(docEntry.getMaster()));
-                    if(productMap.get(docEntry.getMaster()).getInvDescription().isEmpty()){
-                        System.err.println("here is the empty product that we are trying to save later "+docEntry.getMaster());
+                    if(productMap.get(docEntry.getMaster()).getCode().compareTo("")==0){
+                        productMap.get(docEntry.getMaster()).setCode(docEntry.getCode());
+                        toUpdateProducts.add(productMap.get(docEntry.getMaster()));
                     }
                 } else {
                     Product product = new Product();
-                    product.setInvmaster(docEntry.getMaster());
+                    StoreBasedAttributes sba = new StoreBasedAttributes();
+
                     String d = "";
                     if(parentDelegate.listManager.docEntriesDescriptions.get(docEntry.getMaster())==null){
-                        System.out.println("here we have a null");
+                        System.out.println("here we have a null when we try to get the description of a doc Entry");
                         d = "the null happened";
                         System.out.println("the master"+docEntry.getMaster());
-
                     } else {
-
                         d = parentDelegate.listManager.docEntriesDescriptions.get(docEntry.getMaster());
                     }
-
+                    product.setInvmaster(docEntry.getMaster());
                     product.setInvDescription(d);
                     product.setCode(docEntry.getCode());
+
+
+                    sba.setProduct(product);
+                    sba.setDescription(d);
+                    sba.setMasterCode(docEntry.getMaster());
+                    sba.setStore(StoreNames.ALL);
+
+
+
                     docEntry.setProduct(product);
                     toSaveProducts.add(product);
+                    toSaveSbas.add(sba);
                     productMap.put(product.getInvmaster(),product);
-
                 }
             });
         });
@@ -215,6 +230,9 @@ public class ProcessingTxtFiles {
 
         productDAO = new ProductDAO();
         productDAO.saveProducts(toSaveProducts.stream().toList());
+
+        productDAO = new ProductDAO();
+        productDAO.updateProducts(toUpdateProducts.stream().toList());
 
 
         newRelations.forEach(rel->{
@@ -244,5 +262,11 @@ public class ProcessingTxtFiles {
 
         parentDelegate.fireDocumentProcessedEvent(new DocumentsImportedEvent(invoicesImportView));
     }
+
+
+
+
+
+
 
 }

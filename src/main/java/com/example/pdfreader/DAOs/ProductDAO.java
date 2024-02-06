@@ -58,6 +58,10 @@ public class ProductDAO {
                     System.err.println("a null product attempted to get saved at position "+i);
                     continue;
                 }
+                if(products.get(i).getInvDescription().startsWith("επιλεγ")){
+                    System.err.println(" WE ARE SAVING THE PRODUCT EPILEGMENO ");
+                    System.err.println(" ");
+                }
                 entityManager.persist(products.get(i));
 
                 // Flush and clear the EntityManager in batches

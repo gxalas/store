@@ -1,16 +1,13 @@
 package com.example.pdfreader.enums;
 
-import com.example.pdfreader.Sinartiseis.ProcessingTxtFiles;
 import javafx.beans.property.SimpleStringProperty;
 
 import java.io.BufferedWriter;
-import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Arrays;
 
 public enum SySettings {
     PATH_TO_FOLDER("appfiles/pdfs");

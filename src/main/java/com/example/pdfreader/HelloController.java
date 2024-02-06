@@ -14,8 +14,7 @@ import com.example.pdfreader.MyCustomEvents.DocumentsImportedEvent;
 import com.example.pdfreader.MyCustomEvents.DocumentsImportedListener;
 import com.example.pdfreader.MyCustomEvents.TracingFolderEvent;
 import com.example.pdfreader.MyCustomEvents.TracingFolderListener;
-import com.example.pdfreader.Sinartiseis.ProcessingTxtFiles;
-import com.example.pdfreader.Sinartiseis.Serialization;
+import com.example.pdfreader.Sinartiseis.ImportPdfFiles;
 import com.example.pdfreader.Sinartiseis.TextExtractions;
 import com.example.pdfreader.enums.SySettings;
 import javafx.animation.*;
@@ -59,7 +58,6 @@ import java.lang.management.MemoryMXBean;
 import java.lang.management.MemoryUsage;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.jar.JarOutputStream;
 
 public class HelloController {
     public IntegerProperty numFilesInFolder = new SimpleIntegerProperty(0);
@@ -462,7 +460,7 @@ public class HelloController {
                 Task<Void> trace = new Task<>() {
                     @Override
                     protected Void call() {
-                        ProcessingTxtFiles.traceFolder(Paths.get(SySettings.PATH_TO_FOLDER.getPath()).toFile(), getControllerObject());
+                        ImportPdfFiles.traceFolder(Paths.get(SySettings.PATH_TO_FOLDER.getPath()).toFile(), getControllerObject());
                         return null;
                     }
                 };

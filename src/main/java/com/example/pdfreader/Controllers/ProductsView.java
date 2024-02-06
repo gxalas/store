@@ -193,13 +193,8 @@ public class ProductsView extends ChildController{
     private MyTask loadingProductDtosTask(){
         MyTask loadProductDtos = new MyTask(()->{
             ProductDAO productDAO = new ProductDAO();
-            //long start = System.nanoTime();
             productDtoList = productDAO.getAllProductsWithDocumentCountAndDescriptions();
             List<ProductDTO> filtered = filterProducts();
-            //productDtoList = filterProducts();
-            //long end = System.nanoTime();
-            //System.out.println("the time is : "+((end-start)/1_000_000.00)+" mills");
-            //ObservableList<ProductDTO> data = FXCollections.observableArrayList(productDtoList);
             Platform.runLater(()->{
                 obsProducts.setAll(filtered);
             });
