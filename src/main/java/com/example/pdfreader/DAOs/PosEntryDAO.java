@@ -97,7 +97,7 @@ public class PosEntryDAO {
         Session session = HibernateUtil.getSessionFactory().openSession();
         try {
             Query<PosEntry> query = session.createQuery(
-                    "FROM PosEntry pe WHERE pe.product.master = :masterCode", PosEntry.class);
+                    "FROM PosEntry pe WHERE pe.product.invmaster = :masterCode", PosEntry.class);
             query.setParameter("masterCode", masterCode);
             return query.list();
         } finally {

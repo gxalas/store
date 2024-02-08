@@ -2,6 +2,7 @@ package com.example.pdfreader.Entities;
 
 import com.example.pdfreader.Entities.Attributes.StoreBasedAttributes;
 import com.example.pdfreader.Helpers.ListManager;
+import com.example.pdfreader.Helpers.SupplierProductRelation;
 import com.example.pdfreader.enums.ConflictStates;
 import com.example.pdfreader.enums.StoreNames;
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -22,7 +23,6 @@ public class Product {
      */
     @Column(name = "code")
     private String code;
-
     /**
      * this will be moved
      * to the store based

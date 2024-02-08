@@ -5,30 +5,48 @@
 <?import javafx.scene.control.ComboBox?>
 <?import javafx.scene.control.TableColumn?>
 <?import javafx.scene.control.TableView?>
+<?import javafx.scene.control.TextField?>
 <?import javafx.scene.layout.AnchorPane?>
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.VBox?>
 
-
-<AnchorPane prefHeight="400.0" prefWidth="600.0" xmlns="http://javafx.com/javafx/19" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.example.pdfreader.Controllers.SupplierOverView">
+<AnchorPane xmlns="http://javafx.com/javafx/19" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.example.pdfreader.Controllers.SupplierOverView">
    <children>
-      <VBox prefHeight="200.0" prefWidth="100.0" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
+      <VBox AnchorPane.bottomAnchor="10.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
          <children>
-            <HBox />
-            <HBox>
+            <HBox alignment="CENTER">
                <children>
-                  <VBox alignment="CENTER">
+                  <ComboBox fx:id="cbSuppliers" prefWidth="150.0">
+                     <HBox.margin>
+                        <Insets right="30.0" />
+                     </HBox.margin>
+                  </ComboBox>
+                  <VBox>
+                     <HBox.margin>
+                        <Insets />
+                     </HBox.margin>
                      <children>
-                        <ComboBox fx:id="cbSuppliers" prefWidth="150.0">
-                           <VBox.margin>
-                              <Insets bottom="12.0" top="10.0" />
-                           </VBox.margin>
-                        </ComboBox>
-                        <TableView fx:id="tableSupplierProducts">
+                        <TextField fx:id="txtFilter" />
+                        <ComboBox fx:id="cbDepartment" prefWidth="150.0" />
+                     </children>
+                  </VBox>
+               </children>
+               <VBox.margin>
+                  <Insets bottom="20.0" top="20.0" />
+               </VBox.margin>
+            </HBox>
+            <HBox alignment="CENTER">
+               <children>
+                  <VBox alignment="CENTER" HBox.hgrow="ALWAYS">
+                     <children>
+                        <TableView fx:id="tableSupplierProducts" tableMenuButtonVisible="true">
                           <columns>
                             <TableColumn prefWidth="75.0" text="C1" />
                             <TableColumn prefWidth="75.0" text="C2" />
                           </columns>
+                           <columnResizePolicy>
+                              <TableView fx:constant="CONSTRAINED_RESIZE_POLICY" />
+                           </columnResizePolicy>
                         </TableView>
                         <Button fx:id="btnUnlink" mnemonicParsing="false" text="Unlink">
                            <VBox.margin>
@@ -36,28 +54,35 @@
                            </VBox.margin>
                         </Button>
                      </children>
+                     <HBox.margin>
+                        <Insets />
+                     </HBox.margin>
                   </VBox>
-                  <VBox alignment="CENTER" prefHeight="200.0" prefWidth="100.0">
+                  <VBox alignment="CENTER" maxWidth="80.0" minWidth="60.0" HBox.hgrow="ALWAYS">
                      <children>
                         <Button fx:id="btnLink" mnemonicParsing="false" text="&lt;- Link" />
                      </children>
                   </VBox>
-                  <VBox alignment="CENTER">
+                  <VBox alignment="CENTER" HBox.hgrow="ALWAYS">
                      <children>
-                        <ComboBox fx:id="cbDepartment" prefWidth="150.0">
-                           <VBox.margin>
-                              <Insets bottom="12.0" top="10.0" />
-                           </VBox.margin>
-                        </ComboBox>
-                        <TableView fx:id="tableFreeProducts">
+                        <TableView fx:id="tableFreeProducts" VBox.vgrow="SOMETIMES">
                           <columns>
                             <TableColumn prefWidth="75.0" text="C1" />
                             <TableColumn prefWidth="75.0" text="C2" />
                           </columns>
+                           <columnResizePolicy>
+                              <TableView fx:constant="CONSTRAINED_RESIZE_POLICY" />
+                           </columnResizePolicy>
                         </TableView>
                      </children>
+                     <HBox.margin>
+                        <Insets />
+                     </HBox.margin>
                   </VBox>
                </children>
+               <VBox.margin>
+                  <Insets left="5.0" right="5.0" />
+               </VBox.margin>
             </HBox>
          </children>
       </VBox>

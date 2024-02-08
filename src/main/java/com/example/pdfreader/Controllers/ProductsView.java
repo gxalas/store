@@ -68,6 +68,14 @@ public class ProductsView extends ChildController{
                 return null;
             });
 
+            myTask.addEventHandler(WorkerStateEvent.WORKER_STATE_FAILED, new EventHandler<WorkerStateEvent>() {
+                @Override
+                public void handle(WorkerStateEvent workerStateEvent) {
+                    System.out.println("the fetching failed\n"+workerStateEvent.getSource().getMessage());
+                    workerStateEvent.getSource().getException().printStackTrace();
+                }
+            });
+
 
             parentDelegate.listManager.addTaskToActiveList(
                     "loading Docs and Pos Entries - BREAK THEM - OR REMOVE THEM",
@@ -193,7 +201,8 @@ public class ProductsView extends ChildController{
     private MyTask loadingProductDtosTask(){
         MyTask loadProductDtos = new MyTask(()->{
             ProductDAO productDAO = new ProductDAO();
-            productDtoList = productDAO.getAllProductsWithDocumentCountAndDescriptions();
+            //productDtoList = productDAO.getAllProductsWithDocumentCountAndDescriptions();
+            productDtoList = productDAO.createProductDTOs();
             List<ProductDTO> filtered = filterProducts();
             Platform.runLater(()->{
                 obsProducts.setAll(filtered);

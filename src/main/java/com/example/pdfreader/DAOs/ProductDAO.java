@@ -13,6 +13,7 @@ import org.hibernate.SessionFactory;
 import org.hibernate.query.Query;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 public class ProductDAO {
 
@@ -156,43 +157,38 @@ public class ProductDAO {
             return Collections.emptyMap();
         }
     }
-    public List<ProductDTO> getAllProductsWithDocumentCountAndDescriptions() {
-        List<ProductDTO> productDTOs = new ArrayList<>();
-        try (Session session = sessionFactory.openSession()) {
-            // Corrected JPQL query
-            String jpql = "SELECT p, sba, COUNT(de) "
-                    + "FROM Product p "
-                    + "LEFT JOIN p.storeBasedAttributes sba " // Ensure this matches your field name
-                    + "LEFT JOIN DocEntry de ON de.product = p "
-                    + "GROUP BY p, sba";
 
-            List<Object[]> results = session.createQuery(jpql, Object[].class).getResultList();
-            Map<Long, ProductDTO> dtoMap = new HashMap<>();
+    public List<ProductDTO> createProductDTOs() {
+        List<Object[]> productsAndCounts = fetchProductsAndDocCount();
+        Map<Long, List<StoreBasedAttributes>> sbaMap = fetchSBAsGroupedByProductId();
 
-            for (Object[] row : results) {
-                Product product = (Product) row[0];
-                StoreBasedAttributes storeBasedAttribute = (StoreBasedAttributes) row[1];
-                Long documentCount = (Long) row[2];
+        return productsAndCounts.stream().map(result -> {
+            Long productId = (Long) result[0];
+            String code = (String) result[1];
+            String invDescription = (String) result[2];
+            String invmaster = (String) result[3];
+            Long docCount = (Long) result[4];
 
-                ProductDTO dto = dtoMap.computeIfAbsent(product.getId(), id -> new ProductDTO());
-                dto.setId(product.getId());
-                dto.setCode(product.getCode());
-                dto.setMaster(product.getInvmaster());
-                dto.setDocumentCount(documentCount);
-                dto.getStoreBasedAttributes().add(storeBasedAttribute);
+            List<StoreBasedAttributes> sbasForProduct = sbaMap.getOrDefault(productId, Collections.emptyList());
 
-                // Adding store-based attributes to the DTO
-                //if (!dto.getStoreBasedAttributes().contains(storeBasedAttributes)) {
-                  //  dto.getStoreBasedAttributes().add(storeBasedAttributes);
-                //}
-            }
+            ProductDTO dto = new ProductDTO(productId, code, List.of(invDescription), invmaster, docCount);
+            dto.setStoreBasedAttributes(sbasForProduct);
+            return dto;
+        }).collect(Collectors.toList());
+    }
+    public List<Object[]> fetchProductsAndDocCount() {
+        String query = "SELECT p.id, p.code, p.invDescription, p.invmaster, COUNT(de.id) as docCount " +
+                "FROM Product p " +
+                "LEFT JOIN DocEntry de ON de.product = p " +
+                "GROUP BY p.id";
+        return entityManager.createQuery(query, Object[].class).getResultList();
+    }
+    public Map<Long, List<StoreBasedAttributes>> fetchSBAsGroupedByProductId() {
+        List<StoreBasedAttributes> sbas = entityManager.createQuery(
+                        "SELECT sba FROM StoreBasedAttributes sba JOIN FETCH sba.product", StoreBasedAttributes.class)
+                .getResultList();
 
-            productDTOs.addAll(dtoMap.values());
-        } catch (Exception e) {
-            e.printStackTrace();
-            // Handle exception
-        }
-        return new ArrayList<>(productDTOs);
+        return sbas.stream().collect(Collectors.groupingBy(sba -> sba.getProduct().getId()));
     }
 
     public void addNewProducts(List<Product> newProducts) {

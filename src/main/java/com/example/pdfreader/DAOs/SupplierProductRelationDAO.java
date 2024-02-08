@@ -201,6 +201,7 @@ public class SupplierProductRelationDAO {
             e.printStackTrace();
         }
     }
+
     public boolean relationExists(Product product, Supplier supplier) {
         try (Session session = HibernateUtil.getSessionFactory().openSession()) {
             String hql = "SELECT count(*) FROM SupplierProductRelation spr WHERE spr.product = :product AND spr.supplier = :supplier";

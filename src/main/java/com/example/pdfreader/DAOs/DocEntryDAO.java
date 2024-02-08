@@ -161,9 +161,10 @@ public class DocEntryDAO {
     }
 
     public List<DocEntry> getDocEntriesByProductMasterCode(String masterCode) {
-        List<DocEntry> docEntries = null;
+        List<DocEntry> docEntries = new ArrayList<>();
         try (Session session = sessionFactory.openSession()) {
-            String hql = "FROM DocEntry DE WHERE DE.product.master = :masterCode";
+            // Ensure the correct path to access the master code of the product associated with a DocEntry
+            String hql = "FROM DocEntry DE WHERE DE.product.invmaster = :masterCode";
             Query<DocEntry> query = session.createQuery(hql, DocEntry.class);
             query.setParameter("masterCode", masterCode);
             docEntries = query.list();

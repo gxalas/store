@@ -2,6 +2,7 @@ package com.example.pdfreader.Controllers;
 
 import com.example.pdfreader.Controllers.States.SuppliersConfigState;
 import com.example.pdfreader.DAOs.*;
+import com.example.pdfreader.DTOs.ProductCompleteDTO;
 import com.example.pdfreader.DTOs.ProductWithSupplierCount;
 import com.example.pdfreader.DTOs.SupplierWithProductCount;
 import com.example.pdfreader.Entities.Attributes.StoreBasedAttributes;
@@ -10,19 +11,15 @@ import com.example.pdfreader.Entities.Product;
 import com.example.pdfreader.Entities.Supplier;
 import com.example.pdfreader.HelloController;
 import com.example.pdfreader.Helpers.MyTask;
-import com.example.pdfreader.Helpers.MyTaskState;
 import com.example.pdfreader.Helpers.SupplierProductRelation;
 import com.example.pdfreader.MyCustomEvents.DBError.ErrorEventManager;
 import com.example.pdfreader.enums.ABInvoiceTypes;
 import javafx.application.Platform;
-import javafx.beans.Observable;
 import javafx.beans.property.IntegerProperty;
 import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.beans.property.ReadOnlyStringWrapper;
 import javafx.beans.property.SimpleIntegerProperty;
 import javafx.beans.value.ChangeListener;
-import javafx.beans.value.ObservableIntegerValue;
-import javafx.beans.value.ObservableNumberValue;
 import javafx.beans.value.ObservableValue;
 import javafx.collections.FXCollections;
 import javafx.collections.ListChangeListener;
@@ -43,11 +40,11 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 public class SuppliersConfigView extends ChildController{
-    public TableView<ProductWithSupplierCount> productsTable = new TableView<>();
-    private final ObservableList<ProductWithSupplierCount> obsProductsTable = FXCollections.observableArrayList();
+    public TableView<ProductCompleteDTO> productsTable = new TableView<>();
+    private final ObservableList<ProductCompleteDTO> obsProductsTable = FXCollections.observableArrayList();
     public Text txtNumOfProducts;
-    private List<ProductWithSupplierCount>  allProductsWithCountsList;
-    private List<ProductWithSupplierCount> departmentProductsWithCountList;
+    private List<ProductCompleteDTO>  allProductsWithCountsList;
+    private List<ProductCompleteDTO> departmentProductsWithCountList;
     public Button btnAddSupp;
     public Button btnLink;
     public Button btnUnlink;
@@ -61,29 +58,12 @@ public class SuppliersConfigView extends ChildController{
     public ComboBox<String> cbFamily;
     private final ObservableList<String> obsDeptOptions = FXCollections.observableArrayList();
     private final ObservableList<String> obsFamilyOptions = FXCollections.observableArrayList();
-    //private MyTask loadProductsTask = loadProductsWithSuppliersCountTask();
-    //private final MyTask loadSuppliersTask = loadSuppliersWithProductCountTask();
     private  boolean listen = true;
-    private final IntegerProperty finishedTasks = new SimpleIntegerProperty(); // we are waiting for both task to finish before
-    @Override
-    public void initialize(HelloController hc) {
-        super.parentDelegate = hc;
-        finishedTasks.set(0);
-        parentDelegate.listManager.addTaskToActiveList(
-                "loading the products",
-                "loading the products here",
-                loadProductsWithSuppliersCountTask());
-        //parentDelegate.listManager.getActiveTasksList().add(0, loadProductsTask);
-        parentDelegate.listManager.addTaskToActiveList(
-                "loading suppliers",
-                "loading the suppliers",
-                loadSuppliersWithProductCountTask()
-        );
-        //parentDelegate.listManager.getActiveTasksList().add(0, loadSuppliersTask);
-
-        finishedTasks.addListener(new ChangeListener<Number>() {
-            @Override
-            public void changed(ObservableValue<? extends Number> observableValue, Number number, Number t1) {
+    private final IntegerProperty finishedTasks = new SimpleIntegerProperty(0); // we are waiting for both task to finish before
+    private final ChangeListener<Number> fetchingTaskCompletedCounter = new ChangeListener<Number>() {
+        @Override
+        public void changed(ObservableValue<? extends Number> observableValue, Number number, Number t1) {
+            if(t1!=null){
                 if (t1.intValue()==2&&parentDelegate.suppliersConfigState==null){
                     Platform.runLater(()->{
                         System.out.println("- - - - - - initing combo buttons - - - - - -  ");
@@ -91,19 +71,25 @@ public class SuppliersConfigView extends ChildController{
                     });
                 }
             }
-        });
-
-        obsProductsTable.addListener(new ListChangeListener<ProductWithSupplierCount>() {
-            @Override
-            public void onChanged(Change<? extends ProductWithSupplierCount> change) {
-                txtNumOfProducts.setText("products :"+productsTable.getItems().size());
-            }
-        });
+        }
+    };
+    private final ListChangeListener<ProductCompleteDTO> updTxtOfCountingProducts = new ListChangeListener<ProductCompleteDTO>() {
+        @Override
+        public void onChanged(Change<? extends ProductCompleteDTO> change) {
+            txtNumOfProducts.setText("products :"+productsTable.getItems().size());
+        }
+    };
+    @Override
+    public void initialize(HelloController hc) {
+        super.parentDelegate = hc;
 
         initProductsTable();
         initSuppsTable();
-        initCBDepts();
+        initCBDeptsLogic();
         initButtons();
+
+        loadProducts();
+        loadSuppliers();
 
     }
 
@@ -111,11 +97,15 @@ public class SuppliersConfigView extends ChildController{
 
     @Override
     public void addMyListeners() {
+        finishedTasks.addListener(fetchingTaskCompletedCounter);
+        obsProductsTable.addListener(updTxtOfCountingProducts);
 
     }
 
     @Override
     public void removeListeners(HelloController hc) {
+        finishedTasks.removeListener(fetchingTaskCompletedCounter);
+        obsProductsTable.removeListener(updTxtOfCountingProducts);
 
     }
 
@@ -205,19 +195,18 @@ public class SuppliersConfigView extends ChildController{
         });
 
         btnLink.setOnAction(event -> {
-            Product selectedProduct = productsTable.getSelectionModel().getSelectedItem().getProduct();
+            ProductCompleteDTO selectedProduct = productsTable.getSelectionModel().getSelectedItem();
             Supplier selectedSupplier = tableSupps.getSelectionModel().getSelectedItem().getSupplier();
 
             if (selectedProduct != null && selectedSupplier != null) {
-
                 SupplierProductRelationDAO relationDao = new SupplierProductRelationDAO();
-                if (!relationDao.relationExists(selectedProduct, selectedSupplier)) {
+                if (!relationDao.relationExists(selectedProduct.getProduct(), selectedSupplier)) {
                     // Create and save the new relation
-                    SupplierProductRelation newRelation = new SupplierProductRelation(selectedProduct, selectedSupplier);
+                    SupplierProductRelation newRelation = new SupplierProductRelation(selectedProduct.getProduct(), selectedSupplier);
                     relationDao.save(newRelation);
 
                     // Update the product's supplier count in the table
-                    updateProductInTable(selectedProduct);
+                    updateProductInTable(selectedProduct.getProduct());
                     updateSupplierInTable(selectedSupplier);
                 } else {
                     // Show message that the relation already exists
@@ -230,7 +219,7 @@ public class SuppliersConfigView extends ChildController{
         });
 
         btnUnlink.setOnAction(event->{
-            ProductWithSupplierCount selectedProductWithCount = productsTable.getSelectionModel().getSelectedItem();
+            ProductCompleteDTO selectedProductWithCount = productsTable.getSelectionModel().getSelectedItem();
             SupplierWithProductCount selectedSupplierWithCount = tableSupps.getSelectionModel().getSelectedItem();
 
             if (selectedProductWithCount != null && selectedSupplierWithCount != null) {
@@ -364,14 +353,18 @@ public class SuppliersConfigView extends ChildController{
                     assignSuppliersAndUpdateRelations();
                     return null;
                 });
+                /*
+
+                */
                 MyTask loadProducts = loadProductsWithSuppliersCountTask();
+
                 MyTask loadSuppliers = loadSuppliersWithProductCountTask();
 
                 loadProducts.addEventHandler(WorkerStateEvent.WORKER_STATE_SUCCEEDED, new EventHandler<WorkerStateEvent>() {
                     @Override
                     public void handle(WorkerStateEvent workerStateEvent) {
-                        if(!obsDeptOptions.isEmpty()){
-                            Platform.runLater(()->{
+                        if (!obsDeptOptions.isEmpty()) {
+                            Platform.runLater(() -> {
                                 cbDepts.getSelectionModel().select(0);
                             });
                         }
@@ -410,10 +403,8 @@ public class SuppliersConfigView extends ChildController{
                // }
             }
         });
-
-
     }
-    private void initCBDepts() {
+    private void initCBDeptsLogic() {
         cbDepts.setItems(obsDeptOptions);
         cbFamily.setItems(obsFamilyOptions);
 
@@ -423,15 +414,18 @@ public class SuppliersConfigView extends ChildController{
                 System.out.println("- - - - on cbDept change - - - - - - :::"+t1);
                 if(t1!=null){
                     if (t1.compareTo("all") == 0) {
+                        //if(!allProductsWithCountsList.isEmpty())
                         obsProductsTable.setAll(allProductsWithCountsList);
                         obsFamilyOptions.clear();
                     } else {
-                        List<ProductWithSupplierCount> selection = new ArrayList<>();
-                        for (ProductWithSupplierCount pwc : allProductsWithCountsList) {
-                            if (!pwc.getProduct().getStoreBasedAttributes().isEmpty()) {
-                                if (pwc.getProduct().getStoreBasedAttributes().get(0).getDepartment().compareTo(t1) == 0) {
-                                    selection.add(pwc);
-                                }
+                        List<ProductCompleteDTO> selection = new ArrayList<>();
+                        for (ProductCompleteDTO pwc : allProductsWithCountsList) {
+                            if (!pwc.getStoreBasedAttributesMap().isEmpty()) {
+                                pwc.getStoreBasedAttributesMap().values().forEach(sba->{
+                                    if(sba.getDepartment().compareTo(t1)==0){
+                                        selection.add(pwc);
+                                    }
+                                });
                             }
                         }
                         departmentProductsWithCountList = selection;
@@ -445,9 +439,12 @@ public class SuppliersConfigView extends ChildController{
 
                     }
                 }
+
+
+
+
             }
         });
-
 
         cbFamily.getSelectionModel().selectedItemProperty().addListener(new ChangeListener<String>() {
             @Override
@@ -463,17 +460,15 @@ public class SuppliersConfigView extends ChildController{
                 }
                 System.out.println("- - - - - - - CBFamily triggered - - - - - - - :::::"+t1);
 
-                List<ProductWithSupplierCount> selection = new ArrayList<>();
+                List<ProductCompleteDTO> selection = new ArrayList<>();
                 //System.out.println("t1 not null");
                 if (t1.compareTo("all") == 0) {
                     //System.out.println("t1 all");
                     obsProductsTable.setAll(departmentProductsWithCountList);
                 } else {
-                    //System.out.println("t1 not all");
-
-                    for (ProductWithSupplierCount pwc : departmentProductsWithCountList) {
-                        if (!pwc.getProduct().getStoreBasedAttributes().isEmpty()) {
-                            if (pwc.getProduct().getStoreBasedAttributes().get(0).getFamily().compareTo(t1) == 0) {
+                    for (ProductCompleteDTO pwc : departmentProductsWithCountList) {
+                        if (!pwc.getStoreBasedAttributesMap().isEmpty()) {
+                            if (pwc.getStoreBasedAttributesMap().values().stream().toList().get(0).getFamily().compareTo(t1) == 0) {
                                 selection.add(pwc);
                             }
                         }
@@ -485,12 +480,12 @@ public class SuppliersConfigView extends ChildController{
         });
 
     }
-    private void loadDepartmentChoices(ObservableList<ProductWithSupplierCount>products){
+    private void loadDepartmentChoices(ObservableList<ProductCompleteDTO>products){
         obsDeptOptions.clear();
         ArrayList<String> tempChoices = new ArrayList<>();
         tempChoices.add("all");
-        for(ProductWithSupplierCount pwc:products){
-            for(StoreBasedAttributes sba : pwc.getProduct().getStoreBasedAttributes()){
+        for(ProductCompleteDTO pwc:products){
+            for(StoreBasedAttributes sba : pwc.getStoreBasedAttributesMap().values()){
                 if(!tempChoices.contains(sba.getDepartment())){
                     tempChoices.add(sba.getDepartment());
                 }
@@ -498,11 +493,11 @@ public class SuppliersConfigView extends ChildController{
         }
         obsDeptOptions.setAll(tempChoices);
     }
-    public void loadFamilyChoices(List<ProductWithSupplierCount> products){
+    public void loadFamilyChoices(List<ProductCompleteDTO> products){
         ArrayList<String> tempFamilyChoices = new ArrayList<>();
         System.out.println("- - - - loading family choices - - - - - - ");
-        for(ProductWithSupplierCount pwc:products){
-            for(StoreBasedAttributes sba : pwc.getProduct().getStoreBasedAttributes()){
+        for(ProductCompleteDTO pwc:products){
+            for(StoreBasedAttributes sba : pwc.getStoreBasedAttributesMap().values()){
                 if(!tempFamilyChoices.contains(sba.getFamily())){
                     tempFamilyChoices.add(sba.getFamily());
                 }
@@ -520,20 +515,19 @@ public class SuppliersConfigView extends ChildController{
 
     }
     private void initProductsTable() {
-        TableColumn<ProductWithSupplierCount,String> descCol = new TableColumn<>("description");
+        TableColumn<ProductCompleteDTO,String> descCol = new TableColumn<>("description");
         descCol.setCellValueFactory(cellData->{
             String value = cellData.getValue().getProduct().getInvDescription();
             return new ReadOnlyStringWrapper(value);
         });
 
-        TableColumn<ProductWithSupplierCount,Number> suppsCol = new TableColumn<>("suppliers");
+        TableColumn<ProductCompleteDTO,Number> suppsCol = new TableColumn<>("suppliers");
         suppsCol.setCellValueFactory(cellData->{
-            Number n = cellData.getValue().getSupplierCount();
+            Number n = cellData.getValue().getSupplierNames().size();
             return new ReadOnlyObjectWrapper<>(n);
         });
 
-
-        suppsCol.setCellFactory(column -> new TableCell<ProductWithSupplierCount, Number>() {
+        suppsCol.setCellFactory(column -> new TableCell<ProductCompleteDTO, Number>() {
             @Override
             protected void updateItem(Number item, boolean empty) {
                 super.updateItem(item, empty);
@@ -542,7 +536,7 @@ public class SuppliersConfigView extends ChildController{
                     setTooltip(null);
                 } else {
                     setText(item.toString());
-                    Product product = getTableView().getItems().get(getIndex()).getProduct();
+                    Long productId = getTableView().getItems().get(getIndex()).getProduct().getId();
 
                     Tooltip tooltip = new Tooltip();
                     tooltip.setText("Loading...");
@@ -553,7 +547,7 @@ public class SuppliersConfigView extends ChildController{
                         @Override
                         protected List<String> call() {
                             ProductDAO productDao = new ProductDAO();
-                            return productDao.getSupplierNamesForProduct(product.getId());
+                            return productDao.getSupplierNamesForProduct(productId);
                         }
                     };
                     fetchSuppliersTask.setOnSucceeded(event -> {
@@ -565,35 +559,50 @@ public class SuppliersConfigView extends ChildController{
             }
         });
 
-        TableColumn<ProductWithSupplierCount,String> hopeCol = new TableColumn<>("hope");
+        TableColumn<ProductCompleteDTO,String> hopeCol = new TableColumn<>("hope");
         hopeCol.setCellValueFactory(cellData->{
-            if (cellData.getValue().getProduct().getStoreBasedAttributes().isEmpty()){
+            if (cellData.getValue().getStoreBasedAttributesMap().isEmpty()){
                 return new ReadOnlyStringWrapper("-1");
             }
-            String value = cellData.getValue().getProduct().getStoreBasedAttributes().get(0).getHope();
+            String value = cellData.getValue().getStoreBasedAttributesMap().values().stream().toList().get(0).getHope();
             return new ReadOnlyStringWrapper(value);
         });
 
-        TableColumn<ProductWithSupplierCount,String> famCol = new TableColumn<>("family");
+        TableColumn<ProductCompleteDTO,String> famCol = new TableColumn<>("family");
+
+
         famCol.setCellValueFactory(cellData->{
+            List<String> fams = new ArrayList<>();
             //System.out.println(cellData.getValue().getProduct().getStoreBasedAttributes().get(0).getFamily());
-            StringBuilder sb = new StringBuilder();
-            for(StoreBasedAttributes sba:cellData.getValue().getProduct().getStoreBasedAttributes()){
-                if(!sb.isEmpty()){
-                    sb.append("\n");
+
+            cellData.getValue().getStoreBasedAttributesMap().values().forEach(sba->{
+                if(!fams.contains(sba.getFamily())){
+                    fams.add(sba.getFamily());
                 }
-                sb.append(sba.getFamily());
-            }
+            });
+            StringBuilder sb = new StringBuilder();
+            fams.forEach(fam->{
+                sb.append(fam+"\n");
+            });
             return new ReadOnlyStringWrapper(sb.toString());
         });
 
-        TableColumn<ProductWithSupplierCount,Number> departmentCol = new TableColumn<>("department");
+        TableColumn<ProductCompleteDTO,String> departmentCol = new TableColumn<>("department");
         departmentCol.setCellValueFactory(cellData->{
-            Number value = -1;
-            if(!cellData.getValue().getProduct().getStoreBasedAttributes().isEmpty()){
-                value = Integer.parseInt(cellData.getValue().getProduct().getStoreBasedAttributes().get(0).getDepartment().trim());
-            }
-            return new ReadOnlyObjectWrapper<>(value);
+
+            List<String> values = new ArrayList<>();
+            cellData.getValue().getStoreBasedAttributesMap().values().forEach(sba->{
+                if(!values.contains(sba.getDepartment())){
+                    values.add(sba.getDepartment());
+                }
+
+
+            });
+            StringBuilder sb = new StringBuilder();
+            values.forEach(val->{
+                sb.append(val+"\n");
+            });
+            return new ReadOnlyStringWrapper(sb.toString());
         });
 
         productsTable.getColumns().setAll(descCol,suppsCol,hopeCol,famCol,departmentCol);
@@ -747,13 +756,16 @@ public class SuppliersConfigView extends ChildController{
         int updatedCount = productDao.getSupplierCountForProduct(product.getId());
         ProductWithSupplierCount updatedProductWithCount = new ProductWithSupplierCount(product, (long) updatedCount);
 
-        // Find and update the product in the table
-        for (ProductWithSupplierCount pwc : productsTable.getItems()) {
+        /*
+        for (ProductCompleteDTO pwc : productsTable.getItems()) {
             if (pwc.getProduct().getId().equals(product.getId())) {
                 pwc.setSupplierCount(updatedCount);
                 break;
             }
         }
+         */
+        // Find and update the product in the table
+
         productsTable.refresh();
     }
     private void updateSupplierInTable(Supplier supplier) {
@@ -849,6 +861,21 @@ public class SuppliersConfigView extends ChildController{
        // documentDAO.saveAll(allDocuments);
         relationDAO.saveAll(allRelations);
     }
+
+
+    private void loadSuppliers(){
+        parentDelegate.listManager.addTaskToActiveList(
+                "loading suppliers",
+                "loading the suppliers",
+                loadSuppliersWithProductCountTask()
+        );
+    }
+    private void loadProducts(){
+        parentDelegate.listManager.addTaskToActiveList(
+                "loading the products",
+                "loading the products here",
+                loadProductsWithSuppliersCountTask());
+    }
     private MyTask loadSuppliersWithProductCountTask(){
 
         MyTask loadSuppliersWithProductCountTask = new MyTask(()->{
@@ -868,7 +895,6 @@ public class SuppliersConfigView extends ChildController{
         });
         loadSuppliersWithProductCountTask.setMyTitle("Fetching Suppliers");
         loadSuppliersWithProductCountTask.setMyDescription("get all the Suppliers with Product Count");
-
         loadSuppliersWithProductCountTask.addEventHandler(WorkerStateEvent.WORKER_STATE_SUCCEEDED, new EventHandler<WorkerStateEvent>() {
             @Override
             public void handle(WorkerStateEvent event) {
@@ -888,13 +914,29 @@ public class SuppliersConfigView extends ChildController{
                 });
             }
         });
-
         return loadSuppliersWithProductCountTask;
     }
     private MyTask loadProductsWithSuppliersCountTask(){
-
         MyTask loadProductWithSupplierCountTask = new MyTask(()->{
-            List<ProductWithSupplierCount> results = new ArrayList<>();
+            List<ProductCompleteDTO> allCompleteDtos = ProductCompleteDTO.fetchAllProductDetails(HibernateUtil.getEntityManagerFactory().createEntityManager());
+            //allProductsWithCountsList.clear();
+            allProductsWithCountsList= allCompleteDtos;
+            List<ProductCompleteDTO> results = new ArrayList<>();
+            results.addAll(allCompleteDtos);
+            Platform.runLater(()->{
+                loadDepartmentChoices(FXCollections.observableArrayList(results));
+                System.out.println("loaded products with supplier count task "+results.size());
+                obsProductsTable.setAll(results);
+            });
+            return null;
+        });
+        /*
+        MyTask loadProductWithSupplierCountTask = new MyTask(()->{
+            List<ProductCompleteDTO> results = new ArrayList<>();
+
+            List<ProductCompleteDTO> products = new ArrayList<>(ProductCompleteDTO.fetchAllProductDetails(HibernateUtil.getEntityManagerFactory().createEntityManager()));
+
+
             ProductDAO productDao = new ProductDAO();
             List<Object[]> productsWithCounts = productDao.getProductsWithSupplierCount();
 
@@ -904,16 +946,22 @@ public class SuppliersConfigView extends ChildController{
 
             results.addAll(allProductsWithCountsList);
 
-
             Platform.runLater(()->{
                 loadDepartmentChoices(FXCollections.observableArrayList(results));
                 System.out.println("loaded products with supplier count task "+results.size());
                 obsProductsTable.setAll(results);
             });
-
-            //System.out.println("the supp config  page is initing\n the products are "+ allProductsWithCountsList.size() );
             return null;
         });
+
+        */
+
+
+
+
+
+
+
         loadProductWithSupplierCountTask.addEventHandler(WorkerStateEvent.WORKER_STATE_SUCCEEDED, new EventHandler<WorkerStateEvent>() {
             @Override
             public void handle(WorkerStateEvent workerStateEvent) {

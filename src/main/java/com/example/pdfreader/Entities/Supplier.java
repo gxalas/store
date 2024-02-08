@@ -12,8 +12,7 @@ public class Supplier {
     private Long id;
     @Column(name = "name")
     private String name;
-    @OneToMany(mappedBy = "supplier", cascade = CascadeType.REMOVE)
-    private Set<SupplierProductRelation> supplierProductRelations;
+
 
     public Supplier(){}
     public Supplier(String name){
