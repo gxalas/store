@@ -32,7 +32,6 @@ public class ProductSupplierRelationsView extends ChildController{
                 }
                 obsRelations.setAll(temp);
             }
-
         });
 
         TableColumn<SupplierProductRelation,String> productDescCol = new TableColumn<>("description");

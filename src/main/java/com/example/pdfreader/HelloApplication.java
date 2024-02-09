@@ -41,9 +41,10 @@ public class HelloApplication extends Application {
 
         stage.show();
 
-        //mainController.loadController("database-overview-view.fxml");
-        mainController.loadController("import-txts-view.fxml");
+        mainController.loadController("database-overview-view.fxml");
+        //mainController.loadController("import-txts-view.fxml");
         //mainController.loadController("reading-txts-view.fxml");
+        //mainController.loadController("popup/product-score-pu-view.fxml");
 
         /*
          * - settingsTask

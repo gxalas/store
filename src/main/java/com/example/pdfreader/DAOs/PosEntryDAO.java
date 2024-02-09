@@ -3,6 +3,7 @@ package com.example.pdfreader.DAOs;
 import com.example.pdfreader.Entities.Product;
 import com.example.pdfreader.PosEntry;
 import com.example.pdfreader.enums.StoreNames;
+import jakarta.persistence.TemporalType;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 import org.hibernate.StatelessSession;
@@ -11,6 +12,8 @@ import org.hibernate.cfg.Configuration;
 import org.hibernate.exception.ConstraintViolationException;
 import org.hibernate.query.Query;
 
+import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
@@ -163,6 +166,26 @@ public class PosEntryDAO {
             logger.info("Session closed");
         }
     }
+
+    public List<PosEntry> findEntriesByProductAndDateRange(Product product, Date endDate, int daysBack) {
+        // Convert endDate to LocalDate for calculation
+        LocalDate localEndDate = endDate.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
+
+        // Calculate start date by subtracting daysBack from endDate
+        LocalDate localStartDate = localEndDate.minusDays(daysBack);
+
+        // Convert back to Date object for query
+        Date startDate = Date.from(localStartDate.atStartOfDay(ZoneId.systemDefault()).toInstant());
+
+        // Construct and execute the query
+        List<PosEntry> entries = HibernateUtil.getEntityManagerFactory().createEntityManager().createQuery("SELECT p FROM PosEntry p WHERE p.product = :product AND p.date BETWEEN :startDate AND :endDate", PosEntry.class)
+                .setParameter("product", product)
+                .setParameter("startDate", startDate, TemporalType.DATE)
+                .setParameter("endDate", endDate, TemporalType.DATE)
+                .getResultList();
+
+        return entries;
+    }
     public Date getMinimumDate() {
         try (Session session = HibernateUtil.getSessionFactory().openSession()) {
             return session.createQuery("SELECT MIN(pe.date) FROM PosEntry pe", Date.class)
@@ -182,6 +205,5 @@ public class PosEntryDAO {
             return null;
         }
     }
-
 
 }

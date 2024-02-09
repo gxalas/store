@@ -66,6 +66,7 @@
                               <Menu mnemonicParsing="false" text="Results">
                                 <items>
                                   <MenuItem fx:id="actResultsOverview" mnemonicParsing="false" text="Overview" />
+                                    <MenuItem fx:id="actProductScore" mnemonicParsing="false" text="Product Scores" />
                                 </items>
                               </Menu>
                             <Menu mnemonicParsing="false" text="Help">

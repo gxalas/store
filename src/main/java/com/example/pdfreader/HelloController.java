@@ -64,6 +64,7 @@ public class HelloController {
     public DoubleProperty percentOfTracing = new SimpleDoubleProperty(0.0);
     public ListManager listManager;
     public SplitPane splitPane;
+
     private boolean tracingActive = false;
     @FXML
     public MenuItem actSaveFile;
@@ -91,6 +92,7 @@ public class HelloController {
     public MenuItem actFilterInvoices;
     public MenuItem actProductSuppliers;
     public MenuItem actSuppOverview;
+    public MenuItem actProductScore;
     public DirectoryChooser directoryChooser = new DirectoryChooser();
     @FXML
     public AnchorPane parentContainer;
@@ -477,6 +479,7 @@ public class HelloController {
         actImportTxts.setOnAction(actionEvent -> loadController("import-txts-view.fxml"));
         actProductSuppliers.setOnAction(actionEvent -> loadController("product-supplier-relations.fxml"));
         actSuppOverview.setOnAction(actionEvent -> loadController("supplier-overview.fxml"));
+        actProductScore.setOnAction(actionEvent -> loadController("product-score-view.fxml"));
 
 
     }
