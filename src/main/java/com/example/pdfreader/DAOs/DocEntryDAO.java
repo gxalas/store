@@ -5,6 +5,8 @@ import com.example.pdfreader.DocEntry;
 import com.example.pdfreader.Entities.Document;
 import com.example.pdfreader.Entities.Product;
 import com.example.pdfreader.Helpers.SupplierProductRelation;
+import jakarta.persistence.TemporalType;
+import jakarta.persistence.TypedQuery;
 import org.hibernate.HibernateException;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
@@ -25,7 +27,7 @@ public class DocEntryDAO {
     static {
         try {
             Configuration configuration = new Configuration().configure();
-            sessionFactory = configuration.buildSessionFactory();
+            sessionFactory = HibernateUtil.getSessionFactory();
         } catch (Throwable ex) {
             throw new ExceptionInInitializerError(ex);
         }
@@ -162,7 +164,7 @@ public class DocEntryDAO {
 
     public List<DocEntry> getDocEntriesByProductMasterCode(String masterCode) {
         List<DocEntry> docEntries = new ArrayList<>();
-        try (Session session = sessionFactory.openSession()) {
+        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
             // Ensure the correct path to access the master code of the product associated with a DocEntry
             String hql = "FROM DocEntry DE WHERE DE.product.invmaster = :masterCode";
             Query<DocEntry> query = session.createQuery(hql, DocEntry.class);
@@ -173,6 +175,20 @@ public class DocEntryDAO {
             // Handle exception
         }
         return docEntries;
+    }
+
+    public List<DocEntry> findDocEntriesByProductAndDateRange(Long productId, Date startDate, Date endDate) {
+        String jpql = "SELECT de FROM DocEntry de " +
+                "JOIN de.document doc " +
+                "WHERE de.product.id = :productId " +
+                "AND doc.date BETWEEN :startDate AND :endDate";
+
+        TypedQuery<DocEntry> query = HibernateUtil.getEntityManagerFactory().createEntityManager().createQuery(jpql, DocEntry.class);
+        query.setParameter("productId", productId);
+        query.setParameter("startDate", startDate, TemporalType.DATE);
+        query.setParameter("endDate", endDate, TemporalType.DATE);
+
+        return query.getResultList();
     }
 
     // Additional CRUD methods can be added here as needed.

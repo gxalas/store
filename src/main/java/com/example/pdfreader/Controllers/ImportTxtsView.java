@@ -84,7 +84,9 @@ public class ImportTxtsView extends ChildController{
 
         System.out.println("importing text is here");
         this.parentDelegate = hc;
-        readingTxtFilesLogic();
+        initTables();
+        initButtons();
+        loadContent();
         txtfProducts.setOnAction(new EventHandler<ActionEvent>() {
             @Override
             public void handle(ActionEvent actionEvent) {
@@ -107,7 +109,6 @@ public class ImportTxtsView extends ChildController{
 
     @Override
     public void addMyListeners() {
-
         obsMatchingProducts.addListener(btnVisibilityListener);
         obsAllSbas.addListener(allSbasListener);
         obsAllProducts.addListener(allProductsListener);
@@ -147,19 +148,7 @@ public class ImportTxtsView extends ChildController{
     public void getPreviousState() {
 
     }
-    public void readingTxtFilesLogic(){
 
-
-        initTables();
-        initButtons();
-        loadContent();
-        /*
-
-        */
-
-
-        System.out.println("- - - - -  logic ending - - - ");
-    }
     /*
 
      */

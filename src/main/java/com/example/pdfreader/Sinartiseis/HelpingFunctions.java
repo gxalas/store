@@ -7,6 +7,9 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.LocalDate;
+import java.time.ZoneId;
+import java.util.Date;
 
 public class HelpingFunctions {
     private static Long start;
@@ -50,6 +53,18 @@ public class HelpingFunctions {
                 e.printStackTrace();
             }
         }
+    }
+
+    /*
+    Date and time methods
+     */
+    public static Date convertLocalDateToDate(LocalDate localDate) {
+        // Assuming you want to start the day at the start of the day in the system's default timezone
+        return Date.from(localDate.atStartOfDay(ZoneId.systemDefault()).toInstant());
+    }
+    public static LocalDate convertDateToLocalDate(Date date) {
+        // Convert Date to LocalDate at the system's default timezone
+        return date.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
     }
 
 }

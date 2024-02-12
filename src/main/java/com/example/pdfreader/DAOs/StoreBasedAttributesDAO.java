@@ -167,7 +167,7 @@ public class StoreBasedAttributesDAO {
         return query.getResultList();
     }
     public List<Product> getProductsByBarcodes(List<String> barcodes) {
-        EntityManager entityManager = getEntityManager();
+        EntityManager entityManager = HibernateUtil.getEntityManagerFactory().createEntityManager();
         try {
             TypedQuery<StoreBasedAttributes> query = entityManager.createQuery(
                     "SELECT sba FROM StoreBasedAttributes sba " +

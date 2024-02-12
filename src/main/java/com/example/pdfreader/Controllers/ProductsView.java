@@ -152,10 +152,12 @@ public class ProductsView extends ChildController{
     }
     @Override
     public void addMyListeners() {
+        tableProducts.getSelectionModel().selectedItemProperty().addListener(productsChangeListener);
 
     }
     @Override
     public void removeListeners(HelloController hc) {
+        tableProducts.getSelectionModel().selectedItemProperty().removeListener(productsChangeListener);
 
     }
     @Override
@@ -255,7 +257,7 @@ public class ProductsView extends ChildController{
                 masterCol,docCounterCol,numHopesCol,hopeCol);
         tableProducts.setItems(obsProducts);
 
-        tableProducts.getSelectionModel().selectedItemProperty().addListener(productsChangeListener);
+
     }
 
     private void initDocEntries(){
