@@ -10,26 +10,29 @@ import com.example.pdfreader.MyCustomEvents.Example.CustomEvent;
 import com.example.pdfreader.MyCustomEvents.Example.CustomEventListener;
 import com.example.pdfreader.MyCustomEvents.Example.EventManager;
 import com.example.pdfreader.PosEntry;
+import com.example.pdfreader.Sinartiseis.HelpingFunctions;
 import com.example.pdfreader.TypesOfDocuments.ABUsualInvoice;
 import com.example.pdfreader.enums.StoreNames;
 import javafx.application.Platform;
-import javafx.beans.property.IntegerProperty;
 import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.beans.property.ReadOnlyStringWrapper;
-import javafx.beans.property.SimpleIntegerProperty;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
 import javafx.collections.FXCollections;
+import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
-import javafx.concurrent.WorkerStateEvent;
+import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
 import javafx.fxml.FXML;
+import javafx.scene.Node;
 import javafx.scene.chart.LineChart;
 import javafx.scene.chart.NumberAxis;
 import javafx.scene.chart.XYChart;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.input.MouseEvent;
+import javafx.scene.input.ScrollEvent;
+import javafx.util.Callback;
 import javafx.util.StringConverter;
 
 import java.math.BigDecimal;
@@ -77,12 +80,83 @@ public class ResultsView extends ChildController{
     private double xMousePosition = 0.0;
     private double yMousePosition = 0.0;
     private Tooltip lastTooltip = new Tooltip();
+    private final ChangeListener<String> handleStoreChange = new ChangeListener<String>() {
+        @Override
+        public void changed(ObservableValue<? extends String> observableValue, String s, String t1) {
+            getTheDataFromDB();
+        }
+    };
+    private final ChangeListener<Integer> handleYearChange = new ChangeListener<Integer>() {
+        @Override
+        public void changed(ObservableValue<? extends Integer> observableValue, Integer integer, Integer t1) {
+            getTheDataFromDB();
+        }
+    };
+    private final EventHandler<MouseEvent> mousePressedOnLineChart = new EventHandler<MouseEvent>() {
+        @Override
+        public void handle(MouseEvent mouseEvent) {
+            xMousePosition = mouseEvent.getX();
+            yMousePosition = mouseEvent.getY();
+            lastXMousePosition = xMousePosition;
+            lastYMousePosition = yMousePosition;
+        }
+    };
+    private final EventHandler<MouseEvent> onMouseDraggedOnLineChart = new EventHandler<MouseEvent>() {
+        @Override
+        public void handle(MouseEvent mouseEvent) {
+            double xTranslationDistance = mouseEvent.getX() - lastXMousePosition;
+            double yTranslationDistance = mouseEvent.getY() - lastYMousePosition;
+            lastXMousePosition = mouseEvent.getX();
+            lastYMousePosition = mouseEvent.getY();
 
-    //----- new attempt
+            double xAxisScaleFactor = ResultsView.this.getScaleFactorForXAxis();
+            double yAxisScaleFactor = ResultsView.this.getScaleFactorForYAxis(); // Implement this method
 
-    private IntegerProperty maxMinPosEntriesCounter = new SimpleIntegerProperty();
-    private IntegerProperty maxMinDocumentCounter = new SimpleIntegerProperty();
-    private IntegerProperty maxMinCounter = new SimpleIntegerProperty();
+            double deltaX = xTranslationDistance * xAxisScaleFactor;
+            double deltaY = yTranslationDistance * yAxisScaleFactor;
+
+            xAxis.setLowerBound(xAxis.getLowerBound() - deltaX);
+            xAxis.setUpperBound(xAxis.getUpperBound() - deltaX);
+
+            yAxis.setLowerBound(yAxis.getLowerBound() + deltaY); // Notice the + sign for Y-axis
+            yAxis.setUpperBound(yAxis.getUpperBound() + deltaY);
+        }
+    };
+    private final EventHandler<ScrollEvent> scrollHandleOnLineChart = new EventHandler<ScrollEvent>() {
+        @Override
+        public void handle(ScrollEvent scrollEvent) {
+            if (scrollEvent.getDeltaY() == 0) {
+                return;
+            }
+            double scaleFactor = (scrollEvent.getDeltaY() > 0) ? 1.1 : 0.9;
+            ResultsView.this.zoom(scaleFactor);
+        }
+    };
+    private final EventHandler<ActionEvent> btnToggleHandle = new EventHandler<ActionEvent>() {
+        @Override
+        public void handle(ActionEvent actionEvent) {
+            if (seriesPosSales.getNode().visibleProperty().get()) {
+                seriesPosSales.getNode().setVisible(false);
+                seriesInvoices.getNode().setVisible(false);
+                for (XYChart.Data<Number, Number> data : seriesPosSales.getData()) {
+                    data.getNode().setVisible(false);
+                }
+                for (XYChart.Data<Number, Number> data : seriesInvoices.getData()) {
+                    data.getNode().setVisible(false);
+                }
+            } else {
+                seriesPosSales.getNode().setVisible(true);
+                seriesInvoices.getNode().setVisible(true);
+                for (XYChart.Data<Number, Number> data : seriesPosSales.getData()) {
+                    data.getNode().setVisible(true);
+                }
+                for (XYChart.Data<Number, Number> data : seriesInvoices.getData()) {
+                    data.getNode().setVisible(true);
+                }
+            }
+        }
+    };
+
 
 
 
@@ -100,142 +174,37 @@ public class ResultsView extends ChildController{
     @Override
     public void initialize(HelloController hc) {
         super.parentDelegate = hc;
-        //testingFutures();
         initCbs();
         initTableResults();
         initLineChart();
-        initZoomingListeners();
 
-        TableColumn<String,String> textCol = new TableColumn<>("text");
-        textCol.setCellValueFactory(celData->{
-            return new ReadOnlyStringWrapper(celData.getValue());
-        });
-        tableNullDates.setItems(obsTextNullDates);
-        tableNullDates.getColumns().setAll(textCol);
-
-
-
-        startGettingDates();
-        addMaxMinListeners();
+        initNullEntriesTable();
+        getMaxAndMinDates();
 
         // Adjust thread pool size as needed
 
     }
 
-    private void addMaxMinListeners(){
-        maxMinPosEntriesCounter.addListener(new ChangeListener<Number>() {
-            @Override
-            public void changed(ObservableValue<? extends Number> observableValue, Number number, Number t1) {
-                if (t1.intValue()==2){
-                    maxMinPosEntriesCounter.set(0);
-                    maxMinCounter.set(maxMinCounter.intValue()+1);
-                    //add method for fetching
-                }
-            }
-        });
-
-        maxMinDocumentCounter.addListener(new ChangeListener<Number>() {
-            @Override
-            public void changed(ObservableValue<? extends Number> observableValue, Number number, Number t1) {
-                if(t1.intValue()==2){
-                    maxMinDocumentCounter.set(0);
-                    maxMinCounter.set(maxMinCounter.intValue()+1);
-                }
-            }
-        });
-
-        maxMinCounter.addListener(new ChangeListener<Number>() {
-            @Override
-            public void changed(ObservableValue<? extends Number> observableValue, Number number, Number t1) {
-                if(maxMinCounter.intValue()==2){
-                    maxMinCounter.set(0);
-                    //set the values for the combo boxes
-                    setObsYears();
-                    setObsStores();
-                    getTheDataFromDB();
-                }
-            }
-        });
-    }
-    private void startGettingDates(){
-        PosEntryDAO posEntryDAO = new PosEntryDAO();
-        MyTask getMinPosDate = new MyTask(()->{
-            minPosDate = posEntryDAO.getMinimumDate();
-            System.out.println("the min pos date: "+minPosDate);
-            return null;
-        });
-        getMinPosDate.addEventHandler(WorkerStateEvent.WORKER_STATE_SUCCEEDED, new EventHandler<WorkerStateEvent>() {
-            @Override
-            public void handle(WorkerStateEvent workerStateEvent) {
-                maxMinPosEntriesCounter.set(maxMinPosEntriesCounter.intValue()+1);
-            }
-        });
-
-        MyTask getMaxPosDate = new MyTask(()->{
-            maxPosDate = posEntryDAO.getMaximumDate();
-            System.out.println("the max pos date: "+maxPosDate);
-            return null;
-        });
-        getMaxPosDate.addEventHandler(WorkerStateEvent.WORKER_STATE_SUCCEEDED, new EventHandler<WorkerStateEvent>() {
-            @Override
-            public void handle(WorkerStateEvent workerStateEvent) {
-                maxMinPosEntriesCounter.set(maxMinPosEntriesCounter.intValue()+1);
-            }
-        });
-
-        DocumentDAO documentDAO = new DocumentDAO();
-
-        MyTask getMinDocDate = new MyTask(()->{
-            minDocDate = documentDAO.getMinimumDate();
-            return null;
-        });
-        getMinDocDate.addEventHandler(WorkerStateEvent.WORKER_STATE_SUCCEEDED, new EventHandler<WorkerStateEvent>() {
-            @Override
-            public void handle(WorkerStateEvent workerStateEvent) {
-                maxMinDocumentCounter.set(maxMinDocumentCounter.intValue()+1);
-            }
-        });
-
-        MyTask getMaxDocDate = new MyTask(()->{
-            maxDocDate = documentDAO.getMaximumDate();
-            return null;
-        });
-        getMaxDocDate.addEventHandler(WorkerStateEvent.WORKER_STATE_SUCCEEDED, new EventHandler<WorkerStateEvent>() {
-            @Override
-            public void handle(WorkerStateEvent workerStateEvent) {
-                maxMinDocumentCounter.set(maxMinDocumentCounter.intValue()+1);
-            }
-        });
-
-        parentDelegate.listManager.addTaskToActiveList(
-                "get Min Pos",
-                "retrieve min pos date",
-                getMinPosDate
-        );
-        parentDelegate.listManager.addTaskToActiveList(
-                "get Max Pos",
-                "retrieve max pos date",
-                getMaxPosDate
-        );
-        parentDelegate.listManager.addTaskToActiveList(
-                "get Min Doc",
-                "retrieve min Doc Date",
-                getMinDocDate
-        );
-        parentDelegate.listManager.addTaskToActiveList(
-                "get Max Doc",
-                "retrieve max Doc Date",
-                getMaxDocDate
-        );
-
-    }
     @Override
     public void addMyListeners() {
         EventManager.getInstance().addEventListener(cel);
+        myLineChart.addEventHandler(MouseEvent.MOUSE_PRESSED,mousePressedOnLineChart);
+        myLineChart.addEventHandler(MouseEvent.MOUSE_DRAGGED,onMouseDraggedOnLineChart);
+        myLineChart.addEventHandler(ScrollEvent.SCROLL,scrollHandleOnLineChart);
+        cbStore.getSelectionModel().selectedItemProperty().addListener(handleStoreChange);
+        cbYear.getSelectionModel().selectedItemProperty().addListener(handleYearChange);
+        btnToggle.addEventHandler(ActionEvent.ACTION,btnToggleHandle);
+
     }
     @Override
     public void removeListeners(HelloController hc) {
         EventManager.getInstance().removeEventListener(cel);
+        cbStore.getSelectionModel().selectedItemProperty().removeListener(handleStoreChange);
+        cbYear.getSelectionModel().selectedItemProperty().removeListener(handleYearChange);
+        myLineChart.removeEventHandler(MouseEvent.MOUSE_PRESSED,mousePressedOnLineChart);
+        myLineChart.removeEventHandler(MouseEvent.MOUSE_DRAGGED,onMouseDraggedOnLineChart);
+        myLineChart.removeEventHandler(ScrollEvent.SCROLL,scrollHandleOnLineChart);
+        btnToggle.removeEventHandler(ActionEvent.ACTION,btnToggleHandle);
     }
 
     @Override
@@ -253,89 +222,98 @@ public class ResultsView extends ChildController{
 
     }
     private void initCbs() {
-        cbStore.getSelectionModel().selectedItemProperty().addListener(new ChangeListener<String>() {
-            @Override
-            public void changed(ObservableValue<? extends String> observableValue, String s, String t1) {
-                getTheDataFromDB();
-            }
-        });
-        cbYear.getSelectionModel().selectedItemProperty().addListener(new ChangeListener<Integer>() {
-            @Override
-            public void changed(ObservableValue<? extends Integer> observableValue, Integer integer, Integer t1) {
-                getTheDataFromDB();
-            }
-        });
-
         cbYear.setItems(obsYears);
         cbStore.setItems(obsStores);
     }
+    public void initTableResults(){
+        TableColumn<SaleSummary,Date> dateCol = new TableColumn<>("Date");
+        dateCol.setCellValueFactory(cellData->{
+            Date date = cellData.getValue().getDate();
+            return new ReadOnlyObjectWrapper<>(date);
+        });
+        dateCol.setCellFactory(new Callback<TableColumn<SaleSummary, Date>, TableCell<SaleSummary, Date>>() {
+            @Override
+            public TableCell<SaleSummary, Date> call(TableColumn<SaleSummary, Date> column) {
+                return new TableCell<>() {
+                    @Override
+                    protected void updateItem(Date item, boolean empty) {
+                        super.updateItem(item, empty);
+                        if (item == null || empty) {
+                            setText(null);
+                        } else {
+                            setText(ABUsualInvoice.format.format(item));
+                        }
+                    }
+                };
+            }
+        });
 
+        TableColumn<SaleSummary,Number> moneyCol = new TableColumn<>("Money");
+        moneyCol.setCellValueFactory(new PropertyValueFactory<>("sum"));
+        tableResults.getColumns().setAll(dateCol,moneyCol);
+        tableResults.setItems(obsSaleSummaries);
+        tableResults.getSortOrder().add(dateCol);
+        tableResults.sort();
+        obsSaleSummaries.addListener(new ListChangeListener<SaleSummary>() {
+            @Override
+            public void onChanged(Change<? extends SaleSummary> change) {
+                Platform.runLater(()->{
+                    tableResults.sort();
+                });
+            }
+        });
+    }
+    private void initNullEntriesTable(){
+        TableColumn<String,String> textCol = new TableColumn<>("text");
+        textCol.setCellValueFactory(celData->{
+            return new ReadOnlyStringWrapper(celData.getValue());
+        });
+        tableNullDates.setItems(obsTextNullDates);
+        tableNullDates.getColumns().setAll(textCol);
+    }
+    public void initLineChart() {
+        xAxis = (NumberAxis) myLineChart.getXAxis();
+        yAxis = (NumberAxis) myLineChart.getYAxis();
+        myLineChart.setTitle("Sale Summary Over Time");
+        myLineChart.getXAxis().setLabel("Date");
+        myLineChart.getYAxis().setLabel("Sale Summary Value");
+        myLineChart.getXAxis().setAutoRanging(false);
+        myLineChart.getYAxis().setAutoRanging(false);
+        xAxis.setTickLabelFormatter(new StringConverter<Number>() {
+            @Override
+            public String toString(Number object) {
+                if (referenceTimestamp == null) return "";
+                return dateFormat.format(new Date(referenceTimestamp + TimeUnit.DAYS.toMillis(object.longValue())));
+            }
+
+            @Override
+            public Number fromString(String string) {
+                try {
+                    return TimeUnit.MILLISECONDS.toDays(dateFormat.parse(string).getTime() - referenceTimestamp);
+                } catch (ParseException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+        });
+        yAxis.setUpperBound(10000);
+        yAxis.setTickUnit(1000);
+
+        Calendar ca = Calendar.getInstance();
+        Calendar cb = Calendar.getInstance();
+        cb.add(Calendar.DATE,20);
+
+        long diff = cb.getTimeInMillis() - ca.getTimeInMillis();
+        yAxis.setTickUnit(diff);
+
+
+        myLineChart.setData(obsSeries);
+        obsSeries.addAll(seriesPosSales,seriesRunningAverage,seriesInvoices,seriesInvoicrsRunningAverage);
+    }
     private void makePosSalesVisible(){
         seriesPosSales.getNode().setVisible(true);
         for(XYChart.Data<Number,Number> data : seriesPosSales.getData()){
             data.getNode().setVisible(true);
         }
-    }
-    private void initZoomingListeners() {
-        btnToggle.setOnAction(e -> {
-            if (seriesPosSales.getNode().visibleProperty().get()){
-                seriesPosSales.getNode().setVisible(false);
-                seriesInvoices.getNode().setVisible(false);
-                for(XYChart.Data<Number,Number> data : seriesPosSales.getData()){
-                    data.getNode().setVisible(false);
-                }
-                for(XYChart.Data<Number,Number> data : seriesInvoices.getData()){
-                    data.getNode().setVisible(false);
-                }
-            } else {
-                seriesPosSales.getNode().setVisible(true);
-                seriesInvoices.getNode().setVisible(true);
-                for(XYChart.Data<Number,Number> data : seriesPosSales.getData()){
-                    data.getNode().setVisible(true);
-                }
-                for(XYChart.Data<Number,Number> data : seriesInvoices.getData()){
-                    data.getNode().setVisible(true);
-                }
-            }
-
-
-
-            //zoom(0.9); // Zoom in (show more detail)
-            //System.out.println("zoom in");
-        });
-        myLineChart.setOnScroll(e -> {
-            if (e.getDeltaY() == 0) {
-                return;
-            }
-
-            double scaleFactor = (e.getDeltaY() > 0) ? 1.1 : 0.9;
-
-            zoom(scaleFactor);
-        });
-        myLineChart.setOnMousePressed(mouseEvent -> {
-            xMousePosition = mouseEvent.getX();
-            yMousePosition = mouseEvent.getY();
-            lastXMousePosition = xMousePosition;
-            lastYMousePosition = yMousePosition;
-        });
-        myLineChart.setOnMouseDragged(mouseEvent -> {
-            double xTranslationDistance = mouseEvent.getX() - lastXMousePosition;
-            double yTranslationDistance = mouseEvent.getY() - lastYMousePosition;
-            lastXMousePosition = mouseEvent.getX();
-            lastYMousePosition = mouseEvent.getY();
-
-            double xAxisScaleFactor = getScaleFactorForXAxis();
-            double yAxisScaleFactor = getScaleFactorForYAxis(); // Implement this method
-
-            double deltaX = xTranslationDistance * xAxisScaleFactor;
-            double deltaY = yTranslationDistance * yAxisScaleFactor;
-
-            xAxis.setLowerBound(xAxis.getLowerBound() - deltaX);
-            xAxis.setUpperBound(xAxis.getUpperBound() - deltaX);
-
-            yAxis.setLowerBound(yAxis.getLowerBound() + deltaY); // Notice the + sign for Y-axis
-            yAxis.setUpperBound(yAxis.getUpperBound() + deltaY);
-        });
     }
     private void calculateInvoicesSeries(){
         int a =0;
@@ -343,7 +321,6 @@ public class ResultsView extends ChildController{
         Date previousDate = new Date();
         BigDecimal dateSum = new BigDecimal(0);
 
-        //calculating the date sums
         XYChart.Series<Number, Number> tempSeries = new XYChart.Series<>();
         XYChart.Series<Number, Number> tempRunSeries = new XYChart.Series<>();
 
@@ -382,16 +359,7 @@ public class ResultsView extends ChildController{
                     tempRunSeries.getData().add(dataAvg);
                     fifoQueue.poll();
                 }
-
-                // Attach an event handler to the data point
-                // Inside the listener for the node property
-                // Add data to series with event handlers
-                //addListenerToPoint(data);
-
-                //tempPos.getData().add(data);
-                //seriesPosSales.getData().add(data);
             }
-            //updateReferenceTimestamp(sortedSummaries);
         } else {
             Calendar calD = Calendar.getInstance();
             calD.set(cbYear.getValue(),Calendar.JANUARY,0);
@@ -444,10 +412,11 @@ public class ResultsView extends ChildController{
                 long daysBetween = ChronoUnit.DAYS.between(lastDate, sumiDate);
                 if (daysBetween >1){
                     System.out.println("We are missing a date !!! - - - - - - - - --- - - "+sumi.getDate());
+                    LocalDate finalLastDate = lastDate;
                     Platform.runLater(()->{
-                        obsTextNullDates.add("we are missing "+sumi.getDate());
+                        obsTextNullDates.add("we are missing "+ (finalLastDate.datesUntil(sumiDate).toList().size()-1)
+                                +" date at "+HelpingFunctions.convertDateToLocalDate(sumi.getDate()).minusDays(1));
                     });
-
                 }
                 lastDate = sumiDate;
 
@@ -492,87 +461,48 @@ public class ResultsView extends ChildController{
 
     }
     private void addListenerToPoint(XYChart.Data<Number,Number> data){
-        data.nodeProperty().addListener((observable, oldValue, newNode) -> {
-            if (newNode != null) {
-                newNode.setOnMouseEntered(mouseEvent -> {
-                    // Hide the last tooltip before showing a new one
-                    if (lastTooltip.isShowing()) {
-                        lastTooltip.hide();
-                    }
-
-                    Date date = numericToDate(data.getXValue().longValue());
-                    Number value = data.getYValue();
-                    lastTooltip = new Tooltip("Date: " + dateFormat.format(date) + "\nValue: " + value);
-
-                    // Install and show the tooltip near the cursor
-                    Tooltip.install(newNode, lastTooltip);
-                    lastTooltip.show(newNode, mouseEvent.getScreenX(), mouseEvent.getScreenY() + 15);
-                });
-
-                newNode.setOnMouseExited(mouseEvent -> {
-                    // Hide and uninstall the tooltip when the mouse leaves the node
-                    if (lastTooltip.isShowing()) {
-                        lastTooltip.hide();
-                    }
-                    Tooltip.uninstall(newNode, lastTooltip);
-                });
-
-                // Add a listener to the scene property of the node
-                newNode.sceneProperty().addListener((sceneObservable, oldScene, newScene) -> {
-                    if (newScene != null) {
-                        // Add event filter to the new scene
-                        newScene.addEventFilter(MouseEvent.MOUSE_CLICKED, event -> {
-                            if (lastTooltip != null && lastTooltip.isShowing()) {
-                                lastTooltip.hide();
-                            }
-                        });
-                    }
-                });
-            }
-        });
-    }
-    public void initLineChart() {
-        xAxis = (NumberAxis) myLineChart.getXAxis();
-        yAxis = (NumberAxis) myLineChart.getYAxis();
-        myLineChart.setTitle("Sale Summary Over Time");
-        myLineChart.getXAxis().setLabel("Date");
-        myLineChart.getYAxis().setLabel("Sale Summary Value");
-        myLineChart.getXAxis().setAutoRanging(false);
-        myLineChart.getYAxis().setAutoRanging(false);
-        //myLineChart.getYAxis().rang
-
-        xAxis.setTickLabelFormatter(new StringConverter<Number>() {
+        data.nodeProperty().addListener(new ChangeListener<Node>() {
             @Override
-            public String toString(Number object) {
-                if (referenceTimestamp == null) return "";
-                return dateFormat.format(new Date(referenceTimestamp + TimeUnit.DAYS.toMillis(object.longValue())));
-            }
+            public void changed(ObservableValue<? extends Node> observable, Node oldValue, Node newNode) {
+                if (newNode != null) {
+                    newNode.setOnMouseEntered(mouseEvent -> {
+                        // Hide the last tooltip before showing a new one
+                        if (lastTooltip.isShowing()) {
+                            lastTooltip.hide();
+                        }
 
-            @Override
-            public Number fromString(String string) {
-                try {
-                    return TimeUnit.MILLISECONDS.toDays(dateFormat.parse(string).getTime() - referenceTimestamp);
-                } catch (ParseException e) {
-                    throw new RuntimeException(e);
+                        Date date = ResultsView.this.numericToDate(data.getXValue().longValue());
+                        Number value = data.getYValue();
+                        lastTooltip = new Tooltip("Date: " + dateFormat.format(date) + "\nValue: " + value);
+
+                        // Install and show the tooltip near the cursor
+                        Tooltip.install(newNode, lastTooltip);
+                        lastTooltip.show(newNode, mouseEvent.getScreenX(), mouseEvent.getScreenY() + 15);
+                    });
+
+                    newNode.setOnMouseExited(mouseEvent -> {
+                        // Hide and uninstall the tooltip when the mouse leaves the node
+                        if (lastTooltip.isShowing()) {
+                            lastTooltip.hide();
+                        }
+                        Tooltip.uninstall(newNode, lastTooltip);
+                    });
+                    // Add a listener to the scene property of the node
+                    newNode.sceneProperty().addListener((sceneObservable, oldScene, newScene) -> {
+                        if (newScene != null) {
+                            // Add event filter to the new scene
+                            newScene.addEventFilter(MouseEvent.MOUSE_CLICKED, event -> {
+                                if (lastTooltip != null && lastTooltip.isShowing()) {
+                                    lastTooltip.hide();
+                                }
+                            });
+                        }
+                    });
                 }
             }
         });
-        yAxis.setUpperBound(10000);
-        yAxis.setTickUnit(1000);
-
-        Calendar ca = Calendar.getInstance();
-        Calendar cb = Calendar.getInstance();
-        cb.add(Calendar.DATE,20);
-
-        long diff = cb.getTimeInMillis() - ca.getTimeInMillis();
-        yAxis.setTickUnit(diff);
-
-
-        myLineChart.setData(obsSeries);
-
-
-        obsSeries.addAll(seriesPosSales,seriesRunningAverage,seriesInvoices,seriesInvoicrsRunningAverage);
     }
+
     private double getScaleFactorForXAxis() {
         // Get the width of the chart in pixels
         double axisLength = myLineChart.getWidth();
@@ -592,8 +522,6 @@ public class ResultsView extends ChildController{
     private void updateReferenceTimestamp() {
         Calendar calRef = Calendar.getInstance();
         calRef.set(cbYear.getValue(),Calendar.JANUARY,0);
-        //SaleSummary earliestSummary = sortedSummaries.get(0); // Assuming sortedSummaries is sorted by date
-        //referenceTimestamp = earliestSummary.getDate().getTime();
         referenceTimestamp = calRef.getTime().getTime();
     }
     private void zoom(double scaleFactor) {
@@ -628,37 +556,139 @@ public class ResultsView extends ChildController{
         long millisSinceReference = TimeUnit.DAYS.toMillis(numeric);
         return new Date(referenceTimestamp + millisSinceReference);
     }
-    public void initTableResults(){
-        TableColumn<SaleSummary,Date> dateCol = new TableColumn<>("Date");
-        dateCol.setCellValueFactory(cellData->{
-            Date date = cellData.getValue().getDate();
-            return new ReadOnlyObjectWrapper<>(date);
-        });
-        dateCol.setCellFactory(column -> new TableCell<>() {
-            @Override
-            protected void updateItem(Date item, boolean empty) {
-                super.updateItem(item, empty);
-                if (item == null || empty) {
-                    setText(null);
-                } else {
-                    setText(ABUsualInvoice.format.format(item));
-                }
+    public void setObsYears(){
+        System.out.println("setting years");
+        obsYears.clear();
+        boolean posDates = true;
+        boolean invDates = true;
+        Date minDate, maxDate;
+        if (minPosDate == null || maxPosDate ==null){
+            System.out.println(" coundn't get min and max dates for pos entries");
+            posDates = false;
+        }
+        if (maxDocDate == null || minDocDate ==null){
+            System.out.println(" coundn't get min and max dates for documents");
+            invDates = false;
+        }
+        if(posDates!=invDates){
+            if(posDates){
+                minDate = minPosDate;
+                maxDate = maxPosDate;
+            } else {
+                minDate = minDocDate;
+                maxDate = maxDocDate;
             }
+        } else if(!posDates){
+            return;
+        } else {
+            if(minDocDate.before(minPosDate)){
+                minDate = minDocDate;
+            } else {
+                minDate = minPosDate;
+            }
+
+            if(maxDocDate.before(maxPosDate)){
+                maxDate = maxDocDate;
+            } else {
+                maxDate = maxPosDate;
+            }
+        }
+
+        Calendar calMin = Calendar.getInstance();
+        Calendar calMax = Calendar.getInstance();
+        calMin.setTime(minDate);
+        calMax.setTime(maxDate);
+        ArrayList<Integer> choices =  new ArrayList<>();
+
+        int minYear = calMin.get(Calendar.YEAR);
+        int maxYear = calMax.get(Calendar.YEAR);
+        System.out.println("min year "+minYear+", max year "+maxYear);
+        for (int i=minYear;i<maxYear+1;i++){
+            choices.add(i);
+        }
+        Platform.runLater(()->{
+            cbYear.getSelectionModel().selectedItemProperty().removeListener(handleYearChange);
+            obsYears.setAll(choices);
+            cbYear.getSelectionModel().select(0);
+            cbYear.getSelectionModel().selectedItemProperty().addListener(handleYearChange);
+        });
+    }
+    public void setObsStores (){
+        Platform.runLater(()->{
+            cbStore.getSelectionModel().selectedItemProperty().removeListener(handleStoreChange);
+            obsStores.setAll(StoreNames.stringValues());
+            if(!obsStores.isEmpty()){
+                cbStore.getSelectionModel().select(0);
+            }
+            cbStore.getSelectionModel().selectedItemProperty().addListener(handleStoreChange);
+        });
+    }
+    private void getMaxAndMinDates(){
+
+        MyTask fetchDates = new MyTask(()->null);
+
+        fetchDates.setTaskLogic(()->{
+            CompletableFuture<Void> getMinPosDate = CompletableFuture.runAsync(()->{
+                PosEntryDAO posEntryDAO = new PosEntryDAO();
+                minPosDate = posEntryDAO.getMinimumDate();
+                Platform.runLater(()->{
+                    fetchDates.setMyDescription(fetchDates.getMyDescription()+"\ngot min pos");
+                });
+
+                //System.out.println("the min pos date: "+minPosDate);
+            });
+
+            CompletableFuture<Void> getMaxPosDate = CompletableFuture.runAsync(()->{
+                PosEntryDAO posEntryDAO = new PosEntryDAO();
+                maxPosDate = posEntryDAO.getMaximumDate();
+                Platform.runLater(()->{
+                    fetchDates.setMyDescription(fetchDates.getMyDescription()+"\ngot max pos");
+                });
+                //System.out.println("the max pos date: "+maxPosDate);
+            });
+
+            CompletableFuture<Void> getMinDocDate = CompletableFuture.runAsync(()->{
+                DocumentDAO documentDAO = new DocumentDAO();
+                minDocDate = documentDAO.getMinimumDate();
+                Platform.runLater(()->{
+                    fetchDates.setMyDescription(fetchDates.getMyDescription()+"\ngot min doc");
+                });
+
+            });
+
+            CompletableFuture<Void> getMaxDocDate = CompletableFuture.runAsync(()->{
+                DocumentDAO documentDAO = new DocumentDAO();
+                maxDocDate = documentDAO.getMaximumDate();
+                Platform.runLater(()->{
+                    fetchDates.setMyDescription(fetchDates.getMyDescription()+"\ngot max doc");
+                });
+            });
+
+            CompletableFuture<Void> gettingDates = CompletableFuture.allOf(getMinPosDate,getMaxPosDate,getMinDocDate,getMaxDocDate);
+
+            gettingDates.thenRun(()->{
+                if(minPosDate==null||maxPosDate==null||minDocDate==null||maxDocDate==null){
+                    System.out.println("one of the dates is null");
+                    return;
+                }
+                System.out.println("setting the obs years");
+                setObsYears();
+                System.out.println("set the obs stores");
+                setObsStores();
+                System.out.println("getting the data from the db");
+                getTheDataFromDB();
+            });
+            return null;
         });
 
-        TableColumn<SaleSummary,Number> moneyCol = new TableColumn<>("Money");
-        moneyCol.setCellValueFactory(new PropertyValueFactory<>("sum"));
-
-
-        tableResults.getColumns().setAll(dateCol,moneyCol);
-        tableResults.setItems(obsSaleSummaries);
+        parentDelegate.listManager.addTaskToActiveList(
+                "getting dates",
+                "getting min and max dates",
+                fetchDates
+        );
     }
-    /*
-    initializing the combo boxes
-    and retrieving the initial data
-     */
-
     public void getTheDataFromDB(){
+        System.out.println("getting the data from db started");
         MyTask loadDataTask = new MyTask(()-> null);
 
         loadDataTask.setTaskLogic(()->{
@@ -731,7 +761,7 @@ public class ResultsView extends ChildController{
             CompletableFuture<Void> combinedFuture = CompletableFuture.allOf(loadingPosEntries, loadingDocuments);
 
             combinedFuture.thenRun(() -> {
-                System.out.println("everything ended");
+                System.out.println("everything ended "+Thread.currentThread().getName());
                 Platform.runLater(()->{
                     cbStore.setDisable(false);
                     cbYear.setDisable(false);
@@ -769,70 +799,5 @@ public class ResultsView extends ChildController{
                 "testing the future",
                 loadDataTask
         );
-    }
-    public void setObsYears(){
-        System.out.println("setting years");
-        obsYears.clear();
-        boolean posDates = true;
-        boolean invDates = true;
-        Date minDate, maxDate;
-        if (minPosDate == null || maxPosDate ==null){
-            System.out.println(" coundn't get min and max dates for pos entries");
-            posDates = false;
-        }
-        if (maxDocDate == null || minDocDate ==null){
-            System.out.println(" coundn't get min and max dates for documents");
-            invDates = false;
-        }
-        if(posDates!=invDates){
-            if(posDates){
-                minDate = minPosDate;
-                maxDate = maxPosDate;
-            } else {
-                minDate = minDocDate;
-                maxDate = maxDocDate;
-            }
-        } else if(!posDates){
-            return;
-        } else {
-            if(minDocDate.before(minPosDate)){
-                minDate = minDocDate;
-            } else {
-                minDate = minPosDate;
-            }
-
-            if(maxDocDate.before(maxPosDate)){
-                maxDate = maxDocDate;
-            } else {
-                maxDate = maxPosDate;
-            }
-        }
-
-        Calendar calMin = Calendar.getInstance();
-        Calendar calMax = Calendar.getInstance();
-        calMin.setTime(minDate);
-        calMax.setTime(maxDate);
-        ArrayList<Integer> choices =  new ArrayList<>();
-
-        int minYear = calMin.get(Calendar.YEAR);
-        int maxYear = calMax.get(Calendar.YEAR);
-        System.out.println("min year "+minYear+", max year "+maxYear);
-        for (int i=minYear;i<maxYear+1;i++){
-            choices.add(i);
-        }
-        Platform.runLater(()->{
-            obsYears.setAll(choices);
-            cbYear.getSelectionModel().select(0);
-        });
-    }
-    public void setObsStores (){
-        obsStores.setAll(StoreNames.stringValues());
-        if(!obsStores.isEmpty()){
-            cbStore.getSelectionModel().select(0);
-        }
-    }
-
-    private void futureGettingDates(){
-
     }
 }

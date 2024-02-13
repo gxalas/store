@@ -3,6 +3,7 @@ package com.example.pdfreader.DAOs;
 import com.example.pdfreader.Entities.Product;
 import com.example.pdfreader.PosEntry;
 import com.example.pdfreader.enums.StoreNames;
+import jakarta.persistence.NoResultException;
 import jakarta.persistence.TemporalType;
 import jakarta.persistence.TypedQuery;
 import org.hibernate.Session;
@@ -179,8 +180,11 @@ public class PosEntryDAO {
     }
     public Date getMinimumDate() {
         try (Session session = HibernateUtil.getSessionFactory().openSession()) {
-            return session.createQuery("SELECT MIN(pe.date) FROM PosEntry pe", Date.class)
-                    .getSingleResult();
+            try {
+                return session.createQuery("SELECT MIN(pe.date) FROM PosEntry pe", Date.class).getSingleResult();
+            } catch (NoResultException e) {
+                return null; // Return null or handle appropriately when no data is found
+            }
         } catch (Exception e) {
             e.printStackTrace();
             return null;
