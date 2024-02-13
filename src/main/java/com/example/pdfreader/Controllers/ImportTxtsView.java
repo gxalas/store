@@ -542,11 +542,17 @@ public class ImportTxtsView extends ChildController{
                         if(!t1.getBarcodes().isEmpty()){
                             StoreBasedAttributesDAO storeBasedAttributesDAO = new StoreBasedAttributesDAO();
                             List<Product> products = storeBasedAttributesDAO.getProductsByBarcodes(t1.getBarcodes());
-                            obsMatchingProducts.setAll(products);
+                            Platform.runLater(()->{
+                                obsMatchingProducts.setAll(products);
+                            });
+
                             return null;
                         }
                     }
-                    obsMatchingProducts.clear();
+                    Platform.runLater(()->{
+                        obsMatchingProducts.clear();
+                    });
+
                     return null;
                 });
                 loadProducts.addEventHandler(WorkerStateEvent.WORKER_STATE_FAILED, new EventHandler<WorkerStateEvent>() {

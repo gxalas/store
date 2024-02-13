@@ -656,7 +656,11 @@ public class FilterInvoicesView extends ChildController{
         //qEntryDescription.setCellValueFactory(new PropertyValueFactory<>("description"));
 
         TableColumn<DocEntry,String> qEntryMaster = new TableColumn<>("master");
-        qEntryMaster.setCellValueFactory(new PropertyValueFactory<>("productMaster"));
+        qEntryMaster.setCellValueFactory(cellData->{
+            String m = cellData.getValue().getMaster();
+            return new ReadOnlyStringWrapper(m);
+        });
+        //qEntryMaster.setCellValueFactory(new PropertyValueFactory<>("productMaster"));
 
         //qEntryEan.setCellValueFactory(new PropertyValueFactory<>("lastEan"));
 

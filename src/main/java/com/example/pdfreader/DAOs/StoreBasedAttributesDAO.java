@@ -13,28 +13,16 @@ import org.hibernate.cfg.Configuration;
 import java.util.*;
 
 public class StoreBasedAttributesDAO {
-    private static SessionFactory sessionFactory;
 
 
-    private EntityManager getEntityManager() {
-        return HibernateUtil.getSessionFactory().createEntityManager();
-        //return sessionFactory.createEntityManager();
-    }
 
-    static {
-        try {
-            //Configuration configuration = new Configuration().configure();
-            //sessionFactory = configuration.buildSessionFactory();
-            sessionFactory = HibernateUtil.getSessionFactory();
-        } catch (Throwable ex) {
-            throw new ExceptionInInitializerError(ex);
-        }
-    }
+
+
     public StoreBasedAttributesDAO() {
     }
 
     public void saveSBAs(List<StoreBasedAttributes> sbas) {
-        EntityManager entityManager = getEntityManager();
+        EntityManager entityManager = HibernateUtil.getEntityManagerFactory().createEntityManager();
         EntityTransaction transaction = entityManager.getTransaction();
         try {
             transaction.begin();
@@ -148,7 +136,7 @@ public class StoreBasedAttributesDAO {
 
     // Method to fetch all StoreBasedAttributes with no Product set
     public List<StoreBasedAttributes> getStoreBasedAttributesWithNoProduct() {
-        TypedQuery<StoreBasedAttributes> query = getEntityManager().createQuery(
+        TypedQuery<StoreBasedAttributes> query = HibernateUtil.getEntityManagerFactory().createEntityManager().createQuery(
                 "SELECT s FROM StoreBasedAttributes s WHERE s.product IS NULL", StoreBasedAttributes.class);
         return query.getResultList();
     }
@@ -167,8 +155,9 @@ public class StoreBasedAttributesDAO {
         return query.getResultList();
     }
     public List<Product> getProductsByBarcodes(List<String> barcodes) {
-        EntityManager entityManager = HibernateUtil.getEntityManagerFactory().createEntityManager();
-        try {
+        List<Product> products = new ArrayList<>();
+
+        try (EntityManager entityManager = HibernateUtil.getEntityManagerFactory().createEntityManager()) {
             TypedQuery<StoreBasedAttributes> query = entityManager.createQuery(
                     "SELECT sba FROM StoreBasedAttributes sba " +
                             "JOIN sba.barcodes barcode " +
@@ -176,17 +165,17 @@ public class StoreBasedAttributesDAO {
             query.setParameter("barcodes", barcodes);
 
             List<StoreBasedAttributes> storeBasedAttributesList = query.getResultList();
+            Set<Product> productSet = new HashSet<>();
 
-            Set<Product> products = new HashSet<>();
             for (StoreBasedAttributes sba : storeBasedAttributesList) {
                 if (sba.getProduct() != null) {
-                    products.add(sba.getProduct());
+                    productSet.add(sba.getProduct());
                 }
             }
-            return new ArrayList<>(products);
-        } finally {
-            entityManager.close();
-        }
+            products.addAll(productSet);
+        } // EntityManager is automatically closed here
+
+        return products;
     }
     public List<StoreBasedAttributes> getStoreBasedAttributesByProduct(Product product) {
         TypedQuery<StoreBasedAttributes> query = HibernateUtil.getEntityManagerFactory().createEntityManager().createQuery(

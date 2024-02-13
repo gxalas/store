@@ -662,9 +662,9 @@ public class SuppliersConfigView extends ChildController{
         tableSupps.setItems(obsSuppliers);
     }
     private void reloadSuppliersTable(SupplierDAO supplierDao){
-        List<Object[]> suppliersWithCounts = supplierDao.getSuppliersWithProductCount();
+        List<SupplierWithProductCount> suppliersWithCounts = supplierDao.getSuppliersWithProductCount();
         List<SupplierWithProductCount> supplierWithCountsList = suppliersWithCounts.stream()
-                .map(objects -> new SupplierWithProductCount((Supplier) objects[0], ((Long) objects[1]).intValue()))
+                .map(objects -> new SupplierWithProductCount(objects.getSupplier(), objects.getProductCount()))
                 .collect(Collectors.toList());
 
         obsSuppliers.setAll(supplierWithCountsList);
@@ -881,10 +881,10 @@ public class SuppliersConfigView extends ChildController{
         MyTask loadSuppliersWithProductCountTask = new MyTask(()->{
             List<SupplierWithProductCount> resultList = new ArrayList<>();
             SupplierDAO supplierDao = new SupplierDAO();
-            List<Object[]> suppliersWithCounts = supplierDao.getSuppliersWithProductCount();
+            List<SupplierWithProductCount> suppliersWithCounts = supplierDao.getSuppliersWithProductCount();
 
             List<SupplierWithProductCount> supplierWithCountsList = suppliersWithCounts.stream()
-                    .map(objects -> new SupplierWithProductCount((Supplier) objects[0], ((Long) objects[1]).intValue()))
+                    .map(objects -> new SupplierWithProductCount(objects.getSupplier(), objects.getProductCount()))
                     .toList();
 
             resultList.addAll(supplierWithCountsList);

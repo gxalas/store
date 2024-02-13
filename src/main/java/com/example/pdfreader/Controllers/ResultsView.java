@@ -40,6 +40,7 @@ import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
@@ -60,7 +61,7 @@ public class ResultsView extends ChildController{
     private XYChart.Series<Number, Number> seriesPosSales = new XYChart.Series<>();
     private XYChart.Series<Number, Number> seriesRunningAverage = new XYChart.Series<>(); //2
     private XYChart.Series<Number,Number> seriesInvoicrsRunningAverage = new XYChart.Series<>();
-    private IntegerProperty taskCounter = new SimpleIntegerProperty();
+    //private IntegerProperty taskCounter = new SimpleIntegerProperty();
     private Date minPosDate;
     private Date maxPosDate;
     private Date minDocDate;
@@ -99,11 +100,11 @@ public class ResultsView extends ChildController{
     @Override
     public void initialize(HelloController hc) {
         super.parentDelegate = hc;
+        //testingFutures();
         initCbs();
         initTableResults();
         initLineChart();
         initZoomingListeners();
-        addLineChartListener();
 
         TableColumn<String,String> textCol = new TableColumn<>("text");
         textCol.setCellValueFactory(celData->{
@@ -113,8 +114,9 @@ public class ResultsView extends ChildController{
         tableNullDates.getColumns().setAll(textCol);
 
 
-        addMaxMinListeners();
+
         startGettingDates();
+        addMaxMinListeners();
 
         // Adjust thread pool size as needed
 
@@ -150,10 +152,7 @@ public class ResultsView extends ChildController{
                     //set the values for the combo boxes
                     setObsYears();
                     setObsStores();
-                    Platform.runLater(()->{
-                        getTheDataFromDB();
-                    });
-
+                    getTheDataFromDB();
                 }
             }
         });
@@ -230,14 +229,10 @@ public class ResultsView extends ChildController{
         );
 
     }
-
-
     @Override
     public void addMyListeners() {
         EventManager.getInstance().addEventListener(cel);
-
     }
-
     @Override
     public void removeListeners(HelloController hc) {
         EventManager.getInstance().removeEventListener(cel);
@@ -257,35 +252,29 @@ public class ResultsView extends ChildController{
     public void getPreviousState() {
 
     }
-
-    /*
-    when both tasks have ended we begin calculating the series
-     */
-    private void addLineChartListener() {
-        taskCounter.addListener(new ChangeListener<Number>() {
+    private void initCbs() {
+        cbStore.getSelectionModel().selectedItemProperty().addListener(new ChangeListener<String>() {
             @Override
-            public void changed(ObservableValue<? extends Number> observableValue, Number number, Number t1) {
-                System.out.println("the value is "+t1);
-                if(t1.intValue()==2){
-                    cbStore.setDisable(false);
-                    cbYear.setDisable(false);
-                    calculatePosAndRunningAvgSeries();
-                    calculateInvoicesSeries();
-                    myLineChart.layout();
-                } else {
-                    cbStore.setDisable(true);
-                    cbYear.setDisable(true);
-                }
-
+            public void changed(ObservableValue<? extends String> observableValue, String s, String t1) {
+                getTheDataFromDB();
             }
         });
+        cbYear.getSelectionModel().selectedItemProperty().addListener(new ChangeListener<Integer>() {
+            @Override
+            public void changed(ObservableValue<? extends Integer> observableValue, Integer integer, Integer t1) {
+                getTheDataFromDB();
+            }
+        });
+
+        cbYear.setItems(obsYears);
+        cbStore.setItems(obsStores);
     }
+
     private void makePosSalesVisible(){
         seriesPosSales.getNode().setVisible(true);
         for(XYChart.Data<Number,Number> data : seriesPosSales.getData()){
             data.getNode().setVisible(true);
         }
-
     }
     private void initZoomingListeners() {
         btnToggle.setOnAction(e -> {
@@ -346,59 +335,6 @@ public class ResultsView extends ChildController{
 
             yAxis.setLowerBound(yAxis.getLowerBound() + deltaY); // Notice the + sign for Y-axis
             yAxis.setUpperBound(yAxis.getUpperBound() + deltaY);
-        });
-    }
-    private MyTask getPosEntriesFromDb() {
-        return new MyTask(()->{
-            PosEntryDAO posEntryDAO = new PosEntryDAO();
-            //List<PosEntry> posEntryList = posEntryDAO.getAllPosEntries();
-            int year = cbYear.getValue();
-            String store = cbStore.getValue();
-
-
-            List<PosEntry> posEntryList = posEntryDAO.getPosEntriesByYearAndStore(year,store);
-
-
-            HashMap<Date, SaleSummary> salesMap = new HashMap<>();
-
-            for(PosEntry pos : posEntryList){
-                if(salesMap.get(pos.getDate())==null){
-                    salesMap.put(pos.getDate(),new SaleSummary(pos.getDate()));
-                }
-                salesMap.get(pos.getDate()).addValueToSum(pos.money);
-            }
-            Platform.runLater(() -> {
-                obsSaleSummaries.setAll(salesMap.values());
-            });
-            return null;
-        });
-    }
-    private MyTask getInvoicesFromDB(){
-        return new MyTask(()->{
-            CustomEvent event = new CustomEvent("loading invoices");
-            EventManager.getInstance().fireStarting(event);
-
-
-            DocumentDAO documentDAO = new DocumentDAO();
-            //List<Document> documents =
-            int year = cbYear.getValue();
-            String store = cbStore.getValue();
-
-            documentsRetrieved = new ArrayList<>(documentDAO.getDocumentsByYearAndStore(year,store));
-            System.out.println("the docs retrieved count is "+documentsRetrieved.size());
-            documentsRetrieved = (ArrayList<Document>) documentsRetrieved.stream().
-                    sorted(Comparator.comparing(Document::getDate)).
-                    collect(Collectors.toList());
-
-            if(!documentsRetrieved.isEmpty()){
-                SaleSummary refSum = new SaleSummary(documentsRetrieved.get(0).getDate());
-                List<SaleSummary> testList = new ArrayList<>();
-                testList.add(refSum);
-                //updateReferenceTimestamp(testList);
-            }
-
-            EventManager.getInstance().fireEnding(event);
-            return null;
         });
     }
     private void calculateInvoicesSeries(){
@@ -660,8 +596,6 @@ public class ResultsView extends ChildController{
         //referenceTimestamp = earliestSummary.getDate().getTime();
         referenceTimestamp = calRef.getTime().getTime();
     }
-
-
     private void zoom(double scaleFactor) {
         if (referenceTimestamp == null) {
             return; // Safety check to make sure we have referenceTimestamp set
@@ -685,7 +619,6 @@ public class ResultsView extends ChildController{
         // Request layout to take effect of changes
         myLineChart.requestLayout();
     }
-
     private long dateToNumeric(Date date) {
         if (referenceTimestamp == null) return 0;
         long diffInMillies = date.getTime() - referenceTimestamp;
@@ -724,93 +657,118 @@ public class ResultsView extends ChildController{
     initializing the combo boxes
     and retrieving the initial data
      */
-    private void initCbs() {
 
-        cbStore.getSelectionModel().selectedItemProperty().addListener(new ChangeListener<String>() {
-            @Override
-            public void changed(ObservableValue<? extends String> observableValue, String s, String t1) {
-                if(taskCounter.get()==2){
-                    getTheDataFromDB();
-                }
-            }
-        });
-        cbYear.getSelectionModel().selectedItemProperty().addListener(new ChangeListener<Integer>() {
-            @Override
-            public void changed(ObservableValue<? extends Integer> observableValue, Integer integer, Integer t1) {
-                if(taskCounter.get()==2){
-                    getTheDataFromDB();
-                }
-            }
-        });
-        taskCounter.addListener(new ChangeListener<Number>() {
-            @Override
-            public void changed(ObservableValue<? extends Number> observableValue, Number number, Number t1) {
-                if (taskCounter.intValue()==2){
-                    updateReferenceTimestamp();
-                    Calendar cStart = Calendar.getInstance();
-                    cStart.set(cbYear.getValue(),Calendar.JANUARY,0);
-                    Calendar cEnd = Calendar.getInstance();
-                    cEnd.set(cbYear.getValue(),Calendar.DECEMBER,30);
-                    Platform.runLater(()->{
-                        myLineChart.getXAxis().setAutoRanging(false);
-                        xAxis.setLowerBound(dateToNumeric(cStart.getTime()) );
-                        xAxis.setUpperBound(dateToNumeric(cEnd.getTime()));
-                        myLineChart.requestLayout();
-                        makePosSalesVisible();
-                    });
-                }
-            }
-        });
-
-
-        cbYear.setItems(obsYears);
-        cbStore.setItems(obsStores);
-        taskCounter.set(0);
-    }
     public void getTheDataFromDB(){
-        taskCounter.set(0);
-        MyTask loadPosEntries = getPosEntriesFromDb();
-        MyTask loadDocuments = getInvoicesFromDB();
-        loadDocuments.addEventHandler(WorkerStateEvent.WORKER_STATE_FAILED, new EventHandler<WorkerStateEvent>() {
-            @Override
-            public void handle(WorkerStateEvent workerStateEvent) {
-                Throwable exception = workerStateEvent.getSource().getException();
-                if (exception != null) {
-                    System.out.println("Task failed due to: " + exception.getMessage());
-                    exception.printStackTrace(); // For detailed error trace
-                } else {
-                    System.out.println("Task failed for an unknown reason.");
+        MyTask loadDataTask = new MyTask(()-> null);
+
+        loadDataTask.setTaskLogic(()->{
+
+            CompletableFuture<Void> loadingPosEntries = CompletableFuture.runAsync(() -> {
+                Platform.runLater(()->{
+                    cbStore.setDisable(true);
+                    cbYear.setDisable(true);
+                });
+
+                System.out.println("loading the poses for example");
+                System.out.println("future thread "+Thread.currentThread().getName());
+
+                PosEntryDAO posEntryDAO = new PosEntryDAO();
+                int year = cbYear.getValue();
+                String store = cbStore.getValue();
+
+                List<PosEntry> posEntryList = posEntryDAO.getPosEntriesByYearAndStore(year,store);
+
+                HashMap<Date, SaleSummary> salesMap = new HashMap<>();
+                for(PosEntry pos : posEntryList){
+                    salesMap.computeIfAbsent(pos.getDate(), k -> new SaleSummary(pos.getDate()));
+                    salesMap.get(pos.getDate()).addValueToSum(pos.money);
+                }
+                Platform.runLater(() -> {
+                    obsSaleSummaries.setAll(salesMap.values());
+                    loadDataTask.setMyDescription(loadDataTask.getMyDescription()+"\nloaded pos");
+                });
+                // Task 1 code
+            });
+
+            CompletableFuture<Void> loadingDocuments = CompletableFuture.runAsync(() -> {
+                Platform.runLater(()->{
+                    cbStore.setDisable(true);
+                    cbYear.setDisable(true);
+                });
+
+                System.out.println("loading the documents");
+                System.out.println("future thread "+Thread.currentThread().getName());
+
+                CustomEvent event = new CustomEvent("loading invoices");
+                EventManager.getInstance().fireStarting(event);
+
+
+                DocumentDAO documentDAO = new DocumentDAO();
+                //List<Document> documents =
+                int year = cbYear.getValue();
+                String store = cbStore.getValue();
+
+                documentsRetrieved = new ArrayList<>(documentDAO.getDocumentsByYearAndStore(year,store));
+                System.out.println("the docs retrieved count is "+documentsRetrieved.size());
+                documentsRetrieved = (ArrayList<Document>) documentsRetrieved.stream().
+                        sorted(Comparator.comparing(Document::getDate)).
+                        collect(Collectors.toList());
+
+                if(!documentsRetrieved.isEmpty()){
+                    SaleSummary refSum = new SaleSummary(documentsRetrieved.get(0).getDate());
+                    List<SaleSummary> testList = new ArrayList<>();
+                    testList.add(refSum);
+                    //updateReferenceTimestamp(testList);
                 }
 
-            }
-        });
+                Platform.runLater(()->{
+                    loadDataTask.setMyDescription(loadDataTask.getMyDescription()+"\nloaded docs");
+                    EventManager.getInstance().fireEnding(event);
+                });
+                // Task 2 code
+            });
 
+            CompletableFuture<Void> combinedFuture = CompletableFuture.allOf(loadingPosEntries, loadingDocuments);
 
-        loadPosEntries.addEventHandler(WorkerStateEvent.WORKER_STATE_SUCCEEDED, new EventHandler<WorkerStateEvent>() {
-            @Override
-            public void handle(WorkerStateEvent workerStateEvent) {
-                taskCounter.set(taskCounter.get()+1);
-            }
-        });
+            combinedFuture.thenRun(() -> {
+                System.out.println("everything ended");
+                Platform.runLater(()->{
+                    cbStore.setDisable(false);
+                    cbYear.setDisable(false);
+                    calculatePosAndRunningAvgSeries();
+                    calculateInvoicesSeries();
+                    myLineChart.layout();
+                });
 
-        loadDocuments.addEventHandler(WorkerStateEvent.WORKER_STATE_SUCCEEDED, new EventHandler<WorkerStateEvent>() {
-            @Override
-            public void handle(WorkerStateEvent workerStateEvent) {
-                taskCounter.set(taskCounter.get()+1);
-            }
+                updateReferenceTimestamp();
+                Calendar cStart = Calendar.getInstance();
+                cStart.set(cbYear.getValue(),Calendar.JANUARY,0);
+                Calendar cEnd = Calendar.getInstance();
+                cEnd.set(cbYear.getValue(),Calendar.DECEMBER,30);
+
+                Platform.runLater(()->{
+                    myLineChart.getXAxis().setAutoRanging(false);
+                    xAxis.setLowerBound(dateToNumeric(cStart.getTime()) );
+                    xAxis.setUpperBound(dateToNumeric(cEnd.getTime()));
+                    myLineChart.requestLayout();
+                    makePosSalesVisible();
+                });
+                Platform.runLater(()->{
+                    loadDataTask.setMyDescription(loadDataTask.getMyDescription()+"\ndata loaded");
+                });
+
+                System.out.println("future FINAL thread "+Thread.currentThread().getName());
+                // Code to run after both tasks are complete
+            });
+
+            return null;
         });
 
         parentDelegate.listManager.addTaskToActiveList(
-                "loading Pos Entries",
-                "fetching all pos entries from db",
-                loadPosEntries
+                "future test",
+                "testing the future",
+                loadDataTask
         );
-        parentDelegate.listManager.addTaskToActiveList(
-                "loading Documents",
-                "fetching all the documents from the database",
-                loadDocuments
-        );
-
     }
     public void setObsYears(){
         System.out.println("setting years");
@@ -834,10 +792,7 @@ public class ResultsView extends ChildController{
                 minDate = minDocDate;
                 maxDate = maxDocDate;
             }
-        } else
-
-        if(!posDates){
-
+        } else if(!posDates){
             return;
         } else {
             if(minDocDate.before(minPosDate)){
@@ -875,5 +830,9 @@ public class ResultsView extends ChildController{
         if(!obsStores.isEmpty()){
             cbStore.getSelectionModel().select(0);
         }
+    }
+
+    private void futureGettingDates(){
+
     }
 }

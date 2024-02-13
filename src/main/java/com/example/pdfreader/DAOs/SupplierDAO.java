@@ -1,6 +1,7 @@
 package com.example.pdfreader.DAOs;
 
 
+import com.example.pdfreader.DTOs.SupplierWithProductCount;
 import com.example.pdfreader.Entities.Product;
 import com.example.pdfreader.Entities.Supplier;
 import com.example.pdfreader.Helpers.SupplierProductRelation;
@@ -108,15 +109,24 @@ public class SupplierDAO {
             e.printStackTrace(); // Or handle the exception as you prefer
         }
     }
-    public List<Object[]> getSuppliersWithProductCount() {
+    public List<SupplierWithProductCount> getSuppliersWithProductCount() {
+        List<SupplierWithProductCount> resultList = new ArrayList<>();
         try (Session session = HibernateUtil.getSessionFactory().openSession()) {
-            String hql = "SELECT s, COUNT(spr.product) FROM Supplier s LEFT JOIN SupplierProductRelation spr ON s.id = spr.supplier GROUP BY s";
-            Query<Object[]> query = session.createQuery(hql, Object[].class);
-            return query.getResultList();
+            String sql = "SELECT s.id, COUNT(spr.product_id) " +
+                    "FROM Supplier s LEFT JOIN SupplierProductRelation spr ON s.id = spr.supplier_id " +
+                    "GROUP BY s.id";
+            List<Object[]> queryResults = session.createNativeQuery(sql).getResultList();
+            for (Object[] row : queryResults) {
+                Long supplierId = ((Number) row[0]).longValue();
+                Integer productCount = ((Number) row[1]).intValue();
+                // Fetch the supplier entity based on the id
+                Supplier supplier = session.find(Supplier.class, supplierId);
+                resultList.add(new SupplierWithProductCount(supplier, productCount));
+            }
         } catch (Exception e) {
             e.printStackTrace();
         }
-        return null;
+        return resultList;
     }
     public int getProductCountForSupplier(Supplier supplier) {
         try (Session session = HibernateUtil.getSessionFactory().openSession()) {

@@ -149,25 +149,17 @@ public class DocumentDAO {
         }
     }
     public List<Document> getAllDocuments() {
-        System.out.println("trying to get all documents - * * - - - - - - - ");
-        int parallelismLevel =3;
-        ForkJoinPool customThreadPool = new ForkJoinPool(parallelismLevel);
-        try (Session session = sessionFactory.openSession()) {
+        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
             Query<Document> query = session.createQuery("FROM Document", Document.class);
-            //query.setHint("javax.persistence.fetchgraph", session.getEntityGraph("document.entries.product"));
-            List<Document> documents = customThreadPool.submit(()->query.getResultStream().parallel().
-                    //filter(document -> {Hibernate.initialize(document.getErrorList());return true;}).
-                    collect(Collectors.toList())).get();
-            return documents;
+            List<Document> documents = query.getResultList(); // Fetch documents sequentially
+            // Process documents in parallel if needed, after fetching
+            return documents; // Return the fetched documents
         } catch (Exception e) {
-            System.out.println("there is an error here");
             e.printStackTrace();
             return Collections.emptyList();
         }
     }
     public List<Document> getDocumentsByYearAndStore(int year, String storeName) {
-        int parallelismLevel =3;
-        ForkJoinPool customThreadPool = new ForkJoinPool(parallelismLevel);
         logger.info("Opening session");
         try (Session session = HibernateUtil.getSessionFactory().openSession()) {
             logger.info("Session opened");
@@ -175,14 +167,11 @@ public class DocumentDAO {
             Query<Document> query = session.createQuery(jpql, Document.class);
             query.setParameter("year", year);
             query.setParameter("storeName", StoreNames.getStoreByName(storeName));
-
-
-            //List<Document> docs = query.getResultList();
-            List<Document> docs = customThreadPool.submit(()->query.getResultStream().parallel().collect(Collectors.toList())).get();
+            List<Document> docs = query.getResultList(); // Fetch documents sequentially
             logger.info("Query executed");
-            return docs;
+            return docs; // Return the fetched documents
         } catch (Exception e) {
-            logger.log(Level.SEVERE, "Error in getEntities", e);
+            logger.log(Level.SEVERE, "Error in getDocumentsByYearAndStore", e);
             e.printStackTrace();
             return Collections.emptyList();
         } finally {

@@ -148,9 +148,12 @@ public class PreviewFileView extends ChildController {
             ddao = new DocumentDAO(dbErrorDAO);
             dedao = new DocEntryDAO();
             List<Document> tempDocs = ddao.getAllDocuments();
+            /*
             try (Session session = HibernateUtil.getSessionFactory().openSession()){
                 tempDocs.forEach(document -> Hibernate.initialize(document.getErrorList()));
             }
+             */
+
             Platform.runLater(()->{
                 dbDocuments = tempDocs;
                 viewDocTable.refresh();

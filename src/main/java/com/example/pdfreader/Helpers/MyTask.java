@@ -29,15 +29,6 @@ public class MyTask extends Task<Void> {
             }
         });
 
-
-
-
-
-
-
-
-
-
         // Set the onSucceeded event handler within the constructor
         this.setOnSucceeded(new EventHandler<WorkerStateEvent>() {
             @Override
@@ -102,6 +93,10 @@ public class MyTask extends Task<Void> {
     }
     public Callable<Void> getTaskLogic(){
         return this.taskLogic;
+    }
+
+    public void setTaskLogic(Callable<Void> logic){
+        this.taskLogic = logic;
     }
 
 }
