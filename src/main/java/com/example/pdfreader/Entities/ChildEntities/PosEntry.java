@@ -1,13 +1,11 @@
-package com.example.pdfreader;
+package com.example.pdfreader.Entities.ChildEntities;
 
-import com.example.pdfreader.Entities.Product;
-import com.example.pdfreader.Helpers.ListManager;
-import com.example.pdfreader.Sinartiseis.TextExtractions;
+import com.example.pdfreader.Entities.Main.Product;
 import com.example.pdfreader.TypesOfDocuments.ABUsualInvoice;
 import com.example.pdfreader.enums.StoreNames;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
-import javafx.application.Platform;
+
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.nio.charset.StandardCharsets;

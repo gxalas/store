@@ -1,7 +1,7 @@
-package com.example.pdfreader;
+package com.example.pdfreader.Entities.ChildEntities;
 
-import com.example.pdfreader.Entities.Document;
-import com.example.pdfreader.Entities.Product;
+import com.example.pdfreader.Entities.Main.Document;
+import com.example.pdfreader.Entities.Main.Product;
 import com.example.pdfreader.Sinartiseis.TextExtractions;
 
 import java.util.ArrayList;

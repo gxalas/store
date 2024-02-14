@@ -1,13 +1,12 @@
 package com.example.pdfreader.DAOs;
 
 import com.example.pdfreader.DTOs.DocEntryDTO;
-import com.example.pdfreader.DocEntry;
-import com.example.pdfreader.Entities.Document;
-import com.example.pdfreader.Entities.Product;
+import com.example.pdfreader.Entities.ChildEntities.DocEntry;
+import com.example.pdfreader.Entities.Main.Document;
+import com.example.pdfreader.Entities.Main.Product;
 import com.example.pdfreader.Helpers.SupplierProductRelation;
 import jakarta.persistence.TemporalType;
 import jakarta.persistence.TypedQuery;
-import org.hibernate.HibernateException;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 import org.hibernate.Transaction;

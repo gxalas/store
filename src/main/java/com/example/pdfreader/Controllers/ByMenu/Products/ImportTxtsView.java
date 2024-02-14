@@ -1,12 +1,15 @@
-package com.example.pdfreader.Controllers;
+package com.example.pdfreader.Controllers.ByMenu.Products;
 
+import com.example.pdfreader.Controllers.ChildController;
 import com.example.pdfreader.DAOs.*;
 import com.example.pdfreader.DTOs.ProductWithAttributes;
 import com.example.pdfreader.Entities.Attributes.StoreBasedAttributes;
-import com.example.pdfreader.Entities.Product;
+import com.example.pdfreader.Entities.Main.Product;
+import com.example.pdfreader.Entities.Main.Supplier;
 import com.example.pdfreader.HelloController;
 import com.example.pdfreader.Helpers.MyTask;
-import com.example.pdfreader.PosEntry;
+import com.example.pdfreader.Entities.ChildEntities.PosEntry;
+import com.example.pdfreader.Helpers.SupplierProductRelation;
 import com.example.pdfreader.Sinartiseis.ImportItemAndPosFiles;
 import com.example.pdfreader.enums.StoreNames;
 import javafx.application.Platform;
@@ -23,16 +26,18 @@ import javafx.scene.control.*;
 import javafx.scene.text.Text;
 
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
-public class ImportTxtsView extends ChildController{
+public class ImportTxtsView extends ChildController {
     public TextField txtfProducts = new TextField();
     public Button btnAdd;
     public Button btnMatch;
     public Button btnCalcPos;
     public Button btnLoadTxt;
     public Text txtPosErrors ;
+    public Button btnTest;
     private ObservableList<StoreBasedAttributes> obsAllSbas = FXCollections.observableArrayList();
     private ObservableList<Product> obsAllProducts = FXCollections.observableArrayList();
     public TableView<StoreBasedAttributes> tableSbas;
@@ -87,6 +92,7 @@ public class ImportTxtsView extends ChildController{
         initTables();
         initButtons();
         loadContent();
+
         txtfProducts.setOnAction(new EventHandler<ActionEvent>() {
             @Override
             public void handle(ActionEvent actionEvent) {
@@ -390,6 +396,15 @@ public class ImportTxtsView extends ChildController{
             return new ReadOnlyStringWrapper(result.get());
         });
 
+        TableColumn<StoreBasedAttributes,String> hopeBarcodesCol = new TableColumn<>("hope bars");
+        hopeBarcodesCol.setCellValueFactory(cellData->{
+            StringBuilder sb = new StringBuilder("");
+            cellData.getValue().getHopeBarcodes().forEach(hb->{
+                sb.append(hb+"\n");
+            });
+            return new ReadOnlyStringWrapper(sb.toString());
+        });
+
         TableColumn<StoreBasedAttributes,String> descriptionCol = new TableColumn<>("description");
         descriptionCol.setCellValueFactory(cellData->{
             String d = cellData.getValue().getDescription();
@@ -428,8 +443,14 @@ public class ImportTxtsView extends ChildController{
             }
             return new ReadOnlyStringWrapper(d);
         });
+        TableColumn<StoreBasedAttributes,String> hopeCol = new TableColumn<>("hope");
+        hopeCol.setCellValueFactory(cellData->{
+            String h = cellData.getValue().getHope();
+            return new ReadOnlyStringWrapper(h);
+        });
 
-        tableSbas.getColumns().setAll(barcodeCol,storeCol,descriptionCol,masterCol,conBarsCol,productCol);
+        tableSbas.getColumns().setAll(barcodeCol,hopeCol,storeCol,
+                descriptionCol,masterCol,conBarsCol,hopeBarcodesCol,productCol);
         tableSbas.setItems(obsAllSbasTable);
 
 

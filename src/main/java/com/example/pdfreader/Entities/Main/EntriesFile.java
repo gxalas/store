@@ -1,4 +1,4 @@
-package com.example.pdfreader;
+package com.example.pdfreader.Entities.Main;
 
 import jakarta.persistence.*;
 

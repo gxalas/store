@@ -1,6 +1,7 @@
-package com.example.pdfreader.Controllers;
+package com.example.pdfreader.Controllers.ByMenu.Database;
 
 
+import com.example.pdfreader.Controllers.ChildController;
 import com.example.pdfreader.DAOs.*;
 import com.example.pdfreader.HelloController;
 import com.example.pdfreader.MyCustomEvents.DBError.ErrorEventManager;
@@ -24,7 +25,7 @@ import org.hibernate.SessionFactory;
 import java.util.Date;
 import java.util.List;
 
-public class DatabaseOverviewView extends ChildController{
+public class DatabaseOverviewView extends ChildController {
     public Button btnTest;
     public Button btlLoad;
     public TableView<DBError> tableErrors;

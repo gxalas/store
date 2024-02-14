@@ -1,6 +1,6 @@
 package com.example.pdfreader.Sinartiseis;
 
-import com.example.pdfreader.Entities.Document;
+import com.example.pdfreader.Entities.Main.Document;
 import com.example.pdfreader.HelloController;
 
 import java.io.IOException;

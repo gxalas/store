@@ -2,10 +2,9 @@ package com.example.pdfreader.DAOs;
 
 
 import com.example.pdfreader.DTOs.SupplierWithProductCount;
-import com.example.pdfreader.Entities.Product;
-import com.example.pdfreader.Entities.Supplier;
+import com.example.pdfreader.Entities.Main.Product;
+import com.example.pdfreader.Entities.Main.Supplier;
 import com.example.pdfreader.Helpers.SupplierProductRelation;
-import javafx.collections.ObservableList;
 import org.hibernate.Session;
 import org.hibernate.Transaction;
 import org.hibernate.query.Query;

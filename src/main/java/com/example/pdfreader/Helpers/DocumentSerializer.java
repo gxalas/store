@@ -1,7 +1,7 @@
 package com.example.pdfreader.Helpers;
 
-import com.example.pdfreader.DocEntry;
-import com.example.pdfreader.Entities.Document;
+import com.example.pdfreader.Entities.ChildEntities.DocEntry;
+import com.example.pdfreader.Entities.Main.Document;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.JsonSerializer;
 import com.fasterxml.jackson.databind.SerializerProvider;

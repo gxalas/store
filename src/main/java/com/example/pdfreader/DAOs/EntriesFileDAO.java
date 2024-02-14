@@ -1,6 +1,6 @@
 package com.example.pdfreader.DAOs;
 
-import com.example.pdfreader.EntriesFile;
+import com.example.pdfreader.Entities.Main.EntriesFile;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 import org.hibernate.query.Query;

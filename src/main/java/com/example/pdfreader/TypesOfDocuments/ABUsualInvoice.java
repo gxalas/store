@@ -1,8 +1,8 @@
 package com.example.pdfreader.TypesOfDocuments;
 
-import com.example.pdfreader.DocEntry;
-import com.example.pdfreader.DocLine;
-import com.example.pdfreader.Entities.Document;
+import com.example.pdfreader.Entities.ChildEntities.DocEntry;
+import com.example.pdfreader.Entities.ChildEntities.DocLine;
+import com.example.pdfreader.Entities.Main.Document;
 import com.example.pdfreader.HelloApplication;
 import com.example.pdfreader.HelloController;
 import com.example.pdfreader.Helpers.ListManager;

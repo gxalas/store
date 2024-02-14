@@ -1,10 +1,10 @@
 package com.example.pdfreader.Sinartiseis;
 
-import com.example.pdfreader.Controllers.InvoicesImportView;
+import com.example.pdfreader.Controllers.ByMenu.Invoices.InvoicesImportView;
 import com.example.pdfreader.DAOs.*;
 import com.example.pdfreader.Entities.Attributes.StoreBasedAttributes;
-import com.example.pdfreader.Entities.Document;
-import com.example.pdfreader.Entities.Product;
+import com.example.pdfreader.Entities.Main.Document;
+import com.example.pdfreader.Entities.Main.Product;
 import com.example.pdfreader.HelloController;
 import com.example.pdfreader.Helpers.MyTask;
 import com.example.pdfreader.Helpers.SupplierProductRelation;

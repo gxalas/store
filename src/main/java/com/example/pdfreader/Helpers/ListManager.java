@@ -1,21 +1,15 @@
 package com.example.pdfreader.Helpers;
 
 import com.example.pdfreader.DAOs.*;
-import com.example.pdfreader.Entities.Document;
-import com.example.pdfreader.Entities.Product;
+import com.example.pdfreader.Entities.Main.Document;
 import com.example.pdfreader.MyCustomEvents.DBError.ErrorEventManager;
-import com.example.pdfreader.PosEntry;
+import com.example.pdfreader.Entities.ChildEntities.PosEntry;
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 
 import java.io.File;
 import java.util.*;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-
-import javafx.concurrent.WorkerStateEvent;
-import javafx.event.EventHandler;
 
 public class ListManager {
     private final ObservableList<Document> imported = FXCollections.observableArrayList();

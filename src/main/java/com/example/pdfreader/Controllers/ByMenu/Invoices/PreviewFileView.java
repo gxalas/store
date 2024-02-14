@@ -1,19 +1,17 @@
-package com.example.pdfreader.Controllers;
+package com.example.pdfreader.Controllers.ByMenu.Invoices;
 
+import com.example.pdfreader.Controllers.ChildController;
 import com.example.pdfreader.Controllers.States.PreviewFileViewState;
 import com.example.pdfreader.DAOs.*;
 import com.example.pdfreader.DTOs.DocEntryDTO;
-import com.example.pdfreader.DocEntry;
-import com.example.pdfreader.Entities.Document;
-import com.example.pdfreader.Entities.Product;
-import com.example.pdfreader.Entities.Supplier;
+import com.example.pdfreader.Entities.ChildEntities.DocEntry;
+import com.example.pdfreader.Entities.Main.Document;
+import com.example.pdfreader.Entities.Main.Product;
 import com.example.pdfreader.HelloController;
-import com.example.pdfreader.Helpers.ListManager;
 import com.example.pdfreader.Helpers.MyTask;
 import com.example.pdfreader.MyCustomEvents.DBError.ErrorEventManager;
 import com.example.pdfreader.MyCustomEvents.DocumentsImportedListener;
 import com.example.pdfreader.MyCustomEvents.DocumentsImportedEvent;
-import com.example.pdfreader.Sinartiseis.TextExtractions;
 import com.example.pdfreader.TypesOfDocuments.ABUsualInvoice;
 import javafx.application.Platform;
 import javafx.beans.property.ReadOnlyObjectWrapper;
@@ -39,10 +37,6 @@ import javafx.scene.text.Text;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.rendering.ImageType;
 import org.apache.pdfbox.rendering.PDFRenderer;
-import org.hibernate.Hibernate;
-import org.hibernate.Session;
-import org.hibernate.SessionFactory;
-import org.hibernate.internal.SessionFactoryImpl;
 
 import java.awt.image.BufferedImage;
 import java.io.File;
@@ -53,9 +47,6 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
-import java.util.Objects;
-
-import static com.example.pdfreader.DAOs.HibernateUtil.*;
 
 public class PreviewFileView extends ChildController {
     private final ObservableList<Document> obsMerged = FXCollections.observableArrayList(new ArrayList<>());

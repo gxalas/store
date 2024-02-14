@@ -1,14 +1,13 @@
 package com.example.pdfreader.DAOs;
 
 import com.example.pdfreader.Entities.Attributes.StoreBasedAttributes;
-import com.example.pdfreader.Entities.Product;
+import com.example.pdfreader.Entities.Main.Product;
 import com.example.pdfreader.enums.StoreNames;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.EntityTransaction;
 import jakarta.persistence.PersistenceException;
 import jakarta.persistence.TypedQuery;
 import org.hibernate.SessionFactory;
-import org.hibernate.cfg.Configuration;
 
 import java.util.*;
 

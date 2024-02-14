@@ -1,14 +1,13 @@
-package com.example.pdfreader.Controllers;
+package com.example.pdfreader.Controllers.ByMenu.Products;
 
+import com.example.pdfreader.Controllers.ChildController;
 import com.example.pdfreader.Controllers.States.ProductViewState;
 import com.example.pdfreader.DAOs.*;
 import com.example.pdfreader.DTOs.ProductDTO;
-import com.example.pdfreader.DocEntry;
-import com.example.pdfreader.Entities.Attributes.StoreBasedAttributes;
-import com.example.pdfreader.Entities.Product;
+import com.example.pdfreader.Entities.ChildEntities.DocEntry;
 import com.example.pdfreader.HelloController;
 import com.example.pdfreader.Helpers.MyTask;
-import com.example.pdfreader.PosEntry;
+import com.example.pdfreader.Entities.ChildEntities.PosEntry;
 import com.example.pdfreader.TypesOfDocuments.ABUsualInvoice;
 import com.example.pdfreader.enums.StoreNames;
 import javafx.application.Platform;
@@ -20,10 +19,8 @@ import javafx.beans.value.ObservableValue;
 import javafx.collections.FXCollections;
 import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
-import javafx.concurrent.Task;
 import javafx.concurrent.WorkerStateEvent;
 import javafx.event.ActionEvent;
-import javafx.event.Event;
 import javafx.event.EventHandler;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
@@ -33,7 +30,7 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
-public class ProductsView extends ChildController{
+public class ProductsView extends ChildController {
     private final ObservableList<ProductDTO> obsProducts = FXCollections.observableArrayList();
     private List<ProductDTO> productDtoList = new ArrayList<>();
     private final ObservableList<DocEntry> obsDocEntries = FXCollections.observableArrayList();

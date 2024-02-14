@@ -16,7 +16,6 @@ module com.example.pdfreader {
     requires javafx.media;
     requires jlayer;
 
-
     requires jakarta.persistence;
     requires org.hibernate.orm.core;
     requires java.naming;
@@ -31,14 +30,28 @@ module com.example.pdfreader {
     exports com.example.pdfreader.Interfaces;
     exports com.example.pdfreader.MyCustomEvents;
     exports com.example.pdfreader.Controllers.States;
-    exports com.example.pdfreader.Entities;
+    exports com.example.pdfreader.Entities.ChildEntities;
     exports com.example.pdfreader.Entities.Attributes;
+    exports com.example.pdfreader.Entities.Main;
     exports com.example.pdfreader.DAOs;
     exports com.example.pdfreader.DTOs;
     exports com.example.pdfreader.MyCustomEvents.DBError;
     opens com.example.pdfreader.Controllers to javafx.fxml;
     opens com.example.pdfreader.DAOs to org.hibernate.orm.core;
-    opens com.example.pdfreader.Entities to javafx.fxml,org.hibernate.orm.core;
+    opens com.example.pdfreader.Entities.Main to javafx.fxml,org.hibernate.orm.core;
     opens com.example.pdfreader.Entities.Attributes to org.hibernate.orm.core;
+    opens com.example.pdfreader.Entities.ChildEntities to javafx.fxml,org.hibernate.orm.core;
     opens com.example.pdfreader.Helpers to javafx.fxml, org.hibernate.orm.core;
+    exports com.example.pdfreader.Controllers.ByMenu.Invoices;
+    opens com.example.pdfreader.Controllers.ByMenu.Invoices to javafx.fxml;
+    exports com.example.pdfreader.Controllers.ByMenu.Products;
+    opens com.example.pdfreader.Controllers.ByMenu.Products to javafx.fxml;
+    exports com.example.pdfreader.Controllers.ByMenu.Charts;
+    opens com.example.pdfreader.Controllers.ByMenu.Charts to javafx.fxml;
+    exports com.example.pdfreader.Controllers.ByMenu.Database;
+    opens com.example.pdfreader.Controllers.ByMenu.Database to javafx.fxml;
+    exports com.example.pdfreader.Controllers.ByMenu.Status;
+    opens com.example.pdfreader.Controllers.ByMenu.Status to javafx.fxml;
+    exports com.example.pdfreader.Controllers.ByMenu.Suppliers;
+    opens com.example.pdfreader.Controllers.ByMenu.Suppliers to javafx.fxml;
 }

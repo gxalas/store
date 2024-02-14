@@ -1,7 +1,7 @@
 package com.example.pdfreader.Helpers;
 
-import com.example.pdfreader.DocEntry;
-import com.example.pdfreader.Entities.Document;
+import com.example.pdfreader.Entities.ChildEntities.DocEntry;
+import com.example.pdfreader.Entities.Main.Document;
 import com.example.pdfreader.enums.ABInvoiceTypes;
 import com.example.pdfreader.enums.PromTypes;
 import com.example.pdfreader.enums.StoreNames;
@@ -12,7 +12,6 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 
-import java.io.File;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.text.ParseException;

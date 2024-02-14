@@ -1,14 +1,15 @@
-package com.example.pdfreader.Controllers;
+package com.example.pdfreader.Controllers.ByMenu.Suppliers;
 
+import com.example.pdfreader.Controllers.ChildController;
 import com.example.pdfreader.Controllers.States.SuppliersConfigState;
 import com.example.pdfreader.DAOs.*;
 import com.example.pdfreader.DTOs.ProductCompleteDTO;
 import com.example.pdfreader.DTOs.ProductWithSupplierCount;
 import com.example.pdfreader.DTOs.SupplierWithProductCount;
 import com.example.pdfreader.Entities.Attributes.StoreBasedAttributes;
-import com.example.pdfreader.Entities.Document;
-import com.example.pdfreader.Entities.Product;
-import com.example.pdfreader.Entities.Supplier;
+import com.example.pdfreader.Entities.Main.Document;
+import com.example.pdfreader.Entities.Main.Product;
+import com.example.pdfreader.Entities.Main.Supplier;
 import com.example.pdfreader.HelloController;
 import com.example.pdfreader.Helpers.MyTask;
 import com.example.pdfreader.Helpers.SupplierProductRelation;
@@ -36,13 +37,15 @@ import javafx.util.Callback;
 
 import java.io.*;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-public class SuppliersConfigView extends ChildController{
+public class SuppliersConfigView extends ChildController {
     public TableView<ProductCompleteDTO> productsTable = new TableView<>();
     private final ObservableList<ProductCompleteDTO> obsProductsTable = FXCollections.observableArrayList();
     public Text txtNumOfProducts;
+    public Button btnTest;
     private List<ProductCompleteDTO>  allProductsWithCountsList;
     private List<ProductCompleteDTO> departmentProductsWithCountList;
     public Button btnAddSupp;
@@ -59,26 +62,31 @@ public class SuppliersConfigView extends ChildController{
     private final ObservableList<String> obsDeptOptions = FXCollections.observableArrayList();
     private final ObservableList<String> obsFamilyOptions = FXCollections.observableArrayList();
     private  boolean listen = true;
-    private final IntegerProperty finishedTasks = new SimpleIntegerProperty(0); // we are waiting for both task to finish before
-    private final ChangeListener<Number> fetchingTaskCompletedCounter = new ChangeListener<Number>() {
-        @Override
-        public void changed(ObservableValue<? extends Number> observableValue, Number number, Number t1) {
-            if(t1!=null){
-                if (t1.intValue()==2&&parentDelegate.suppliersConfigState==null){
-                    Platform.runLater(()->{
-                        System.out.println("- - - - - - initing combo buttons - - - - - -  ");
-                        cbDepts.getSelectionModel().select("all");
-                    });
-                }
-            }
-        }
-    };
     private final ListChangeListener<ProductCompleteDTO> updTxtOfCountingProducts = new ListChangeListener<ProductCompleteDTO>() {
         @Override
         public void onChanged(Change<? extends ProductCompleteDTO> change) {
             txtNumOfProducts.setText("products :"+productsTable.getItems().size());
         }
     };
+
+    /**
+     * we have this error
+     *  we probably run into a conflict ΑGRINO GOURMET RISOTTOΤΡΟΥΦA - 200G ΑGRINO GOURMET RISOTTO ΤΡΟΥΦA 200G
+     *  in different stores same product different hope => this results in duplicated product
+     *  it is the only one product that has this problem
+     *  currently we skip that barcode, but technically we have different multiple products created
+     *
+     *  Solution 1 : we don't add the hope barcodes into thw barcodes
+     *  -> when we load a map for the scanner we use the hopes based on the store based attribute
+     *
+     *  1.create the new txt file with barcode to product
+     *  2.load that product supplier relation accordingly
+     *  3. save what is needed
+     * @param hc
+     */
+
+
+
     @Override
     public void initialize(HelloController hc) {
         super.parentDelegate = hc;
@@ -88,8 +96,65 @@ public class SuppliersConfigView extends ChildController{
         initCBDeptsLogic();
         initButtons();
 
-        loadProducts();
-        loadSuppliers();
+        fetchingTheData();
+
+        btnTest.setOnAction(new EventHandler<ActionEvent>() {
+            @Override
+            public void handle(ActionEvent actionEvent) {
+                MyTask myTask = new MyTask(()-> null);
+                myTask.setTaskLogic(()->{
+                    Map<String,Product> barcodeToProduct = new HashMap<>();
+                    Map<Product,List<Supplier>> productToSupplier = new HashMap<>();
+
+                    CompletableFuture<Void> loadSBAs = CompletableFuture.runAsync(()->{
+                        StoreBasedAttributesDAO storeBasedAttributesDAO = new StoreBasedAttributesDAO();
+                        List<StoreBasedAttributes> allSbas = new ArrayList<>(storeBasedAttributesDAO.getAllStoreBasedAttributes());
+
+                        allSbas.forEach(sba->{
+                            if(sba.getProduct()!=null){
+                                sba.getBarcodes().forEach(barcode->{
+                                    if(barcodeToProduct.get(barcode)!=null) {
+                                        if(!sba.getProduct().equals(barcodeToProduct.get(barcode))){
+                                            System.err.println(" we probably run into a conflict "+sba.getProduct().getInvDescription()+" "+barcodeToProduct.get(barcode).getInvDescription());
+                                        }
+                                    } else {
+                                        barcodeToProduct.put(barcode,sba.getProduct());
+                                    }
+                                });
+                            }
+                        });
+                    });
+
+                    CompletableFuture<Void> loadSPRs = CompletableFuture.runAsync(()->{
+                        SupplierProductRelationDAO supplierProductRelationDAO = new SupplierProductRelationDAO();
+                        List<SupplierProductRelation> allSPRs = supplierProductRelationDAO.findAll();
+                        allSPRs.forEach(spr->{
+                            productToSupplier.computeIfAbsent(spr.getProduct(), k -> new ArrayList<Supplier>());
+                            productToSupplier.get(spr.getProduct()).add(spr.getSupplier());
+                        });
+                    });
+                    CompletableFuture<Void> onCompleteLoading = CompletableFuture.allOf(loadSPRs,loadSBAs);
+                    onCompleteLoading.thenRun(()->{
+                        barcodeToProduct.keySet().forEach(barcode->{
+                            if(productToSupplier.get(barcodeToProduct.get(barcode))!=null){
+                                productToSupplier.get(barcodeToProduct.get(barcode)).forEach(supplier->{
+                                    System.out.println("the supplier "+supplier.getName()+" supplies barcode "+barcode);
+                                });
+                            }
+                        });
+                    });
+                    return null;
+                });
+                parentDelegate.listManager.addTaskToActiveList(
+                        "testing new map",
+                        "testing the new map",
+                        myTask
+                );
+            }
+        });
+
+        //loadProducts();
+        //loadSuppliers();
 
     }
 
@@ -97,21 +162,18 @@ public class SuppliersConfigView extends ChildController{
 
     @Override
     public void addMyListeners() {
-        finishedTasks.addListener(fetchingTaskCompletedCounter);
         obsProductsTable.addListener(updTxtOfCountingProducts);
 
     }
 
     @Override
     public void removeListeners(HelloController hc) {
-        finishedTasks.removeListener(fetchingTaskCompletedCounter);
         obsProductsTable.removeListener(updTxtOfCountingProducts);
-
     }
 
     @Override
     public <T extends ChildController> T getControllerObject() {
-        return null;
+        return (T) this;
     }
 
     @Override
@@ -193,7 +255,6 @@ public class SuppliersConfigView extends ChildController{
                 }
             }
         });
-
         btnLink.setOnAction(event -> {
             ProductCompleteDTO selectedProduct = productsTable.getSelectionModel().getSelectedItem();
             Supplier selectedSupplier = tableSupps.getSelectionModel().getSelectedItem().getSupplier();
@@ -217,7 +278,6 @@ public class SuppliersConfigView extends ChildController{
                 // Show error message - no product or supplier selected
             }
         });
-
         btnUnlink.setOnAction(event->{
             ProductCompleteDTO selectedProductWithCount = productsTable.getSelectionModel().getSelectedItem();
             SupplierWithProductCount selectedSupplierWithCount = tableSupps.getSelectionModel().getSelectedItem();
@@ -234,6 +294,72 @@ public class SuppliersConfigView extends ChildController{
             } else {
                 // Show error message if no product or supplier is selected
                 showAlert("Selection Error", "Please select a product and a supplier.");
+            }
+        });
+        btnLoadProms.setOnAction(new EventHandler<ActionEvent>() {
+            @Override
+            public void handle(ActionEvent actionEvent) {
+                SupplierProductRelationDAO supplierProductRelationDAO = new SupplierProductRelationDAO();
+                SupplierDAO suppDao = new SupplierDAO();
+                ProductDAO productDAO = new ProductDAO();
+                int lines = 0;
+
+                // Use try-with-resources to ensure BufferedReader is closed after use
+                try (BufferedReader reader = new BufferedReader(new FileReader("appFiles/Proms/output.txt"))) {
+
+                    // Create maps for suppliers and products for quick lookup
+                    Map<String, Supplier> suppMap = suppDao.findAll().stream()
+                            .collect(Collectors.toMap(Supplier::getName, Function.identity()));
+                    Map<String, Product> productMap = productDAO.getAllProductsAsMap();
+
+                    List<SupplierProductRelation> newRelations = new ArrayList<>();
+                    List<Supplier> newSuppliers = new ArrayList<>();
+                    List<SupplierProductRelation> existingRelations = supplierProductRelationDAO.findAll();
+
+
+                    String line;
+                    while ((line = reader.readLine()) != null) {
+                        lines++;
+                        String[] parts = line.split(",", 2);
+                        String supplierName = parts[0].trim();
+                        String productName = parts[1].trim();
+
+                        Product product = productMap.get(productName);
+                        Supplier supplier = suppMap.get(supplierName);
+                        System.out.println(supplierName+" "+productName);
+
+                        if (product != null) {
+                            if (supplier == null) {
+                                supplier = new Supplier(supplierName);
+                                newSuppliers.add(supplier);
+                                System.out.println("adding supplier name "+supplierName);
+                                suppMap.put(supplierName, supplier);
+                            }
+                            SupplierProductRelation spr =  new SupplierProductRelation(product, supplier);
+                            if (!checkRelation(existingRelations,spr)){
+                                newRelations.add(spr);
+                            }
+                        }
+                    }
+                    System.out.println("the lines are : "+lines);
+                    System.out.println("the new suppliers are : "+newSuppliers.size());
+                    System.out.println("the products are "+productMap.size());
+
+                    // Perform database operations in a transactional scope
+                    try {
+                        supplierProductRelationDAO.saveAllRelations(newRelations, newSuppliers);
+                        reloadSuppliersTable(suppDao); // reload supp table after loading supps from text
+                    } catch (Exception e) {
+                        // Log the exception for debugging purposes
+                        e.printStackTrace();
+                        // Handle the exception, e.g., show an error message to the user
+                    }
+
+                    System.out.println("- - - - - finished - - - - - ");
+                } catch (IOException e) {
+                    e.printStackTrace();
+                    // Handle file reading exceptions, e.g., show an error message
+                }
             }
         });
         btnSaveProm.setOnAction(new EventHandler<ActionEvent>() {
@@ -287,65 +413,6 @@ public class SuppliersConfigView extends ChildController{
                 }
             }
         });
-        btnLoadProms.setOnAction(new EventHandler<ActionEvent>() {
-            @Override
-            public void handle(ActionEvent actionEvent) {
-                SupplierProductRelationDAO supplierProductRelationDAO = new SupplierProductRelationDAO();
-                SupplierDAO suppDao = new SupplierDAO();
-                ProductDAO productDAO = new ProductDAO();
-
-                // Use try-with-resources to ensure BufferedReader is closed after use
-                try (BufferedReader reader = new BufferedReader(new FileReader("appFiles/Proms/output.txt"))) {
-                    // Create maps for suppliers and products for quick lookup
-                    Map<String, Supplier> suppMap = suppDao.findAll().stream()
-                            .collect(Collectors.toMap(Supplier::getName, Function.identity()));
-                    Map<String, Product> productMap = productDAO.getAllProductsAsMap();
-
-                    List<SupplierProductRelation> newRelations = new ArrayList<>();
-                    List<Supplier> newSuppliers = new ArrayList<>();
-                    List<SupplierProductRelation> existingRelations = supplierProductRelationDAO.findAll();
-
-
-                    String line;
-                    while ((line = reader.readLine()) != null) {
-                        String[] parts = line.split(",", 2);
-                        String supplierName = parts[0].trim();
-                        String productName = parts[1].trim();
-
-                        Product product = productMap.get(productName);
-                        Supplier supplier = suppMap.get(supplierName);
-
-                        if (product != null) {
-                            if (supplier == null) {
-                                supplier = new Supplier(supplierName);
-                                newSuppliers.add(supplier);
-                                suppMap.put(supplierName, supplier);
-                            }
-                            SupplierProductRelation spr =  new SupplierProductRelation(product, supplier);
-                            if (!checkRelation(existingRelations,spr)){
-                                newRelations.add(spr);
-                            }
-                        }
-                    }
-
-                    // Perform database operations in a transactional scope
-                    try {
-                        supplierProductRelationDAO.saveAllRelations(newRelations, newSuppliers);
-                        reloadSuppliersTable(suppDao); // reload supp table after loading supps from text
-
-                    } catch (Exception e) {
-                        // Log the exception for debugging purposes
-                        e.printStackTrace();
-                        // Handle the exception, e.g., show an error message to the user
-                    }
-
-                    System.out.println("- - - - - finished - - - - - ");
-                } catch (IOException e) {
-                    e.printStackTrace();
-                    // Handle file reading exceptions, e.g., show an error message
-                }
-            }
-        });
         btnCalculate.setOnAction(new EventHandler<ActionEvent>() {
             @Override
             public void handle(ActionEvent actionEvent) {
@@ -353,39 +420,10 @@ public class SuppliersConfigView extends ChildController{
                     assignSuppliersAndUpdateRelations();
                     return null;
                 });
-                /*
-
-                */
-                MyTask loadProducts = loadProductsWithSuppliersCountTask();
-
-                MyTask loadSuppliers = loadSuppliersWithProductCountTask();
-
-                loadProducts.addEventHandler(WorkerStateEvent.WORKER_STATE_SUCCEEDED, new EventHandler<WorkerStateEvent>() {
-                    @Override
-                    public void handle(WorkerStateEvent workerStateEvent) {
-                        if (!obsDeptOptions.isEmpty()) {
-                            Platform.runLater(() -> {
-                                cbDepts.getSelectionModel().select(0);
-                            });
-                        }
-                    }
-                });
-
-
-
                 calculateTask.addEventHandler(WorkerStateEvent.WORKER_STATE_SUCCEEDED, new EventHandler<WorkerStateEvent>() {
                     @Override
                     public void handle(WorkerStateEvent workerStateEvent) {
-                        parentDelegate.listManager.addTaskToActiveList(
-                                "loading products",
-                                "loading the product results - again",
-                                loadProducts
-                        );
-                        parentDelegate.listManager.addTaskToActiveList(
-                                "loading suppliers",
-                                "loading suppliers",
-                                loadSuppliers
-                        );
+                        fetchingTheData();
                     }
                 });
 
@@ -394,13 +432,6 @@ public class SuppliersConfigView extends ChildController{
                         "calculate task",
                         calculateTask
                 );
-
-                //MyTask duplicated = loadProductsTask;
-               // if(loadProductsTask.getMyState().compareTo(MyTaskState.RUNNING)!=0){
-
-
-
-               // }
             }
         });
     }
@@ -863,122 +894,75 @@ public class SuppliersConfigView extends ChildController{
     }
 
 
-    private void loadSuppliers(){
-        parentDelegate.listManager.addTaskToActiveList(
-                "loading suppliers",
-                "loading the suppliers",
-                loadSuppliersWithProductCountTask()
-        );
-    }
-    private void loadProducts(){
-        parentDelegate.listManager.addTaskToActiveList(
-                "loading the products",
-                "loading the products here",
-                loadProductsWithSuppliersCountTask());
-    }
-    private MyTask loadSuppliersWithProductCountTask(){
 
-        MyTask loadSuppliersWithProductCountTask = new MyTask(()->{
-            List<SupplierWithProductCount> resultList = new ArrayList<>();
-            SupplierDAO supplierDao = new SupplierDAO();
-            List<SupplierWithProductCount> suppliersWithCounts = supplierDao.getSuppliersWithProductCount();
-
-            List<SupplierWithProductCount> supplierWithCountsList = suppliersWithCounts.stream()
-                    .map(objects -> new SupplierWithProductCount(objects.getSupplier(), objects.getProductCount()))
-                    .toList();
-
-            resultList.addAll(supplierWithCountsList);
-            Platform.runLater(()->{
-                obsSuppliers.setAll(resultList);
-            });
-            return null;
-        });
-        loadSuppliersWithProductCountTask.setMyTitle("Fetching Suppliers");
-        loadSuppliersWithProductCountTask.setMyDescription("get all the Suppliers with Product Count");
-        loadSuppliersWithProductCountTask.addEventHandler(WorkerStateEvent.WORKER_STATE_SUCCEEDED, new EventHandler<WorkerStateEvent>() {
-            @Override
-            public void handle(WorkerStateEvent event) {
-                // Additional onSucceeded logic
-                MyTask myTask = (MyTask) event.getSource();
-                System.out.println("a demo method to show how we can access the task attributes from this methods "+myTask.getMyTitle());
-                finishedTasks.set(finishedTasks.get()+1);
-
-            }
-        });
-        loadSuppliersWithProductCountTask.addEventHandler(WorkerStateEvent.WORKER_STATE_FAILED, new EventHandler<WorkerStateEvent>() {
-            @Override
-            public void handle(WorkerStateEvent workerStateEvent) {
-                finishedTasks.set(finishedTasks.get()+1);
+    private void fetchingTheData(){
+        MyTask myTask = new MyTask(()->null);
+        myTask.setTaskLogic(()->{
+            CompletableFuture<Void> fetchingProducts = CompletableFuture.runAsync(()->{
+                List<ProductCompleteDTO> allCompleteDtos = ProductCompleteDTO.fetchAllProductDetails(HibernateUtil.getEntityManagerFactory().createEntityManager());
+                allProductsWithCountsList= allCompleteDtos;
+                List<ProductCompleteDTO> results = new ArrayList<>();
+                results.addAll(allCompleteDtos);
                 Platform.runLater(()->{
-                    System.out.println(" ERROR AT LOADING SUPPLIERS WITH PRODUCT COUNT");
+
+                    if (!obsDeptOptions.isEmpty()) {
+                        Platform.runLater(() -> {
+                            cbDepts.getSelectionModel().select(0);
+                        });
+                    }
+
+                    loadDepartmentChoices(FXCollections.observableArrayList(results));
+                    System.out.println("loaded products with supplier count task "+results.size());
+                    obsProductsTable.setAll(results);
                 });
-            }
-        });
-        return loadSuppliersWithProductCountTask;
-    }
-    private MyTask loadProductsWithSuppliersCountTask(){
-        MyTask loadProductWithSupplierCountTask = new MyTask(()->{
-            List<ProductCompleteDTO> allCompleteDtos = ProductCompleteDTO.fetchAllProductDetails(HibernateUtil.getEntityManagerFactory().createEntityManager());
-            //allProductsWithCountsList.clear();
-            allProductsWithCountsList= allCompleteDtos;
-            List<ProductCompleteDTO> results = new ArrayList<>();
-            results.addAll(allCompleteDtos);
-            Platform.runLater(()->{
-                loadDepartmentChoices(FXCollections.observableArrayList(results));
-                System.out.println("loaded products with supplier count task "+results.size());
-                obsProductsTable.setAll(results);
+
+                Platform.runLater(()->{
+                    myTask.setMyDescription(myTask.getMyDescription()+"\n fetching products ended");
+                });
             });
+            CompletableFuture<Void> fetchingSuppliers = CompletableFuture.runAsync(()->{
+                List<SupplierWithProductCount> resultList = new ArrayList<>();
+                SupplierDAO supplierDao = new SupplierDAO();
+                List<SupplierWithProductCount> suppliersWithCounts = supplierDao.getSuppliersWithProductCount();
+
+                List<SupplierWithProductCount> supplierWithCountsList = suppliersWithCounts.stream()
+                        .map(objects -> new SupplierWithProductCount(objects.getSupplier(), objects.getProductCount()))
+                        .toList();
+
+                resultList.addAll(supplierWithCountsList);
+                Platform.runLater(()->{
+                    obsSuppliers.setAll(resultList);
+                });
+                Platform.runLater(()->{
+                    myTask.setMyDescription(myTask.getMyDescription()+"\n fetching suppliers ended");
+                });
+            });
+            CompletableFuture<Void> afterFetched = CompletableFuture.allOf(fetchingProducts,fetchingSuppliers);
+
+            afterFetched.thenRun(()->{
+                Platform.runLater(()->{
+                    if(parentDelegate.suppliersConfigState == null){
+                        cbDepts.getSelectionModel().select("all");
+                    }
+                    myTask.setMyDescription(myTask.getMyDescription()+"\nloading completed");
+                });
+            });
+
             return null;
         });
-        /*
-        MyTask loadProductWithSupplierCountTask = new MyTask(()->{
-            List<ProductCompleteDTO> results = new ArrayList<>();
-
-            List<ProductCompleteDTO> products = new ArrayList<>(ProductCompleteDTO.fetchAllProductDetails(HibernateUtil.getEntityManagerFactory().createEntityManager()));
-
-
-            ProductDAO productDao = new ProductDAO();
-            List<Object[]> productsWithCounts = productDao.getProductsWithSupplierCount();
-
-            allProductsWithCountsList = productsWithCounts.stream()
-                    .map(objects -> new ProductWithSupplierCount((Product) objects[0], (Long) objects[1]))
-                    .toList();
-
-            results.addAll(allProductsWithCountsList);
-
-            Platform.runLater(()->{
-                loadDepartmentChoices(FXCollections.observableArrayList(results));
-                System.out.println("loaded products with supplier count task "+results.size());
-                obsProductsTable.setAll(results);
-            });
-            return null;
-        });
-
-        */
-
-
-
-
-
-
-
-        loadProductWithSupplierCountTask.addEventHandler(WorkerStateEvent.WORKER_STATE_SUCCEEDED, new EventHandler<WorkerStateEvent>() {
+        myTask.addEventHandler(WorkerStateEvent.WORKER_STATE_FAILED, new EventHandler<WorkerStateEvent>() {
             @Override
             public void handle(WorkerStateEvent workerStateEvent) {
-                System.out.println("nothing");
-                finishedTasks.set(finishedTasks.get()+1);
+                workerStateEvent.getSource().getException().printStackTrace();
+                System.out.println(workerStateEvent.getSource().getMessage());
             }
         });
-        loadProductWithSupplierCountTask.addEventHandler(WorkerStateEvent.WORKER_STATE_FAILED, new EventHandler<WorkerStateEvent>() {
-            @Override
-            public void handle(WorkerStateEvent workerStateEvent) {
-                finishedTasks.set(finishedTasks.get()+1);
-                System.out.println(" ERROR AT LOADING THE PRODUCTS WITH SUPPLIER COUNT");
-            }
-        });
-        loadProductWithSupplierCountTask.setMyTitle("Load Products");
-        loadProductWithSupplierCountTask.setMyDescription("Loading Products with Supplier Count");
 
-        return loadProductWithSupplierCountTask;
+        parentDelegate.listManager.addTaskToActiveList(
+                "fetching the data",
+                "loading the data",
+                myTask
+        );
+
     }
 }

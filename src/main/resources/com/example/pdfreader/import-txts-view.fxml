@@ -14,7 +14,7 @@
 <?import javafx.scene.layout.VBox?>
 <?import javafx.scene.text.Text?>
 
-<AnchorPane prefHeight="400.0" prefWidth="600.0" xmlns="http://javafx.com/javafx/19" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.example.pdfreader.Controllers.ImportTxtsView">
+<AnchorPane prefHeight="400.0" prefWidth="600.0" xmlns="http://javafx.com/javafx/19" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.example.pdfreader.Controllers.ByMenu.Products.ImportTxtsView">
    <children>
       <TabPane AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
          <tabs>
@@ -94,6 +94,11 @@
                            <children>
                               <HBox alignment="CENTER">
                                  <children>
+                                    <Button fx:id="btnTest" mnemonicParsing="false" text="create new map">
+                                       <HBox.margin>
+                                          <Insets right="10.0" />
+                                       </HBox.margin>
+                                    </Button>
                                     <ComboBox fx:id="cbStores" prefWidth="150.0">
                                        <HBox.margin>
                                           <Insets right="10.0" />

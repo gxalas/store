@@ -5,7 +5,7 @@ import com.example.pdfreader.Controllers.States.FilterInvoicesState;
 import com.example.pdfreader.Controllers.States.PreviewFileViewState;
 import com.example.pdfreader.Controllers.States.ProductViewState;
 import com.example.pdfreader.Controllers.States.SuppliersConfigState;
-import com.example.pdfreader.Entities.Document;
+import com.example.pdfreader.Entities.Main.Document;
 import com.example.pdfreader.Helpers.ListManager;
 import com.example.pdfreader.Helpers.MyTask;
 import com.example.pdfreader.Helpers.MyTaskState;

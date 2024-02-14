@@ -5,7 +5,7 @@
 <?import javafx.scene.layout.VBox?>
 <?import javafx.scene.text.Text?>
 
-<AnchorPane style="-fx-background-color: yellow;" xmlns="http://javafx.com/javafx/19" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.example.pdfreader.Controllers.StatusView">
+<AnchorPane style="-fx-background-color: yellow;" xmlns="http://javafx.com/javafx/19" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.example.pdfreader.Controllers.ByMenu.Status.StatusView">
    <children>
       <VBox layoutX="20.0" layoutY="30.0" prefHeight="200.0" AnchorPane.leftAnchor="10.0" AnchorPane.rightAnchor="10.0" AnchorPane.topAnchor="10.0">
          <children>

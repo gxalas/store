@@ -1,13 +1,14 @@
-package com.example.pdfreader.Controllers;
+package com.example.pdfreader.Controllers.ByMenu.Invoices;
 
+import com.example.pdfreader.Controllers.ChildController;
 import com.example.pdfreader.Controllers.States.FilterInvoicesState;
 import com.example.pdfreader.Controllers.States.PreviewFileViewState;
 import com.example.pdfreader.DAOs.DBErrorDAO;
 import com.example.pdfreader.DAOs.DocumentDAO;
 import com.example.pdfreader.DAOs.SupplierDAO;
-import com.example.pdfreader.DocEntry;
-import com.example.pdfreader.Entities.Document;
-import com.example.pdfreader.Entities.Supplier;
+import com.example.pdfreader.Entities.ChildEntities.DocEntry;
+import com.example.pdfreader.Entities.Main.Document;
+import com.example.pdfreader.Entities.Main.Supplier;
 import com.example.pdfreader.HelloApplication;
 import com.example.pdfreader.HelloController;
 import com.example.pdfreader.Helpers.MyTask;
@@ -43,7 +44,7 @@ import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.*;
 
-public class FilterInvoicesView extends ChildController{
+public class FilterInvoicesView extends ChildController {
     private List<Document> dbDocuments= new ArrayList<>();
     private final ObservableList<Document> obsFilteredDocs = FXCollections.observableArrayList(new ArrayList<>());
     private final ObservableList<DocEntry> obsFilteredEntries = FXCollections.observableArrayList(new ArrayList<>());

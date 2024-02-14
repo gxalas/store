@@ -1,6 +1,6 @@
 package com.example.pdfreader.DTOs;
 
-import com.example.pdfreader.DocEntry;
+import com.example.pdfreader.Entities.ChildEntities.DocEntry;
 
 public class DocEntryDTO {
     private DocEntry docEntry;

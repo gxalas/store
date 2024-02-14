@@ -1,14 +1,13 @@
 package com.example.pdfreader.DAOs;
 
-import com.example.pdfreader.DocEntry;
-import com.example.pdfreader.Entities.Document;
-import com.example.pdfreader.Entities.Product;
+import com.example.pdfreader.Entities.ChildEntities.DocEntry;
+import com.example.pdfreader.Entities.Main.Document;
+import com.example.pdfreader.Entities.Main.Product;
 import com.example.pdfreader.enums.StoreNames;
 import org.hibernate.Hibernate;
 import org.hibernate.Session;
 import org.hibernate.Transaction;
 import org.hibernate.SessionFactory;
-import org.hibernate.cfg.Configuration;
 import org.hibernate.query.Query;
 
 import java.util.ArrayList;

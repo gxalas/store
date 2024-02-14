@@ -1,16 +1,12 @@
 package com.example.pdfreader.Entities.Attributes;
 
 
-import com.example.pdfreader.Controllers.ImportTxtsView;
-import com.example.pdfreader.DAOs.HibernateUtil;
-import com.example.pdfreader.Entities.Product;
+import com.example.pdfreader.Entities.Main.Product;
 import com.example.pdfreader.enums.StoreNames;
 import jakarta.persistence.*;
 
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 
 
 /*
@@ -58,6 +54,13 @@ public class StoreBasedAttributes {
     )
     @Column(name = "conflicting_barcodes")
     private List<String> conflictingBarcodes = new ArrayList<>();
+    @ElementCollection (fetch = FetchType.EAGER)
+    @CollectionTable(
+            name = "sba_hobe_barcodes",
+            joinColumns = @JoinColumn(name = "store_based_attributes_id")
+    )
+    @Column(name = "hope_barcodes")
+    private List<String> hopeBarcodes = new ArrayList<>();
 
     @Column(name="has_conflict")
     private boolean hasConflict=false;
@@ -68,15 +71,6 @@ public class StoreBasedAttributes {
         //this.product = product;
         this.store = store;
     }
-
-    //public Product getProduct() {
-      //  return product;
-    //}
-
-    //public void setProduct(Product product) {
-        //this.product = product;
-    //}
-
     public Long getId() {
         return id;
     }
@@ -91,6 +85,10 @@ public class StoreBasedAttributes {
 
     public void setHope(String hope) {
         this.hope = hope;
+        if(hope.compareTo("0")==0){
+            setFamily("918");
+            return;
+        }
         if(hope.length()!=7 && hope.length()>2){
             //System.out.println("i found a hope less than 7 "+ hope.length()+" "+ hope+);
             StringBuilder sb = new StringBuilder();
@@ -110,66 +108,55 @@ public class StoreBasedAttributes {
     public StoreNames getStore() {
         return store;
     }
-
     public void setStore(StoreNames store) {
         this.store = store;
     }
-
     public String getDepartment() {
         return department;
     }
     public void setDepartment(String department) {
         this.department = department;
     }
-
     public String getFamily() {
         return family;
     }
-
     public void setFamily(String family) {
         //System.out.println(" - - - ^ ^ ^  ^ ^ ^ ^ ^ ^ ^ ^ ^ ^^ "+family+ " // "+hope);
         this.family = family;
     }
-
     public String getMasterCode(){
         return this.masterCode;
     }
-
     public void setMasterCode(String master){
         this.masterCode = master;
     }
-
     public void setDescription(String description) {
         this.description = description;
     }
-
     public String getDescription() {
         return description;
     }
-
     public void setProduct(Product product) {
         this.product = product;
     }
     public Product getProduct(){
         return product;
     }
-
     public List<String> getBarcodes(){
         return this.barcodes;
     }
-
     public boolean getHasConflict() {
         return hasConflict;
     }
-
     public void setHasConflict(boolean hasConflict) {
         this.hasConflict = hasConflict;
     }
-
     public List<String> getConflictingBarcodes() {
         return conflictingBarcodes;
     }
-
+    public List<String> getHopeBarcodes(){
+        return this.hopeBarcodes;
+    }
     public void fixConflictingBarcode(String barcode){
         if(getBarcodes().contains(barcode)){
             getBarcodes().remove(barcode);
@@ -182,7 +169,6 @@ public class StoreBasedAttributes {
             System.out.println("there is an error ");
         }
     }
-
     public boolean areEqual(StoreBasedAttributes sba){
 
         if(sba.getStore().compareTo(this.store)!=0){
@@ -193,10 +179,5 @@ public class StoreBasedAttributes {
         }
         return true;
     }
-
-
-
-
-    // Getters and setters...
 }
 

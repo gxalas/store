@@ -1,8 +1,8 @@
 package com.example.pdfreader.DTOs;
 
 import com.example.pdfreader.DAOs.ProductDAO;
-import com.example.pdfreader.Entities.Product;
-import com.example.pdfreader.Entities.Supplier;
+import com.example.pdfreader.Entities.Main.Product;
+import com.example.pdfreader.Entities.Main.Supplier;
 
 import java.util.ArrayList;
 import java.util.List;

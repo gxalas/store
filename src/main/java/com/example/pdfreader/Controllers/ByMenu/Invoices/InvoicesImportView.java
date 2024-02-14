@@ -1,6 +1,7 @@
-package com.example.pdfreader.Controllers;
+package com.example.pdfreader.Controllers.ByMenu.Invoices;
 
-import com.example.pdfreader.Entities.Document;
+import com.example.pdfreader.Controllers.ChildController;
+import com.example.pdfreader.Entities.Main.Document;
 import com.example.pdfreader.HelloController;
 import com.example.pdfreader.Helpers.ObservableQueue;
 import com.example.pdfreader.MyCustomEvents.DBError.DBErrorEvent;
@@ -22,7 +23,7 @@ import javafx.scene.text.Text;
 
 import java.util.Date;
 
-public class InvoicesImportView extends ChildController{
+public class InvoicesImportView extends ChildController {
     @FXML
     public Text txtNumAtFolder,txtNumImported,txtNumFailed,txtNumToImport;
     @FXML

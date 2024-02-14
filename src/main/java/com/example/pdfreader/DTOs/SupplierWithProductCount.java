@@ -1,6 +1,6 @@
 package com.example.pdfreader.DTOs;
 
-import com.example.pdfreader.Entities.Supplier;
+import com.example.pdfreader.Entities.Main.Supplier;
 
 public class SupplierWithProductCount {
     private final Supplier supplier;

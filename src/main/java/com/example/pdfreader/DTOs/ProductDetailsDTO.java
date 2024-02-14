@@ -1,11 +1,8 @@
 package com.example.pdfreader.DTOs;
 
 import com.example.pdfreader.Entities.Attributes.StoreBasedAttributes;
-import com.example.pdfreader.Entities.Product;
-import com.example.pdfreader.Entities.Supplier;
-import com.example.pdfreader.Helpers.SupplierProductRelation;
+import com.example.pdfreader.Entities.Main.Product;
 import jakarta.persistence.EntityManager;
-import jakarta.persistence.TypedQuery;
 
 import java.util.*;
 import java.util.stream.Collectors;

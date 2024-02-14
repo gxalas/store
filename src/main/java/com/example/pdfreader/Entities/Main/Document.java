@@ -1,13 +1,9 @@
-package com.example.pdfreader.Entities;
+package com.example.pdfreader.Entities.Main;
 
-import com.example.pdfreader.DAOs.DBErrorDAO;
-import com.example.pdfreader.DAOs.DocumentDAO;
-import com.example.pdfreader.DAOs.SupplierProductRelationDAO;
-import com.example.pdfreader.DocEntry;
-import com.example.pdfreader.DocumentErrors;
+import com.example.pdfreader.Entities.ChildEntities.DocEntry;
+import com.example.pdfreader.Entities.ChildEntities.DocumentErrors;
 import com.example.pdfreader.Helpers.ListManager;
 import com.example.pdfreader.Helpers.SupplierProductRelation;
-import com.example.pdfreader.MyCustomEvents.DBError.ErrorEventManager;
 import com.example.pdfreader.Sinartiseis.TextExtractions;
 import com.example.pdfreader.enums.ABInvoiceTypes;
 import com.example.pdfreader.enums.PromTypes;

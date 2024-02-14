@@ -1,5 +1,6 @@
-package com.example.pdfreader.Controllers;
+package com.example.pdfreader.Controllers.ByMenu.Status;
 
+import com.example.pdfreader.Controllers.ChildController;
 import com.example.pdfreader.HelloController;
 import com.example.pdfreader.Helpers.ListManager;
 import com.example.pdfreader.Interfaces.ParentControllerDelegate;

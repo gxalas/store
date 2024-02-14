@@ -1,5 +1,6 @@
-package com.example.pdfreader.Controllers;
+package com.example.pdfreader.Controllers.ByMenu.Suppliers;
 
+import com.example.pdfreader.Controllers.ChildController;
 import com.example.pdfreader.DAOs.SupplierProductRelationDAO;
 import com.example.pdfreader.HelloController;
 import com.example.pdfreader.Helpers.MyTask;
@@ -14,7 +15,7 @@ import javafx.scene.control.TextField;
 import java.util.ArrayList;
 import java.util.List;
 
-public class ProductSupplierRelationsView extends ChildController{
+public class ProductSupplierRelationsView extends ChildController {
     public TableView<SupplierProductRelation> tableRelations;
     public TextField txtFilter;
     private ObservableList<SupplierProductRelation> obsRelations = FXCollections.observableArrayList();

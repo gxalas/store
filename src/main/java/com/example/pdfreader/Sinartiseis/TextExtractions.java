@@ -1,9 +1,8 @@
 package com.example.pdfreader.Sinartiseis;
 
-import com.example.pdfreader.Entities.Document;
+import com.example.pdfreader.Entities.Main.Document;
 import com.example.pdfreader.HelloController;
 import com.example.pdfreader.Helpers.ListManager;
-import com.example.pdfreader.MyCustomEvents.TracingFolderEvent;
 import com.example.pdfreader.TypesOfDocuments.*;
 import com.itextpdf.text.pdf.PdfReader;
 import com.itextpdf.text.pdf.parser.PdfTextExtractor;

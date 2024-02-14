@@ -1,5 +1,5 @@
 package com.example.pdfreader.DTOs;
-import com.example.pdfreader.Entities.Product;
+import com.example.pdfreader.Entities.Main.Product;
 import com.example.pdfreader.Entities.Attributes.StoreBasedAttributes;
 import com.example.pdfreader.enums.StoreNames;
 import jakarta.persistence.EntityManager;

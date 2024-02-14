@@ -1,8 +1,5 @@
 package com.example.pdfreader.Helpers;
 
-import com.example.pdfreader.Entities.Product;
-import com.example.pdfreader.PosEntry;
-
 import java.math.BigDecimal;
 import java.util.Date;
 

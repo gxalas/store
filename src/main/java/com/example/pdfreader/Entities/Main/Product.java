@@ -1,13 +1,7 @@
-package com.example.pdfreader.Entities;
+package com.example.pdfreader.Entities.Main;
 
 import com.example.pdfreader.Entities.Attributes.StoreBasedAttributes;
-import com.example.pdfreader.Helpers.ListManager;
-import com.example.pdfreader.Helpers.SupplierProductRelation;
-import com.example.pdfreader.enums.ConflictStates;
-import com.example.pdfreader.enums.StoreNames;
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
-import org.hibernate.annotations.NaturalId;
 
 import java.util.*;
 

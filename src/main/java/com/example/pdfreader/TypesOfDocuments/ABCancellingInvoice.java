@@ -1,7 +1,7 @@
 package com.example.pdfreader.TypesOfDocuments;
 
-import com.example.pdfreader.DocLine;
-import com.example.pdfreader.Entities.Document;
+import com.example.pdfreader.Entities.ChildEntities.DocLine;
+import com.example.pdfreader.Entities.Main.Document;
 import com.example.pdfreader.HelloController;
 import com.example.pdfreader.Sinartiseis.TextExtractions;
 import com.example.pdfreader.enums.ABInvoiceTypes;

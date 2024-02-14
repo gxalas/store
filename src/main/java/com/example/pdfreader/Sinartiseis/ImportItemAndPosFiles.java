@@ -3,12 +3,13 @@ package com.example.pdfreader.Sinartiseis;
 import com.example.pdfreader.DAOs.*;
 import com.example.pdfreader.DTOs.ProductWithAttributes;
 import com.example.pdfreader.Entities.Attributes.StoreBasedAttributes;
-import com.example.pdfreader.Entities.Product;
-import com.example.pdfreader.EntriesFile;
+import com.example.pdfreader.Entities.Main.Product;
+import com.example.pdfreader.Entities.Main.EntriesFile;
 import com.example.pdfreader.HelloController;
-import com.example.pdfreader.PosEntry;
+import com.example.pdfreader.Entities.ChildEntities.PosEntry;
 import com.example.pdfreader.enums.StoreNames;
 import com.example.pdfreader.enums.SySettings;
+import org.w3c.dom.ls.LSOutput;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -32,10 +33,8 @@ public class ImportItemAndPosFiles {
     private final Map<File, StoreNames> posSaleFiles = new HashMap<>();
     private final Map<String, ProductWithAttributes> barcodeToProductWithAttributes = new HashMap<>();
     private final Map<String, Product> masterToProduct = new HashMap<>();
-
     private final Map<StoreNames,Map<String, StoreBasedAttributes>> sbaMegaMap= new HashMap<>();
     private final Map<StoreNames,Map<Date,Map<String, PosEntry>>> megaPosMap = new HashMap<>();
-
     private final List<String> hardConflicts = new ArrayList<>(); // we found more than one product for a sba
     private  final List<String> softConflicts = new ArrayList<>(); // the product found has not a department as the sba
     private final HelloController hc;
@@ -143,6 +142,12 @@ public class ImportItemAndPosFiles {
         if(matchingProducts.isEmpty()){
             Product product = new Product();
             product.setInvDescription(sba.getDescription());
+            product.setInvmaster(sba.getMasterCode());
+            if(masterToProduct.get(sba.getMasterCode())==null){
+                masterToProduct.put(sba.getMasterCode(),product);
+            } else {
+                System.out.println(" mysterious thing ");
+            }
             sba.setProduct(product);
             ProductWithAttributes tempPWA = new ProductWithAttributes(product,sba);
             sba.getBarcodes().forEach(barcode->{
@@ -250,6 +255,13 @@ public class ImportItemAndPosFiles {
                     updateSba(sbaMegaMap.get(store).get(currentSba.getMasterCode()),currentSba);
                 }
             }
+            sbaMegaMap.keySet().forEach(key->{
+                sbaMegaMap.get(key).keySet().forEach(master->{
+                    if(sbaMegaMap.get(key).get(master).getBarcodes().isEmpty()){
+                        sbaMegaMap.get(key).get(master).getBarcodes().addAll(sbaMegaMap.get(key).get(master).getHopeBarcodes());
+                    }
+                });
+            });
         } catch (IOException ex) {
             throw new RuntimeException(ex);
         } catch (Exception e){
@@ -269,12 +281,21 @@ public class ImportItemAndPosFiles {
         sba.setHope(hope);
         sba.setDepartment(dept);
 
+
+
         if(sba.getHope().length()>6){
-            if((barcode.startsWith(sba.getHope().substring(0,6)))&&(sba.getFamily().compareTo("930")==0)){
-                sba.getConflictingBarcodes().add(barcode);
+            if((barcode.startsWith(sba.getHope().substring(0,6))) && (sba.getFamily().compareTo("930")==0) && (barcode.length()<9)){
+                sba.getHopeBarcodes().add(barcode);
             } else {
-                sba.getBarcodes().add(barcode);
+                if((barcode.contains(sba.getHope().substring(sba.getHope().length()-5)))&&barcode.length()<9){
+                    sba.getHopeBarcodes().add(barcode);
+                } else {
+                    sba.getBarcodes().add(barcode);
+                }
             }
+        }
+        if(sba.getDescription().toLowerCase().contains("κενη φιαλη 0")){
+            System.out.println(sba.getDescription()+" "+sba.getHope()+" "+sba.getFamily());
         }
         return sba;
     }
@@ -344,8 +365,16 @@ public class ImportItemAndPosFiles {
                         }
                         continue;
                     }
+                    //from the database
                     findProductWithMasterCode(sba);
 
+                    //we didn't find a product from the database so
+                    //we try to find a product through the barcode form
+                    //the database
+                    // in the find product with barcodes, if
+                    // we don't find a matching product for the barcodes
+                    // of the sba we create a new product and assign it also
+                    // to the master to product
                     if (sba.getProduct() == null) {
                         findProductWithBarcodes(sba, newProducts);
                     }

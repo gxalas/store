@@ -1,6 +1,6 @@
 package com.example.pdfreader.TypesOfDocuments;
 
-import com.example.pdfreader.Entities.Document;
+import com.example.pdfreader.Entities.Main.Document;
 import com.example.pdfreader.Sinartiseis.TextExtractions;
 
 import java.text.ParseException;

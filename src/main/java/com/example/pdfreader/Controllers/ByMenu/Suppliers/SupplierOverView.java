@@ -1,20 +1,19 @@
-package com.example.pdfreader.Controllers;
+package com.example.pdfreader.Controllers.ByMenu.Suppliers;
 
+import com.example.pdfreader.Controllers.ChildController;
 import com.example.pdfreader.DAOs.HibernateUtil;
 import com.example.pdfreader.DAOs.ProductDAO;
 import com.example.pdfreader.DAOs.SupplierDAO;
 import com.example.pdfreader.DAOs.SupplierProductRelationDAO;
 import com.example.pdfreader.DTOs.ProductDetailsDTO;
-import com.example.pdfreader.Entities.Product;
-import com.example.pdfreader.Entities.Supplier;
+import com.example.pdfreader.Entities.Main.Product;
+import com.example.pdfreader.Entities.Main.Supplier;
 import com.example.pdfreader.HelloController;
 import com.example.pdfreader.Helpers.MyTask;
 import com.example.pdfreader.Helpers.SupplierProductRelation;
 import com.example.pdfreader.Sinartiseis.HelpingFunctions;
 import javafx.application.Platform;
 import javafx.beans.property.ReadOnlyStringWrapper;
-import javafx.beans.property.SimpleStringProperty;
-import javafx.beans.property.StringProperty;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
 import javafx.collections.FXCollections;
@@ -22,7 +21,6 @@ import javafx.collections.ObservableList;
 import javafx.concurrent.WorkerStateEvent;
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
-import javafx.event.EventType;
 import javafx.scene.control.*;
 
 import java.util.ArrayList;

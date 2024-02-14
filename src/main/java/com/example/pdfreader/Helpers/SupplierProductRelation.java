@@ -1,11 +1,8 @@
 package com.example.pdfreader.Helpers;
 
-import com.example.pdfreader.Entities.Product;
-import com.example.pdfreader.Entities.Supplier;
+import com.example.pdfreader.Entities.Main.Product;
+import com.example.pdfreader.Entities.Main.Supplier;
 import jakarta.persistence.*;
-import org.hibernate.annotations.Cascade;
-
-import static org.hibernate.annotations.CascadeType.PERSIST;
 
 @Entity
 public class SupplierProductRelation {

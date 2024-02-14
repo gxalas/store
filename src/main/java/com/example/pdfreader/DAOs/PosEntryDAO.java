@@ -1,25 +1,17 @@
 package com.example.pdfreader.DAOs;
 
-import com.example.pdfreader.Entities.Product;
-import com.example.pdfreader.PosEntry;
+import com.example.pdfreader.Entities.Main.Product;
+import com.example.pdfreader.Entities.ChildEntities.PosEntry;
 import com.example.pdfreader.enums.StoreNames;
 import jakarta.persistence.NoResultException;
-import jakarta.persistence.TemporalType;
 import jakarta.persistence.TypedQuery;
 import org.hibernate.Session;
-import org.hibernate.SessionFactory;
-import org.hibernate.StatelessSession;
 import org.hibernate.Transaction;
-import org.hibernate.cfg.Configuration;
-import org.hibernate.exception.ConstraintViolationException;
 import org.hibernate.query.Query;
 
-import java.time.LocalDate;
-import java.time.ZoneId;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 
 public class PosEntryDAO {
@@ -71,6 +63,7 @@ public class PosEntryDAO {
                 if (tx != null) {
                     tx.rollback();
                 }
+                /*
                 System.out.println("- - - - -  error at duplicate :: saving pos entries - - - - -");
                 System.out.println(e.hashCode() + " . " + e.getCause() + " . " + e.getMessage());
                 System.out.println("- - - - -  error at duplicate - - - - -");
@@ -78,6 +71,7 @@ public class PosEntryDAO {
                 System.out.println("store " + posEntry.getStoreName()); // Make sure this is the correct way to access storeName
                 System.out.println("master " + posEntry.getMaster());
                 System.out.println("date " + posEntry.getDate());
+                */
                 // Log the error properly
             } finally {
                 // Optionally clear the session to handle memory efficiently
@@ -109,17 +103,7 @@ public class PosEntryDAO {
             session.close();
         }
     }
-    /*
-    public List<PosEntry> getAllPosEntries() {
-        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
-            return session.createQuery("FROM PosEntry", PosEntry.class).getResultList();
-        } catch (Exception e) {
-            System.out.println("& & &");
-            e.printStackTrace();
-            return Collections.emptyList();
-        }
-    }
-     */
+
 
     public List<PosEntry> getAllPosEntries() {
         Transaction transaction = null;
@@ -138,10 +122,11 @@ public class PosEntryDAO {
     }
 
     public List<PosEntry> getPosEntriesByYearAndStore(int year, String storeName) {
+        logger.info("getting pos entries of "+storeName+" at "+year);
         Transaction transaction = null;
-        logger.info("Opening session");
+        //logger.info("Opening session");
         try (Session session = HibernateUtil.getSessionFactory().openSession()) {
-            logger.info("Session opened");
+            //logger.info("Session opened");
             transaction = session.beginTransaction();
 
 
@@ -154,10 +139,11 @@ public class PosEntryDAO {
 
             transaction.commit();
             //System.out.println("the retrieved");
-            logger.info("Query executed");
+
+            //logger.info("Query executed");
             return posEntries;
         } catch (Exception e) {
-            logger.log(Level.SEVERE, "Error in getEntities", e);
+            //logger.log(Level.SEVERE, "Error in getEntities", e);
             System.out.println("\n\n\n we have an error at loading pos entries \n\n\n");
             if (transaction != null) {
                 transaction.rollback();

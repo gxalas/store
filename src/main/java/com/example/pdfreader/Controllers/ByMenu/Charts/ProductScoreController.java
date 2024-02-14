@@ -1,15 +1,16 @@
-package com.example.pdfreader.Controllers;
+package com.example.pdfreader.Controllers.ByMenu.Charts;
 
+import com.example.pdfreader.Controllers.ChildController;
 import com.example.pdfreader.DAOs.DocEntryDAO;
 import com.example.pdfreader.DAOs.DocumentDAO;
 import com.example.pdfreader.DAOs.PosEntryDAO;
 import com.example.pdfreader.DAOs.StoreBasedAttributesDAO;
-import com.example.pdfreader.DocEntry;
+import com.example.pdfreader.Entities.ChildEntities.DocEntry;
 import com.example.pdfreader.Entities.Attributes.StoreBasedAttributes;
-import com.example.pdfreader.Entities.Product;
+import com.example.pdfreader.Entities.Main.Product;
 import com.example.pdfreader.HelloController;
 import com.example.pdfreader.Helpers.MyTask;
-import com.example.pdfreader.PosEntry;
+import com.example.pdfreader.Entities.ChildEntities.PosEntry;
 import com.example.pdfreader.Sinartiseis.HelpingFunctions;
 import com.example.pdfreader.enums.StoreNames;
 import javafx.application.Platform;
@@ -44,7 +45,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.function.Consumer;
 
-public class ProductScoreController extends ChildController{
+public class ProductScoreController extends ChildController {
     public Button btnCompareChart;
     private XYChart.Series<String,Number> emptyCompare = new XYChart.Series<>();
     private Map<String, XYChart.Series<String,Number>> compareSeriesMap = new HashMap<>();
@@ -696,6 +697,10 @@ public class ProductScoreController extends ChildController{
         PosEntryDAO posEntryDAO = new PosEntryDAO();
         Date posDate = posEntryDAO.getMaximumDate();
 
+        if(posDate==null||docDate==null){
+            System.out.println("we do not have pos or doc date");
+            return;
+        }
         Date last = posDate.after(docDate) ? posDate : docDate;
         dpLastDate.valueProperty().addListener(new ChangeListener<LocalDate>() {
             @Override

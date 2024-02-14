@@ -1,8 +1,6 @@
 package com.example.pdfreader.DTOs;
 
-import com.example.pdfreader.Entities.Attributes.StoreBasedAttributes;
-import com.example.pdfreader.Entities.Product;
-import com.example.pdfreader.enums.StoreNames;
+import com.example.pdfreader.Entities.Main.Product;
 
 public class ProductWithSupplierCount {
     private final Product product;
