@@ -29,22 +29,43 @@ import javafx.beans.value.ObservableValue;
 import javafx.collections.FXCollections;
 import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
+import javafx.concurrent.Task;
+import javafx.embed.swing.SwingFXUtils;
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
 import javafx.fxml.FXML;
+import javafx.geometry.Pos;
 import javafx.scene.Node;
+import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
+import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
+import javafx.scene.input.MouseButton;
+import javafx.scene.layout.VBox;
 import javafx.scene.text.Text;
+import javafx.stage.Modality;
+import javafx.stage.Stage;
 import org.apache.commons.collections4.BidiMap;
 import org.apache.commons.collections4.bidimap.DualHashBidiMap;
+import org.apache.pdfbox.pdmodel.PDDocument;
+import org.apache.pdfbox.rendering.ImageType;
+import org.apache.pdfbox.rendering.PDFRenderer;
 
+import java.awt.image.BufferedImage;
+import java.io.File;
+import java.io.IOException;
 import java.math.BigDecimal;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.*;
 
 public class FilterInvoicesView extends ChildController {
+    private Stage popUpStage = new Stage();
+    //private VBox layout = new VBox(10);
+    ScrollPane scrollPane = new ScrollPane();
     private List<Document> dbDocuments= new ArrayList<>();
     private final ObservableList<Document> obsFilteredDocs = FXCollections.observableArrayList(new ArrayList<>());
     private final ObservableList<DocEntry> obsFilteredEntries = FXCollections.observableArrayList(new ArrayList<>());
@@ -86,7 +107,6 @@ public class FilterInvoicesView extends ChildController {
     @FXML
     public  ListView<String> storeList = new ListView<>();
 
-
     @Override
     public void initialize(HelloController hc) {
         parentDelegate = hc;
@@ -98,6 +118,7 @@ public class FilterInvoicesView extends ChildController {
         initQEntriesTable();
         initBtnGotoPreview();
         initDatePickers();
+        initPopUp();
 
         MyTask task = getLoadDataTask();
 
@@ -179,7 +200,6 @@ public class FilterInvoicesView extends ChildController {
         }
 
     }
-
     private MyTask getLoadDataTask() {
         MyTask loadDataTask = new MyTask(()->{
             System.out.println("data loading started ...");
@@ -639,6 +659,23 @@ public class FilterInvoicesView extends ChildController {
 
             }
         });
+        qDocsTable.setRowFactory(tv -> {
+            TableRow<Document> row = new TableRow<>();
+            row.setOnMouseClicked(event -> {
+                if (!row.isEmpty() && event.getClickCount() == 2 && event.getButton() == MouseButton.PRIMARY) {
+                    Document clickedRowData = row.getItem();
+                    // Handle double-click event here
+                    System.out.println("Double clicked on: " + clickedRowData.getPath());
+                    popUpStage.show();
+                    try {
+                        loadPdfViewerPane(clickedRowData);
+                    } catch (IOException e) {
+                        throw new RuntimeException(e);
+                    }
+                }
+            });
+            return row;
+        });
     }
     private void initQEntriesTable() {
         TableColumn<DocEntry,String> qEntryProductId = new TableColumn<>("Product Id");
@@ -689,5 +726,72 @@ public class FilterInvoicesView extends ChildController {
         if(HelloApplication.maxDate!=null){
             qMaxDate.valueProperty().set(HelloApplication.maxDate.toInstant().atZone(ZoneId.systemDefault()).toLocalDate());
         }
+    }
+    private void initPopUp(){
+        popUpStage = new Stage();
+        popUpStage.initModality(Modality.NONE);
+        popUpStage.setTitle("Preview Document");
+        // Directly create the layout and scene for the popup
+
+
+
+
+
+        scrollPane.setStyle("-fx-padding: 10;");
+        Scene scene = new Scene(scrollPane); // Create the scene with the initial layout
+
+
+        scrollPane.setMinWidth(600);
+        scrollPane.setMinHeight(400);
+        Platform.runLater(()->{
+            scrollPane.setContent(new Text("panatha"));
+            //scrollPane.getChildren().add(new Text("Panatha"));
+            popUpStage.setScene(scene); // Set the scene on the stage
+        });
+
+
+        // Setup the popup UI components here as needed
+
+        //return popupStage;
+    }
+
+    private void loadPdfViewerPane(Document doc) throws IOException {
+        Task<Void> task = new Task<Void>() {
+            @Override
+            protected Void call() throws IOException {
+
+                //ScrollPane pdfScrollPane = new ScrollPane();
+                VBox layout = new VBox(10);
+                layout.setAlignment(Pos.CENTER);
+                if(!Files.exists(Paths.get(doc.getPath()))){
+                    System.out.println("couldn't find the file to load id");
+                    layout.getChildren().set(0, new Text("didn't find pdf"));
+                    Platform.runLater(() -> {
+                        scrollPane.setFitToWidth(true);
+                        scrollPane.setContent(layout);
+                    });
+                    return null;
+                }
+                PDDocument document = PDDocument.load(new File(doc.getFilePath()));
+                PDFRenderer pdfRenderer = new PDFRenderer(document);
+                double initialZoomLevel = 0.4;
+                for (int page = 0; page < document.getNumberOfPages(); page++) {
+                    BufferedImage bufferedImage = pdfRenderer.renderImageWithDPI(page, 300, ImageType.RGB);
+                    Image image = SwingFXUtils.toFXImage(bufferedImage, null);
+                    ImageView imageView = new ImageView(image);
+                    imageView.setFitWidth(image.getWidth() * initialZoomLevel);
+                    imageView.setFitHeight(image.getHeight() * initialZoomLevel);
+                    imageView.setPreserveRatio(true);
+                    layout.getChildren().add(imageView);
+                }
+                Platform.runLater(() -> {
+                    scrollPane.setFitToWidth(true);
+                    scrollPane.setContent(layout);
+                });
+                document.close();
+                return null;
+            }
+        };
+        task.run();
     }
 }

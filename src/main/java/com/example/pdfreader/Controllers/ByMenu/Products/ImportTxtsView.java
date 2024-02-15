@@ -37,7 +37,6 @@ public class ImportTxtsView extends ChildController {
     public Button btnCalcPos;
     public Button btnLoadTxt;
     public Text txtPosErrors ;
-    public Button btnTest;
     private ObservableList<StoreBasedAttributes> obsAllSbas = FXCollections.observableArrayList();
     private ObservableList<Product> obsAllProducts = FXCollections.observableArrayList();
     public TableView<StoreBasedAttributes> tableSbas;
@@ -75,9 +74,15 @@ public class ImportTxtsView extends ChildController {
             List<StoreBasedAttributes> filtered = new ArrayList<>();
             obsAllSbas.forEach(sba->{
                 if(sba.getProduct()!=null){
+                    if(t1.equals(sba.getProduct())){
+                        filtered.add(sba);
+                    }
+                    /*
                     if (sba.getProduct().getInvDescription().compareTo(t1.getInvDescription())==0){
                         filtered.add(sba);
                     }
+                    */
+
                 }
             });
             obsFilteredSbas.setAll(filtered);
@@ -170,11 +175,6 @@ public class ImportTxtsView extends ChildController {
             System.out.println("the product "+product.getProduct().getInvDescription()+" has "+product.getAttributes().size()+" attributes");
         });
     }
-
-
-
-
-
 
 
 
@@ -473,8 +473,13 @@ public class ImportTxtsView extends ChildController {
             String c = cellData.getValue().getCode();
             return new ReadOnlyStringWrapper(c);
         });
+        TableColumn<Product,String> logCol = new TableColumn<>("log");
+        logCol.setCellValueFactory(cellData->{
+            String l = cellData.getValue().getLog();
+            return new ReadOnlyStringWrapper(l);
+        });
 
-        tableProducts.getColumns().setAll(productDescCol,masterCol,codeCol);
+        tableProducts.getColumns().setAll(productDescCol,masterCol,codeCol,logCol);
         tableProducts.setItems(obsProductsTable);
 
     }

@@ -193,6 +193,7 @@ public class ImportPdfFiles {
                     }
                 } else {
                     Product product = new Product();
+                    product.setLog("from documents "+StoreNames.ALL);
                     StoreBasedAttributes sba = new StoreBasedAttributes();
 
                     String d = "";

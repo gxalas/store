@@ -28,6 +28,9 @@ public class Product {
     @Column(name = "invmaster")
     private String invmaster;
 
+    @Column(name = "log")
+    private String log;
+
 
     public Product(String productCode,String description,String master){
         this.code = productCode;
@@ -106,4 +109,10 @@ public class Product {
         return new ArrayList<>();
     }
 
+    public String getLog() {
+        return log;
+    }
+    public void setLog(String log) {
+        this.log = log;
+    }
 }

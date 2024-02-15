@@ -9,7 +9,6 @@ import com.example.pdfreader.HelloController;
 import com.example.pdfreader.Entities.ChildEntities.PosEntry;
 import com.example.pdfreader.enums.StoreNames;
 import com.example.pdfreader.enums.SySettings;
-import org.w3c.dom.ls.LSOutput;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -19,6 +18,7 @@ import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
@@ -61,12 +61,13 @@ public class ImportItemAndPosFiles {
         getFilesFromFolder();
         readFiles();
 
-        initBarcodeToProductMap();
-        initMasterToProductMap();
+        initBarcodeToProductMap(); //from the database
+        initMasterToProductMap(); //from the database -- should be the same method as the above
 
         Set<StoreBasedAttributes> sbasToSave = findProductsForPosAndSbas();
         saveStoreBasedAttributes(sbasToSave.stream().toList());
         savePosEntries();
+
 
         clearMaps();
     }
@@ -140,30 +141,46 @@ public class ImportItemAndPosFiles {
         */
 
         if(matchingProducts.isEmpty()){
-            Product product = new Product();
-            product.setInvDescription(sba.getDescription());
-            product.setInvmaster(sba.getMasterCode());
-            if(masterToProduct.get(sba.getMasterCode())==null){
-                masterToProduct.put(sba.getMasterCode(),product);
-            } else {
-                System.out.println(" mysterious thing ");
-            }
-            sba.setProduct(product);
-            ProductWithAttributes tempPWA = new ProductWithAttributes(product,sba);
-            sba.getBarcodes().forEach(barcode->{
-                if(!barcode.startsWith(sba.getHope().trim())){
-                    barcodeToProductWithAttributes.put(barcode,tempPWA);
+            if(sba.getProduct()==null){
+                Product product = new Product();
+                product.setLog("created by sba - "+sba.getStore()+"\n at empty matching");
+                product.setInvDescription(sba.getDescription());
+                product.setInvmaster(sba.getMasterCode());
+                if(masterToProduct.get(sba.getMasterCode())==null){
+                    masterToProduct.put(sba.getMasterCode(),product);
+                } else {
+                    System.out.println(" mysterious thing ");
                 }
-            });
-            toSaveProducts.add(product);
+                sba.setProduct(product);
+                ProductWithAttributes tempPWA = new ProductWithAttributes(product,sba);
+                sba.getBarcodes().forEach(barcode->{
+                    barcodeToProductWithAttributes.put(barcode,tempPWA);
+                });
+                toSaveProducts.add(product);
+            }
         } else if(matchingProducts.size()==1){
             Set<String> matchingDeparments = new HashSet<>();
-
             matchingProducts.stream().toList().get(0).getAttributes().values().forEach(mSba->{
                 matchingDeparments.add(mSba.getDepartment());
             });
             if (matchingDeparments.contains(sba.getDepartment())){
-                sba.setProduct(matchingProducts.stream().toList().get(0).getProduct());
+                Product p = matchingProducts.stream().toList().get(0).getProduct();
+                if(sba.getProduct()==null){
+                    if(!p.getLog().contains("matching product 1")){
+                        p.setLog(p.getLog()+"\n at matching product 1");
+                    }
+                    sba.setProduct(p);
+                } else {
+                    if(sba.getProduct().equals(p)){
+                        //ok
+                    } else {
+                        //conflict
+                        sba.getProduct().setLog(sba.getProduct().getLog()+"\n c o n f l i c t");
+                        p.setLog(p.getLog()+"\nconflict");
+                        sba.setProduct(p);
+                        //sba.setProduct(null);
+                    }
+                }
             } else {
                 String softLog = "probable conflict "+sba.getStore()+", "+sba.getDepartment()+" :: "+sba.getDescription()+", matching depts  "+matchingDeparments+" = "+matchingProducts.stream().toList().get(0).getProduct().getInvDescription();
                 if(!softConflicts.contains(softLog)){
@@ -241,12 +258,12 @@ public class ImportItemAndPosFiles {
     }
     private  void createTheMegaSbaMap(File file, StoreNames store){
         String newline = "";
+        Map<String,Product> barcodeToProduct = new HashMap<>();
         sbaMegaMap.computeIfAbsent(store, k -> new HashMap<>());
         try (BufferedReader br = new BufferedReader(new FileReader(file, Charset.forName("ISO-8859-7")))) {
             while (((newline = br.readLine()) != null) && (newline.length()>7)) { //to length megalitero tou 7 thelei allo elengxo
                 StoreBasedAttributes currentSba = sbaFromLine(newline);
                 currentSba.setStore(store);
-
                 if(sbaMegaMap.get(store).get(currentSba.getMasterCode())==null){
                     //if current sba is not at the map
                     sbaMegaMap.get(store).put(currentSba.getMasterCode(),currentSba);
@@ -254,6 +271,9 @@ public class ImportItemAndPosFiles {
                     //current sba is on the map -> update
                     updateSba(sbaMegaMap.get(store).get(currentSba.getMasterCode()),currentSba);
                 }
+                //here we check if there is a conflict
+                //with the barcodes
+                //if(barcodeToProduct)
             }
             sbaMegaMap.keySet().forEach(key->{
                 sbaMegaMap.get(key).keySet().forEach(master->{
@@ -307,13 +327,17 @@ public class ImportItemAndPosFiles {
         sbas.forEach(sba->{
             sba.getBarcodes().forEach(bar->{
                 if(barcodeToProductWithAttributes.get(bar)!=null){
-                    System.out.println(" C O N F L I C T ");
+                    if(!barcodeToProductWithAttributes.get(bar).getProduct().equals(sba.getProduct())){
+                        System.out.println(" C O N F L I C T ");
+                    }
                 } else {
                     if(sba.getProduct()!=null){
                         ProductWithAttributes tempPWA = new ProductWithAttributes(sba.getProduct(),sba);
                         sba.getBarcodes().forEach(barcode->{
-                            if(!barcode.startsWith(sba.getHope().trim())){
+                            if(barcodeToProductWithAttributes.get(barcode)==null){
                                 barcodeToProductWithAttributes.put(barcode,tempPWA);
+                            } else {
+                                sba.getConflictingBarcodes().add(barcode);
                             }
                         });
                     }
@@ -346,11 +370,11 @@ public class ImportItemAndPosFiles {
     }
     private  Set<StoreBasedAttributes> findProductsForPosAndSbas(){
         List<Product> newProducts = new ArrayList<>();
-        List<String> nullMasters = new ArrayList<>(); // no sba found with the pos master -> probably item file older than pos file
         Set<StoreBasedAttributes> sbasToSave = new HashSet<>();
 
         //gia kathe pos entry pame na vroume to antisoixo sba apo to items file
         //den einai kako auto
+        List<String> nullMasters = new ArrayList<>(); // no sba found with the pos master -> probably item file older than pos file
 
         megaPosMap.keySet().forEach(store->{
             megaPosMap.get(store).keySet().forEach(date->{
@@ -367,7 +391,6 @@ public class ImportItemAndPosFiles {
                     }
                     //from the database
                     findProductWithMasterCode(sba);
-
                     //we didn't find a product from the database so
                     //we try to find a product through the barcode form
                     //the database
@@ -375,12 +398,16 @@ public class ImportItemAndPosFiles {
                     // we don't find a matching product for the barcodes
                     // of the sba we create a new product and assign it also
                     // to the master to product
+                    findProductWithBarcodes(sba, newProducts);
+
                     if (sba.getProduct() == null) {
-                        findProductWithBarcodes(sba, newProducts);
-                    }
-                    if (sba.getProduct() == null) {
+                        System.out.println("sba without product "+sba.getDescription());
                         //System.out.println("couldn't find a product");
                     }
+                    if (sba.getProduct() == null) {
+
+                    }
+
                     megaPosMap.get(store).get(date).get(master).setProduct(sba.getProduct());
                     sbasToSave.add(sba);
                 }
@@ -390,11 +417,14 @@ public class ImportItemAndPosFiles {
         return sbasToSave;
     }
 
+
     private  void saveStoreBasedAttributes(List<StoreBasedAttributes> toSave){
         StoreBasedAttributesDAO storeBasedAttributesDAO = new StoreBasedAttributesDAO();
 
         List<StoreBasedAttributes> dbSbas = new ArrayList<>();
         dbSbas.addAll(storeBasedAttributesDAO.getAllStoreBasedAttributes());
+
+
 
         Map<StoreNames,Map<String,StoreBasedAttributes>> dbSbaMap = new HashMap<>();
         dbSbas.forEach(sba->{
@@ -411,6 +441,7 @@ public class ImportItemAndPosFiles {
                     if(dbSbaMap.get(sba.getStore()).get(sba.getMasterCode()).areEqual(sba)){
                         //do not save
                     } else {
+                        System.out.println("the sba has changed - should be updated");
                         //there is an error
                     }
                 } else {
@@ -443,38 +474,17 @@ public class ImportItemAndPosFiles {
         Set<Product> toUpdProducts = new HashSet<>();
 
         saveList.forEach(sba->{
-            if(sba.getDescription().toLowerCase().startsWith("επιλεγ")){
-                System.err.println("we found epilegmeno");
-                System.err.println(sba.getDescription()+" "+sba.getMasterCode());
-            }
             if(sba.getFamily().compareTo("930")!=0){
-                if(sba.getDescription().toLowerCase().startsWith("επιλεγ")){
-                    System.err.println("it is not a 930");
-                    System.err.println(" "+sba.getFamily()+" ");
-                }
                 if(mapProducts.get(sba.getMasterCode())!=null){
-                    if(sba.getDescription().toLowerCase().startsWith("επιλεγ")){
-                        System.err.println("we found a product on the map and we replace");
-                        System.err.println("we found an sba :"+sba.getProduct().getInvDescription());
-                    }
-                    sba.setProduct(mapProducts.get(sba.getMasterCode()));
-                    if(sba.getDescription().toLowerCase().startsWith("επιλεγ")){
-                        System.err.println("the description of the changed product");
-                        System.err.println("we found an sba :"+sba.getProduct().getInvDescription());
-                    }
+                    Product p = mapProducts.get(sba.getMasterCode());
+                    p.setLog(p.getLog()+"\nat saving");
+                    sba.setProduct(p);
                     counter.getAndIncrement();
                     toUpdProducts.add(sba.getProduct());
                 } else{
-                    if(sba.getDescription().toLowerCase().startsWith("επιλεγ")){
-                        System.err.println("we didn't find a product on the map -> it goes at to save");
-                    }
                     toSaveProducts.add(sba.getProduct());
                 }
             }else{
-                if(sba.getDescription().toLowerCase().startsWith("επιλεγ")){
-                    System.err.println("it is a 930 -> to save products");
-
-                }
                 toSaveProducts.add(sba.getProduct());
             }
         });
@@ -579,12 +589,71 @@ public class ImportItemAndPosFiles {
     }
 
     private  void findProductWithMasterCode(StoreBasedAttributes sba){
-        if(sba.getFamily().compareTo("930")!=0){
-            if(sba.getProduct()==null){
-                if(masterToProduct.get(sba.getMasterCode())!=null){
-                    sba.setProduct(masterToProduct.get(sba.getMasterCode()));
-                }
-            }
+        /*
+        * we wil try to remove this check
+        * and add afterward a general check
+        * that will find the conflicts and clear them
+        *
+        * second check. get all barcodes and if we find
+        * multiple matching products for product will get
+        * the sbas that reference those products and remove
+        * those products
+        *
+        * later we will go to the conflicts tab and
+        * resolve them
+        */
+
+        if(sba.getDepartment().compareTo("31")!=0){
+
         }
+        if(sba.getProduct()!=null){
+            System.out.println(" we shouldn't have a product for an sba yet");
+        }
+
+        if(masterToProduct.get(sba.getMasterCode())!=null){
+            Product p = masterToProduct.get(sba.getMasterCode());
+            if(!p.getLog().contains("by mastercode")){
+                p.setLog(p.getLog()+"\n find by mastercode");
+            }
+            sba.setProduct(p);
+        }
+
+        /*
+
+         */
+        /*
+
+        if(sba.getProduct()!=null){
+            Product temp = sba.getProduct();
+            AtomicBoolean conflict = new AtomicBoolean(false);
+            sba.getBarcodes().forEach(bar-> {
+                if (barcodeToProductWithAttributes.get(bar)!=null){
+                    if(barcodeToProductWithAttributes.get(bar).getProduct()!=null){
+                        if(!barcodeToProductWithAttributes.get(bar).getProduct().equals(temp)){
+                            conflict.set(true);
+                        }
+                        */
+
+                        /*
+                        if(!barcodeToProductWithAttributes.get(bar).getProduct().equals(sba.getProduct())){
+                            System.out.println(" c o n f l i c t "+sba.getDescription()+" "+
+                                    barcodeToProductWithAttributes.get(bar).getProduct().getInvDescription());
+                            sba.setProduct(null);
+                        }
+                         */
+                        /*
+                    }
+                }
+            });
+            if(conflict.get()){
+                sba.setProduct(null);
+            }
+
+
+
+        }
+
+                         */
+
     }
 }

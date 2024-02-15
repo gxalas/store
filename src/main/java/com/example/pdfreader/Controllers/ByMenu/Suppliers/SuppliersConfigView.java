@@ -115,7 +115,10 @@ public class SuppliersConfigView extends ChildController {
                                 sba.getBarcodes().forEach(barcode->{
                                     if(barcodeToProduct.get(barcode)!=null) {
                                         if(!sba.getProduct().equals(barcodeToProduct.get(barcode))){
-                                            System.err.println(" we probably run into a conflict "+sba.getProduct().getInvDescription()+" "+barcodeToProduct.get(barcode).getInvDescription());
+                                            System.err.println(" we probably run into a conflict " +
+                                                    sba.getDescription()+" # "+sba.getFamily()+ " : "+
+                                                    sba.getProduct().getInvDescription()+" @ "+ sba.getStore()+" <-> "+
+                                                    barcodeToProduct.get(barcode).getInvDescription());
                                         }
                                     } else {
                                         barcodeToProduct.put(barcode,sba.getProduct());
@@ -142,7 +145,12 @@ public class SuppliersConfigView extends ChildController {
                                 });
                             }
                         });
+                        System.err.println("\n\n\n barcode to product size : "+barcodeToProduct.size()+"\n\n\n");
+                        System.out.println(" - - -  new map ended - - - ");
                     });
+
+
+
                     return null;
                 });
                 parentDelegate.listManager.addTaskToActiveList(
