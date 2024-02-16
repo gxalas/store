@@ -1,5 +1,6 @@
 package com.example.pdfreader.Entities.ChildEntities;
 
+import com.example.pdfreader.Entities.Attributes.StoreBasedAttributes;
 import com.example.pdfreader.Entities.Main.Product;
 import com.example.pdfreader.TypesOfDocuments.ABUsualInvoice;
 import com.example.pdfreader.enums.StoreNames;
@@ -40,6 +41,10 @@ public class PosEntry {
     @ManyToOne (fetch = FetchType.EAGER)
     @JoinColumn(name = "product_id")
     private Product product;
+
+    @ManyToOne (fetch = FetchType.EAGER)
+    @JoinColumn(name = "store_based_attributes_id")
+    private StoreBasedAttributes sba;
 
     @Column(length = 5)
     public String fpaCode;
@@ -170,6 +175,14 @@ public class PosEntry {
     }
     public void setShaCode(String code){
         this.shaCode = code;
+    }
+
+    public void setSba(StoreBasedAttributes sba) {
+        this.sba = sba;
+    }
+
+    public StoreBasedAttributes getSba() {
+        return sba;
     }
 
     public StoreNames getStoreName() {
