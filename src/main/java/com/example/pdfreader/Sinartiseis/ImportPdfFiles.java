@@ -164,8 +164,9 @@ public class ImportPdfFiles {
         });
         int temp = 0;
 
-        temp = productMap.size();
 
+        /*
+        temp = productMap.size();
         ProductDAO productDAO = new ProductDAO();
         List<Product> productList = productDAO.getAllProducts();
         productList.forEach(product -> {
@@ -176,6 +177,9 @@ public class ImportPdfFiles {
         if(productMap.size()!=temp){
             System.out.println("\n\n\n\n we have a change at the map \n\n\n\n\n");
         }
+        */
+
+
 
         Set<Product> toSaveProducts = new HashSet<>();
         Set<Product> toUpdateProducts = new HashSet<>();
@@ -186,7 +190,7 @@ public class ImportPdfFiles {
         toSaveDocuments.forEach(doc->{
             doc.getEntries().forEach(docEntry->{
                 if(productMap.get(docEntry.getMaster())!=null){
-                    docEntry.setProduct(productMap.get(docEntry.getMaster()));
+                    //docEntry.setProduct(productMap.get(docEntry.getMaster()));
                     if(productMap.get(docEntry.getMaster()).getCode().compareTo("")==0){
                         productMap.get(docEntry.getMaster()).setCode(docEntry.getCode());
                         toUpdateProducts.add(productMap.get(docEntry.getMaster()));
@@ -194,7 +198,7 @@ public class ImportPdfFiles {
                 } else {
                     Product product = new Product();
                     product.setLog("from documents "+StoreNames.ALL);
-                    StoreBasedAttributes sba = new StoreBasedAttributes();
+                    //StoreBasedAttributes sba = new StoreBasedAttributes();
 
                     String d = "";
                     if(parentDelegate.listManager.docEntriesDescriptions.get(docEntry.getMaster())==null){
@@ -208,17 +212,29 @@ public class ImportPdfFiles {
                     product.setInvDescription(d);
                     product.setCode(docEntry.getCode());
 
+                    if(docEntry.getSba()!=null){
+                        docEntry.getSba().setProduct(product);
+                        docEntry.getSba().setDescription(d);
+                        docEntry.getSba().setMasterCode(docEntry.getMaster());
+                        try {
+                            docEntry.getSba().setStore(docEntry.getDocument().getStore());
+                        } catch (Exception e){
+                            e.printStackTrace();
+                            System.out.println(e.getMessage());
+                            System.out.println(docEntry.getMaster());
+                            System.out.println(docEntry.getSba().getDescription());
+                        }
 
-                    sba.setProduct(product);
-                    sba.setDescription(d);
-                    sba.setMasterCode(docEntry.getMaster());
-                    sba.setStore(StoreNames.ALL);
+                    } else {
+                        System.out.println(docEntry.getMaster()+" "+docEntry.getDocument().getDocumentId());
+                    }
 
 
 
-                    docEntry.setProduct(product);
+
+                    //docEntry.setProduct(product);
                     toSaveProducts.add(product);
-                    toSaveSbas.add(sba);
+                    toSaveSbas.add(docEntry.getSba());
                     productMap.put(product.getInvmaster(),product);
                 }
             });
@@ -229,11 +245,18 @@ public class ImportPdfFiles {
             }
         });
 
-        productDAO = new ProductDAO();
+
+
+        ProductDAO productDAO = new ProductDAO();
         productDAO.saveProducts(toSaveProducts.stream().toList());
+
+
 
         productDAO = new ProductDAO();
         productDAO.updateProducts(toUpdateProducts.stream().toList());
+
+        storeBasedAttributesDAO = new StoreBasedAttributesDAO();
+        storeBasedAttributesDAO.saveSBAs(toSaveSbas.stream().toList());
 
 
         newRelations.forEach(rel->{

@@ -1,5 +1,6 @@
 package com.example.pdfreader.DAOs;
 
+import com.example.pdfreader.Entities.Attributes.StoreBasedAttributes;
 import com.example.pdfreader.Entities.Main.Product;
 import com.example.pdfreader.Entities.ChildEntities.PosEntry;
 import com.example.pdfreader.enums.StoreNames;
@@ -46,9 +47,9 @@ public class PosEntryDAO {
                 tx = session.beginTransaction();
 
                 // Check if the Product of the PosEntry is transient and save it first
-                Product product = posEntry.getProduct();
-                if (product != null && product.getId() == null) {
-                    session.persist(product);
+                StoreBasedAttributes sba = posEntry.getSba();
+                if (sba != null && sba.getId() == null) {
+                    session.persist(sba);
                     // Now that the product is persisted, Hibernate can manage the cascade
                 }
 

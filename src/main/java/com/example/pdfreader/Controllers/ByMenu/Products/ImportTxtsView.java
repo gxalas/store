@@ -310,7 +310,7 @@ public class ImportTxtsView extends ChildController {
         btnCalcPos.setOnAction(new EventHandler<ActionEvent>() {
             @Override
             public void handle(ActionEvent actionEvent) {
-
+                /*
                 MyTask updatePosEntries = new MyTask(()->{
                     AtomicInteger noProduct = new AtomicInteger(0);
                     AtomicInteger yesProduct = new AtomicInteger(0);
@@ -358,6 +358,8 @@ public class ImportTxtsView extends ChildController {
                         "trying to add product to pos entries that have no pos entries",
                         updatePosEntries
                 );
+                */
+
             }
         });
         btnLoadTxt.setOnAction(new EventHandler<ActionEvent>() {

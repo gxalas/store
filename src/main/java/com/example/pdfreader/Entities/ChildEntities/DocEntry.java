@@ -1,5 +1,6 @@
 package com.example.pdfreader.Entities.ChildEntities;
 
+import com.example.pdfreader.Entities.Attributes.StoreBasedAttributes;
 import com.example.pdfreader.Entities.Main.Document;
 import com.example.pdfreader.Entities.Main.Product;
 import com.example.pdfreader.Helpers.ListManager;
@@ -35,6 +36,10 @@ public class DocEntry {
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "product_id")
     private Product product;
+
+    @ManyToOne (fetch = FetchType.EAGER)
+    @JoinColumn(name = "store_based_attributes_id")
+    private StoreBasedAttributes sba;
 
     @Column(name = "boxes", precision = 9, scale = 4)
     private BigDecimal boxes;
@@ -75,6 +80,18 @@ public class DocEntry {
         this.master = docLine.getRetEan();
         this.code = docLine.productId;
         listManager.docEntriesDescriptions.put(master,docLine.description);
+
+
+        if(listManager.invoicesMasterToSba.get(master)!=null){
+            setSba(listManager.invoicesMasterToSba.get(master));
+        } else {
+            StoreBasedAttributes sba = new StoreBasedAttributes();
+            sba.setMasterCode(master);
+            sba.setDescription(docLine.description);
+            setSba(sba);
+            //sba.setStore(docLine.document.getStore());
+            listManager.invoicesMasterToSba.put(master,sba);
+        }
 
         /*
         Product tempProduct = listManager.getProductHashMap().get(docLine.getRetEan());
@@ -199,14 +216,18 @@ public class DocEntry {
 
     @JsonIgnore
     public Product getProduct() {
-        if(this.product==null){
+        if(sba.getProduct()==null){
             Product product1 = new Product();
             product1.setInvmaster("error");
             product1.setCode("error");
             product1.setInvDescription("error");
             return product1;
+        } else {
+            return sba.getProduct();
         }
-        return product;
+
+
+        //return product;
     }
 
     private void addErrorLog(String text){
@@ -239,5 +260,12 @@ public class DocEntry {
 
     public void setCode(String c){
         this.code = c;
+    }
+    public StoreBasedAttributes getSba(){
+        return this.sba;
+    }
+
+    public void setSba(StoreBasedAttributes sba) {
+        this.sba = sba;
     }
 }

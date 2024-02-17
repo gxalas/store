@@ -1,6 +1,7 @@
 package com.example.pdfreader.Helpers;
 
 import com.example.pdfreader.DAOs.*;
+import com.example.pdfreader.Entities.Attributes.StoreBasedAttributes;
 import com.example.pdfreader.Entities.Main.Document;
 import com.example.pdfreader.MyCustomEvents.DBError.ErrorEventManager;
 import com.example.pdfreader.Entities.ChildEntities.PosEntry;
@@ -23,6 +24,7 @@ public class ListManager {
     private List<String> fileChecksums = new ArrayList<>();
 
     public Map<String,String> docEntriesDescriptions = new HashMap<>();
+    public Map<String, StoreBasedAttributes> invoicesMasterToSba = new HashMap<>();
 
     public ListManager(){
 

@@ -18,7 +18,6 @@ import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
@@ -57,19 +56,32 @@ public class ImportItemAndPosFiles {
 
     private void loadItemAndTextFiles() {
         // Method's heavy lifting is now wrapped within a lock in the public method `initiateLoadingProcess`
-        hc.listManager.loadFileChecksums();
+        //hc.listManager.loadFileChecksums();
         getFilesFromFolder();
         readFiles();
+        attempt();
 
-        initBarcodeToProductMap(); //from the database
-        initMasterToProductMap(); //from the database -- should be the same method as the above
+        System.out.println("\n\n\n we F i n i s h e d ! ! !");
 
-        Set<StoreBasedAttributes> sbasToSave = findProductsForPosAndSbas();
-        saveStoreBasedAttributes(sbasToSave.stream().toList());
-        savePosEntries();
+        //initBarcodeToProductMap(); //from the database
+        //initMasterToProductMap(); //from the database -- should be the same method as the above
+
+        //Map<StoreNames,Map<String,StoreBasedAttributes>> sbasToSave = filterSbasNeeded();
+        //Set<Product> newProductsCreatedBySbas = createNewProducts(sbasToSave);
 
 
-        clearMaps();
+
+        //Map<StoreNames,Map<String,Product>> existingProducts = getToSaveSbas(sbasToSave);
+
+
+
+        //saveStoreBasedAttributes(sbasToSave.stream().toList());
+
+
+        //savePosEntries();
+
+
+        //clearMaps();
     }
     private void clearMaps() {
         itemFiles.clear();
@@ -79,6 +91,8 @@ public class ImportItemAndPosFiles {
         megaPosMap.clear();
         sbaMegaMap.clear();
     }
+
+
 
     private  void getFilesFromFolder(){
         File parentFolder = SySettings.txtFolderPath.toFile();
@@ -108,6 +122,28 @@ public class ImportItemAndPosFiles {
     private  void readFiles(){
         itemFiles.forEach(this::createTheMegaSbaMap);
         posSaleFiles.forEach(this::createTheMegaPosMap);
+    }
+
+
+
+    private void assignProductsFromTheSbas(List<StoreBasedAttributes> sbas){
+        List<Product> newProducts = new ArrayList<>();
+        sbas.forEach(sba->findProductWithBarcodes(sba,newProducts));
+
+
+        //findProductWithBarcodes();
+
+        Map<StoreNames,Map<String,Product>> dbProductMap = new HashMap<>();
+        Map<StoreNames,Map<String,Product>> filesProductMap = new HashMap<>();
+
+        filesProductMap.keySet().forEach(store->{
+            filesProductMap.get(store).keySet().forEach(master->{
+                if(dbProductMap.get(store).get(master)!=null){
+
+                }
+            });
+        });
+
     }
     private  void findProductWithBarcodes(StoreBasedAttributes sba, List<Product> toSaveProducts) {
         Set<ProductWithAttributes> matchingProducts = new HashSet<>();
@@ -262,6 +298,7 @@ public class ImportItemAndPosFiles {
         sbaMegaMap.computeIfAbsent(store, k -> new HashMap<>());
         try (BufferedReader br = new BufferedReader(new FileReader(file, Charset.forName("ISO-8859-7")))) {
             while (((newline = br.readLine()) != null) && (newline.length()>7)) { //to length megalitero tou 7 thelei allo elengxo
+
                 StoreBasedAttributes currentSba = sbaFromLine(newline);
                 currentSba.setStore(store);
                 if(sbaMegaMap.get(store).get(currentSba.getMasterCode())==null){
@@ -271,14 +308,28 @@ public class ImportItemAndPosFiles {
                     //current sba is on the map -> update
                     updateSba(sbaMegaMap.get(store).get(currentSba.getMasterCode()),currentSba);
                 }
+
+                if(currentSba.getHope().compareTo("3050325")==0){
+                    StoreBasedAttributes sba = sbaMegaMap.get(currentSba.getStore()).get(currentSba.getMasterCode());
+                    System.out.println(" :: "+newline+" :: ");
+                    System.out.println("we found "+sba.getDescription()+" "+sba.getBarcodes()+" "+sba.getHopeBarcodes());
+                }
                 //here we check if there is a conflict
                 //with the barcodes
                 //if(barcodeToProduct)
             }
+            System.out.println("READJUSTING STARTS");
             sbaMegaMap.keySet().forEach(key->{
                 sbaMegaMap.get(key).keySet().forEach(master->{
-                    if(sbaMegaMap.get(key).get(master).getBarcodes().isEmpty()){
-                        sbaMegaMap.get(key).get(master).getBarcodes().addAll(sbaMegaMap.get(key).get(master).getHopeBarcodes());
+                    StoreBasedAttributes sba = sbaMegaMap.get(key).get(master);
+                    if(sba.getHope().compareTo("3050325")==0){
+                        System.out.println("we found it at readjusting ");
+                    }
+                    if(sba.getBarcodes().isEmpty()){
+                        if(sba.getHope().compareTo("3050325")==0){
+                            System.out.println("bars are empty");
+                        }
+                        sba.getBarcodes().addAll(sba.getHopeBarcodes());
                     }
                 });
             });
@@ -304,19 +355,49 @@ public class ImportItemAndPosFiles {
 
 
         if(sba.getHope().length()>6){
-            if((barcode.startsWith(sba.getHope().substring(0,6))) && (sba.getFamily().compareTo("930")==0) && (barcode.length()<9)){
+
+            if(sba.getHope().compareTo("3050325")==0){
+                System.out.println("length > 6");
+            }
+
+            if((barcode.startsWith(sba.getHope().substring(0,6)))
+                    && (sba.getFamily().compareTo("930")==0)
+                    && (barcode.length()<9)){
+
+                if(sba.getHope().compareTo("3050325")==0){
+                    System.out.println("complex true");
+                }
                 sba.getHopeBarcodes().add(barcode);
             } else {
+
+                if(sba.getHope().compareTo("3050325")==0){
+                    System.out.println("complex not true");
+                }
+
+
                 if((barcode.contains(sba.getHope().substring(sba.getHope().length()-5)))&&barcode.length()<9){
+
+                    if(sba.getHope().compareTo("3050325")==0){
+                        System.out.println("contains true");
+                    }
+
                     sba.getHopeBarcodes().add(barcode);
                 } else {
+
+                    if(sba.getHope().compareTo("3050325")==0){
+                        System.out.println("contains not true");
+                    }
+
                     sba.getBarcodes().add(barcode);
                 }
             }
+        } else {
+
+            if(sba.getHope().compareTo("3050325")==0){
+                System.out.println("lenght <=  6");
+            }
         }
-        if(sba.getDescription().toLowerCase().contains("κενη φιαλη 0")){
-            System.out.println(sba.getDescription()+" "+sba.getHope()+" "+sba.getFamily());
-        }
+
         return sba;
     }
     private  void initBarcodeToProductMap(){
@@ -345,7 +426,6 @@ public class ImportItemAndPosFiles {
             });
         });
     }
-
     private  void initMasterToProductMap(){
         masterToProduct.clear();
         ProductDAO productDAO = new ProductDAO();
@@ -368,13 +448,307 @@ public class ImportItemAndPosFiles {
         });
         products.clear();
     }
-    private  Set<StoreBasedAttributes> findProductsForPosAndSbas(){
+
+
+    private  void attempt(){
+        StoreBasedAttributesDAO storeBasedAttributesDAO = new StoreBasedAttributesDAO();
+        List<StoreBasedAttributes> dbSbas = storeBasedAttributesDAO.getAllStoreBasedAttributes();
+
+        Map<String,Product> barcodeToProduct = new HashMap<>();
+        Map<StoreNames,Map<String,StoreBasedAttributes>> dbSbasMap = new HashMap<>();
+
+        Map<StoreNames,Map<String,Product>> masterToProductMap = new HashMap<>();
+
+
+        dbSbas.forEach(sba->{
+            sba.getBarcodes().forEach(barcode->{
+                if(barcodeToProduct.get(barcode)!=null){
+                    System.out.println("that is weird !!!#");
+                } else {
+                    if(sba.getProduct()!=null){
+                        barcodeToProduct.put(barcode,sba.getProduct());
+                    }
+                }
+            });
+            dbSbasMap.computeIfAbsent(sba.getStore(), k -> new HashMap<>());
+            dbSbasMap.get(sba.getStore()).putIfAbsent(sba.getMasterCode(), sba);
+
+            masterToProductMap.computeIfAbsent(sba.getStore(), k -> new HashMap<>());
+            if(masterToProductMap.get(sba.getStore()).get(sba.getMasterCode())==null){
+                if(sba.getProduct()!=null){
+                    masterToProductMap.get(sba.getStore()).put(sba.getMasterCode(),sba.getProduct());
+                }
+            }
+        });
+        dbSbas.clear();
+        dbSbas = null;
+
+        PosEntryDAO posEntryDAO = new PosEntryDAO();
+        List<PosEntry> allPoses = posEntryDAO.getAllPosEntries();
+        Map<StoreNames,Map<Date,Map<String,PosEntry>>> megaDbPosMap = new HashMap<>();
+
+        allPoses.forEach(pos->{
+            megaDbPosMap.computeIfAbsent(pos.getStoreName(), k -> new HashMap<>());
+            megaDbPosMap.get(pos.getStoreName()).computeIfAbsent(pos.getDate(), k -> new HashMap<>());
+            megaDbPosMap.get(pos.getStoreName()).get(pos.getDate()).putIfAbsent(pos.getMaster(), pos);
+        });
+
+        allPoses.clear();
+        allPoses= null;
+
+        List<PosEntry> toSavePosEntries = new ArrayList<>();
+
+        megaPosMap.keySet().forEach(store->{
+            megaPosMap.get(store).keySet().forEach(date->{
+                megaPosMap.get(store).get(date).keySet().forEach(master->{
+                    //3050325
+                    StoreBasedAttributes s = sbaMegaMap.get(store).get(master);
+                    megaPosMap.get(store).get(date).get(master).setSba(sbaMegaMap.get(store).get(master));
+                    if(megaDbPosMap.get(store)==null){
+                        toSavePosEntries.add(megaPosMap.get(store).get(date).get(master));
+                    } else {
+                        if(megaDbPosMap.get(store).get(date)==null){
+                            toSavePosEntries.add(megaPosMap.get(store).get(date).get(master));
+                        } else {
+                            if(megaDbPosMap.get(store).get(date).get(master)==null){
+                                toSavePosEntries.add(megaPosMap.get(store).get(date).get(master));
+                            }
+                        }
+                    }
+                });
+            });
+        });
+
+        megaPosMap.clear();
+        Map<StoreBasedAttributes,List<PosEntry>> sbaToPoses = new HashMap<>();
+
+        toSavePosEntries.forEach(posEntry -> {
+            if(posEntry.getSba()==null){
+                System.out.println("we found a pos without an sba");
+            } else{
+                sbaToPoses.computeIfAbsent(posEntry.getSba(), k -> new ArrayList<>());
+                sbaToPoses.get(posEntry.getSba()).add(posEntry);
+            }
+
+        });
+        Set<StoreBasedAttributes> toUpdateSbas = new HashSet<>();
+        Set<StoreBasedAttributes> toSaveSbas = new HashSet<>();
+        Set<Product> toSaveProducts = new HashSet<>();
+
+        sbaToPoses.keySet().forEach(sba->{
+            if(dbSbasMap.get(sba.getStore())!=null){
+                if(dbSbasMap.get(sba.getStore()).get(sba.getMasterCode())!=null){
+                    StoreBasedAttributes dbSba = dbSbasMap.get(sba.getStore()).get(sba.getMasterCode());
+                    checkSba(dbSba,sba);
+                    sba.getBarcodes().forEach(barcode->{
+                        if((!dbSba.getBarcodes().contains(barcode)||dbSba.getBarcodes()==null)
+                                &&(!dbSba.getConflictingBarcodes().contains(barcode)||dbSba.getConflictingBarcodes()==null)
+                                &&(!dbSba.getHopeBarcodes().contains(barcode))||dbSba.getHopeBarcodes()==null){
+                            if(barcodeToProduct.get(barcode)!=null){
+                                if(barcodeToProduct.get(barcode).equals(sba.getProduct())){
+                                    dbSba.getBarcodes().add(barcode);
+                                }
+                            } else {
+                                dbSba.getBarcodes().add(barcode);
+                            }
+                        }
+                    });
+                    sbaToPoses.get(sba).forEach(posEntry -> {
+                        posEntry.setSba(dbSba);
+                    });
+                    toUpdateSbas.add(dbSba);
+                } else{
+                    findProductOfSba(sba,barcodeToProduct,masterToProductMap);
+                    toSaveSbas.add(sba);
+                    toSaveProducts.add(sba.getProduct());
+                }
+            } else {
+                findProductOfSba(sba,barcodeToProduct,masterToProductMap);
+                toSaveSbas.add(sba);
+                toSaveProducts.add(sba.getProduct());
+            }
+        });
+
+        ProductDAO productDAO = new ProductDAO();
+        productDAO.saveProducts(toSaveProducts.stream().toList());
+
+        storeBasedAttributesDAO = new StoreBasedAttributesDAO();
+        storeBasedAttributesDAO.updateStoreBasedAttributes(toUpdateSbas.stream().toList());
+
+        storeBasedAttributesDAO = new StoreBasedAttributesDAO();
+        storeBasedAttributesDAO.saveSBAs(toSaveSbas.stream().toList());
+
+        posEntryDAO = new PosEntryDAO();
+        posEntryDAO.savePosEntries(toSavePosEntries);
+
+        System.out.println("the to save products are "+toSaveProducts.size());
+        System.out.println("the to save pos are "+toSavePosEntries.size());
+        System.out.println("the to update sbas are "+toUpdateSbas.size());
+
+    }
+    private Set<Product> createNewProducts (Map<StoreNames,Map<String,StoreBasedAttributes>> sbasMap){
+
+        Set<Product> newProducts = new HashSet<>();
+        Map<StoreNames,Map<String,Product>> productMap = new HashMap<>();
+        Map<String,Product> barMap = new HashMap<>();
+
+        AtomicInteger empties = new AtomicInteger(0);
+        AtomicInteger one = new AtomicInteger(0);
+        AtomicInteger other = new AtomicInteger(0);
+
+        for (StoreNames store : sbasMap.keySet()) {
+            productMap.put(store, new HashMap<>());
+            sbasMap.get(store).keySet().forEach(master -> {
+
+                StoreBasedAttributes sba = sbasMap.get(store).get(master);
+
+                Set<Product> matchingProducts = new HashSet<>();
+                sba.getBarcodes().forEach(barcode -> {
+                    if (barMap.get(barcode) != null) {
+                        matchingProducts.add(barMap.get(barcode));
+                    }
+                });
+                if (matchingProducts.isEmpty()) {
+                    empties.getAndIncrement();
+                    //asxeto check
+                    if (sba.getMasterCode().compareTo(master) != 0) {
+                        System.err.println("Periergo check");
+                    }
+                    if (productMap.get(store).get(master) == null) {
+                        Product product;
+                        product = new Product();
+                        product.setLog("\n created by file");
+                        product.setInvmaster(sba.getMasterCode());
+                        product.setInvDescription(sba.getDescription());
+                        productMap.get(store).put(master, product);
+                        sba.setProduct(product);
+                        sba.getBarcodes().forEach(barcode -> {
+                            barMap.put(barcode, product);
+                        });
+                    } else {
+                        if (sba.getProduct() != null) {
+                            System.err.println("periergo 2");
+                        }
+                        sba.setProduct(productMap.get(store).get(master));
+                        sba.getBarcodes().forEach(barcode -> {
+                            barMap.put(barcode, sba.getProduct());
+                        });
+                    }
+
+                } else if (matchingProducts.size() == 1) {
+                    one.getAndIncrement();
+                    sba.setProduct(matchingProducts.stream().toList().get(0));
+                    sba.getBarcodes().forEach(barcode -> {
+                        if (barMap.get(barcode) == null) {
+                            barMap.put(barcode, sba.getProduct());
+                        }
+                    });
+                } else {
+                    other.getAndIncrement();
+                    if (other.get() < 10) {
+                        matchingProducts.forEach(product -> {
+                            System.out.println("a conflicting product " + product.getInvDescription());
+                        });
+                    }
+                    //conflict
+                }
+                if (sba.getProduct() != null) {
+                    newProducts.add(sba.getProduct());
+                }
+            });
+        }
+        System.out.println("the no result are "+empties.get()+", the ones are "+one.get()+", the more are "+other.get());
+        return newProducts;
+    }
+
+    private void checkSba(StoreBasedAttributes dbSba, StoreBasedAttributes fileSba){
+        dbSba.setHope(fileSba.getHope());
+        dbSba.setFamily(fileSba.getFamily());
+        dbSba.setDepartment(fileSba.getDepartment());
+        dbSba.setDescription(fileSba.getDescription());
+    }
+    private void findProductOfSba(StoreBasedAttributes sba,
+                                   Map<String,Product> barcodeToProduct,
+                                   Map<StoreNames,Map<String,Product>> masterToProductMap){
+
+        Set<Product> matchingProducts = new HashSet<>();
+        sba.getBarcodes().forEach(barcode -> {
+            if (barcodeToProduct.get(barcode) != null) {
+                matchingProducts.add(barcodeToProduct.get(barcode));
+            }
+        });
+        if(sba.getProduct()!=null){
+            System.err.println("we are trying to find a product for an sba that already has an product");
+        }
+        if (matchingProducts.isEmpty()) {
+            //empties.getAndIncrement();
+            //asxeto check
+
+            Product product = new Product();
+            boolean found = false ;
+            if(masterToProductMap.get(sba.getStore())!=null){
+                if(masterToProductMap.get(sba.getStore()).get(sba.getMasterCode())!=null) {
+                    product = masterToProductMap.get(sba.getStore()).get(sba.getMasterCode());
+                    found = true;
+                    sba.setProduct(product);
+                    // here is the thing with the barcodes
+                    sba.getBarcodes().addAll(sbaMegaMap.get(sba.getStore()).get(sba.getMasterCode()).getBarcodes());
+                }
+            }
+
+            if(!found){
+                sba.setProduct(createNewProduct(sba));
+                sba.getBarcodes().forEach(barcode->{
+                    barcodeToProduct.put(barcode,sba.getProduct());
+                });
+                if(masterToProductMap.get(sba.getStore())==null){
+                    masterToProductMap.put(sba.getStore(),new HashMap<>());
+                    masterToProductMap.get(sba.getStore()).put(sba.getMasterCode(),sba.getProduct());
+                } else {
+                    masterToProductMap.get(sba.getStore()).put(sba.getMasterCode(),sba.getProduct());
+                }
+            }
+
+
+        } else if (matchingProducts.size() == 1) {
+            //one.getAndIncrement();
+            sba.setProduct(matchingProducts.stream().toList().get(0));
+            sba.getBarcodes().forEach(barcode -> {
+                barcodeToProduct.computeIfAbsent(barcode, k -> sba.getProduct());
+            });
+            masterToProductMap.computeIfAbsent(sba.getStore(), k -> new HashMap<>());
+            masterToProductMap.get(sba.getStore()).put(sba.getMasterCode(),sba.getProduct());
+        } else {
+            //other.getAndIncrement();
+            //if (other.get() < 10) {
+            //    matchingProducts.forEach(product -> {
+            //        System.out.println("a conflicting product " + product.getInvDescription());
+            //    });
+            //}
+            //conflict
+        }
+    }
+
+    private Product createNewProduct(StoreBasedAttributes sba){
+        Product product = new Product();
+        product.setInvmaster(sba.getMasterCode());
+        product.setInvDescription(sba.getDescription());
+        product.setLog("\n created by file");
+        return product;
+    }
+
+
+
+
+
+
+    private  Map<StoreNames,Map<String,StoreBasedAttributes>> filterSbasNeeded(){
         List<Product> newProducts = new ArrayList<>();
-        Set<StoreBasedAttributes> sbasToSave = new HashSet<>();
+        Map <StoreNames,Map<String,StoreBasedAttributes>> sbasToSave = new HashMap<>();
 
         //gia kathe pos entry pame na vroume to antisoixo sba apo to items file
         //den einai kako auto
-        List<String> nullMasters = new ArrayList<>(); // no sba found with the pos master -> probably item file older than pos file
+        //List<String> nullMasters = new ArrayList<>(); // no sba found with the pos master -> probably item file older than pos file
 
         megaPosMap.keySet().forEach(store->{
             megaPosMap.get(store).keySet().forEach(date->{
@@ -384,11 +758,12 @@ public class ImportItemAndPosFiles {
                         // here i think we cant find a store based attribute for this product on the store
                         // probably because the item file is older that the pos file
                         String k = master+" | | "+store+" | | "+megaPosMap.get(store).get(date).get(master).getDescription()+" | | ";
-                        if(!nullMasters.contains(k)){
-                            nullMasters.add(k);
-                        }
+                        //if(!nullMasters.contains(k)){
+                        //    nullMasters.add(k);
+                        //}
                         continue;
                     }
+                    /*
                     //from the database
                     findProductWithMasterCode(sba);
                     //we didn't find a product from the database so
@@ -407,29 +782,39 @@ public class ImportItemAndPosFiles {
                     if (sba.getProduct() == null) {
 
                     }
+                     */
+                    megaPosMap.get(store).get(date).get(master).setSba(sba);
 
-                    megaPosMap.get(store).get(date).get(master).setProduct(sba.getProduct());
-                    sbasToSave.add(sba);
+                    sbasToSave.computeIfAbsent(sba.getStore(), k -> new HashMap<>());
+                    if(sbasToSave.get(sba.getStore()).get(sba.getMasterCode())!=null){
+                        if(sbasToSave.get(sba.getStore()).get(sba.getMasterCode()).equals(sba)){
+                            //everything ok, do nothing
+                        } else {
+                            System.out.println("error, different sbas for same mastercode and same store");
+                        }
+                    } else {
+                        sbasToSave.get(sba.getStore()).put(sba.getMasterCode(),sba);
+                    }
+                    //sbasToSave.add(sba);
                 }
             });
         });
-        System.out.println("\n the null masters are "+nullMasters.size());
+        //System.out.println("\n the null masters are "+nullMasters.size());
         return sbasToSave;
     }
-
-
     private  void saveStoreBasedAttributes(List<StoreBasedAttributes> toSave){
         StoreBasedAttributesDAO storeBasedAttributesDAO = new StoreBasedAttributesDAO();
 
         List<StoreBasedAttributes> dbSbas = new ArrayList<>();
         dbSbas.addAll(storeBasedAttributesDAO.getAllStoreBasedAttributes());
 
-
-
         Map<StoreNames,Map<String,StoreBasedAttributes>> dbSbaMap = new HashMap<>();
+        Map<StoreNames,Map<String,Product>> dbProductMap = new HashMap<>();
         dbSbas.forEach(sba->{
             dbSbaMap.computeIfAbsent(sba.getStore(), k -> new HashMap<>());
+            dbProductMap.computeIfAbsent(sba.getStore(), k -> new HashMap<>());
             dbSbaMap.get(sba.getStore()).put(sba.getMasterCode(),sba);
+            dbProductMap.get(sba.getStore()).put(sba.getMasterCode(),sba.getProduct());
         });
         dbSbas.clear();
         dbSbas = null;
@@ -455,6 +840,8 @@ public class ImportItemAndPosFiles {
 
         ProductDAO productDAO = new ProductDAO();
         List<Product> products = productDAO.getAllProducts();
+
+        /*
         Map<String,Product> mapProducts = new HashMap<>();
 
         products.forEach(product->{
@@ -465,6 +852,7 @@ public class ImportItemAndPosFiles {
                 mapProducts.put(product.getInvmaster(),product);
             }
         });
+         */
 
         AtomicInteger counter = new AtomicInteger();
 
@@ -474,6 +862,14 @@ public class ImportItemAndPosFiles {
         Set<Product> toUpdProducts = new HashSet<>();
 
         saveList.forEach(sba->{
+            if(dbProductMap.get(sba.getStore())!=null){
+                if(dbProductMap.get(sba.getStore()).get(sba.getMasterCode())!=null){
+                    sba.setProduct(dbProductMap.get(sba.getStore()).get(sba.getMasterCode()));
+                }
+            }
+
+            Map<String,Product> mapProducts = new HashMap<>();
+
             if(sba.getFamily().compareTo("930")!=0){
                 if(mapProducts.get(sba.getMasterCode())!=null){
                     Product p = mapProducts.get(sba.getMasterCode());
@@ -580,8 +976,13 @@ public class ImportItemAndPosFiles {
         });
         newSba.getConflictingBarcodes().forEach(bar->{
             if(!oldSba.getConflictingBarcodes().contains(bar)){
+                oldSba.getConflictingBarcodes().add(bar);
+            }
+        });
+        newSba.getHopeBarcodes().forEach(bar->{
+            if(!oldSba.getHopeBarcodes().contains(bar)){
                 if(!oldSba.getConflictingBarcodes().contains(bar)){
-                    oldSba.getConflictingBarcodes().add(bar);
+                    oldSba.getHopeBarcodes().add(bar);
                     //System.out.println("a new barcode added for "+oldSba.getMasterCode());
                 }
             }
@@ -654,6 +1055,107 @@ public class ImportItemAndPosFiles {
         }
 
                          */
+/*
+DElete
+private  Map<StoreNames,Map<String,StoreBasedAttributes>> newAttempt(){
+        Set<PosEntry> toSavePos = new HashSet<>();
+        Set<PosEntry> toUpdatePos = new HashSet<>();
+
+        PosEntryDAO posEntryDAO = new PosEntryDAO();
+        List<PosEntry> dbPosEntries = posEntryDAO.getAllPosEntries();
+        Map<StoreNames,Map<Date,Map<String,PosEntry>>> dbMapPosEntries = new HashMap<>();
+        dbPosEntries.forEach(posEntry -> {
+            dbMapPosEntries.computeIfAbsent(posEntry.storeName, k -> new HashMap<>());
+            dbMapPosEntries.get(posEntry.storeName).computeIfAbsent(posEntry.getDate(), k -> new HashMap<>());
+            dbMapPosEntries.get(posEntry.storeName).get(posEntry.getDate()).putIfAbsent(posEntry.getMaster(), posEntry);
+            // check if pos has sba, check if the poses are the same
+    });
+
+        dbPosEntries.clear();
+    dbPosEntries = null;
+
+    StoreBasedAttributesDAO storeBasedAttributesDAO = new StoreBasedAttributesDAO();
+    List<StoreBasedAttributes> dbSbas = storeBasedAttributesDAO.getAllStoreBasedAttributes();
+    Map<StoreNames,Map<String,StoreBasedAttributes>> dbMapSba = new HashMap<>();
+
+        dbSbas.forEach(sba->{
+        dbMapSba.computeIfAbsent(sba.getStore(), k -> new HashMap<>());
+        dbMapSba.get(sba.getStore()).putIfAbsent(sba.getMasterCode(), sba);
+    });
+        dbSbas.clear();
+    dbSbas = null;
+
+        megaPosMap.keySet().forEach(store->{
+        megaPosMap.get(store).keySet().forEach(date->{
+            megaPosMap.get(store).get(date).keySet().forEach(master -> {
+
+                StoreBasedAttributes sba = sbaMegaMap.get(store).get(master);
+
+                if(dbMapSba.get(store)!=null){
+                    if(dbMapSba.get(store).get(master)!=null){
+                        sba = dbMapSba.get(store).get(master);
+                    }
+                }
+
+                megaPosMap.get(store).get(date).get(master).setSba(sba);
+                if(dbMapPosEntries.get(store)==null){
+                    toSavePos.add(megaPosMap.get(store).get(date).get(master));
+                } else if (dbMapPosEntries.get(store).get(date)==null){
+                    toSavePos.add(megaPosMap.get(store).get(date).get(master));
+                } else if(dbMapPosEntries.get(store).get(date).get(master)==null){
+                    toSavePos.add(megaPosMap.get(store).get(date).get(master));
+                } else {
+                    //here we need to check and update - by shouldn't be necessary
+                }
+            });
+        });
+    });
+        megaPosMap.clear();
+
+    Map<StoreNames,Map<String,StoreBasedAttributes>> toSaveSbasMap = new HashMap<>();
+    //Set<StoreBasedAttributes> toSaveSbas = new HashSet<>();
+    Set<StoreBasedAttributes> toUpdateSba = new HashSet<>();
+
+
+
+        toSavePos.forEach(posEntry -> {
+        if(posEntry.getSba()==null){
+            //this shouldn't happen
+            //check if we added an pos without sba//
+        } else {
+            toSaveSbasMap.computeIfAbsent(posEntry.storeName, k -> new HashMap<>());
+            toSaveSbasMap.get(posEntry.storeName).computeIfAbsent(posEntry.getMaster(), k -> posEntry.getSba());
+        }
+    });
+
+        toSaveSbasMap.keySet().forEach(store->{
+        toSaveSbasMap.get(store).keySet().forEach(master->{
+            if(dbMapSba.get(store)!=null){
+                if(dbMapSba.get(store).get(master)!=null){
+                    toSaveSbasMap.get(store).get(master) = dbMapSba.get(store).get(master);
+
+
+                    dbMapSba.get(store).get(master) =
+                         = dbMapSba.get(store).get(master);
+                    toUpdateSba.add(sba);
+                    toSaveSbasMap.remove(sba);
+                }
+            }
+        });
+    });
+
+
+
+
+    //megaPosMap = null;
+
+
+        return null;
+}
+
+
+ */
+
 
     }
 }

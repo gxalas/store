@@ -1,6 +1,7 @@
 package com.example.pdfreader.TypesOfDocuments;
 
 import com.example.pdfreader.DAOs.ProductDAO;
+import com.example.pdfreader.Entities.Attributes.StoreBasedAttributes;
 import com.example.pdfreader.Entities.ChildEntities.DocEntry;
 import com.example.pdfreader.Entities.Main.Document;
 import com.example.pdfreader.HelloController;
@@ -43,17 +44,27 @@ public class ABServiceInvoice {
         //document.setStore(getStore(lines[17]));
         document.setPromType(PromTypes.AB);
         DocEntry entry = getRentEntry(lines);
+        entry.setDocument(document);
         //--8
         entry.setMaster("rent - from service");
         entry.setCode("rent code - from service");
         controller.listManager.docEntriesDescriptions.put(entry.getMaster(),"rent inv wtf");
 
-        ProductDAO productDAO = new ProductDAO();
-        Product product = productDAO.getProductByMasterCode("009");
-        if(product==null){
-            product = new Product("009",lines[16],"009");
-        }
-        entry.setProduct(product);
+        StoreBasedAttributes sba = new StoreBasedAttributes();
+        sba.setDescription("rent invoice");
+        sba.setStore(document.getStore());
+        sba.setFamily("-1");
+        sba.setHope("-1");
+        sba.setDepartment("-1");
+        sba.setMasterCode("-1");
+
+        //ProductDAO productDAO = new ProductDAO();
+        //Product product = productDAO.getProductByMasterCode("009");
+        //if(product==null){
+           // product = new Product("009",lines[16],"009");
+       // }
+        //entry.setProduct(product);
+        entry.setSba(sba);
 
         retDocumentSums(document,entry);
         document.getEntries().add(entry);
@@ -69,19 +80,33 @@ public class ABServiceInvoice {
         document.setStore(StoreNames.NONE);
         document.setPromType(PromTypes.AB);
         DocEntry entry = getRentEntry(lines);
+        entry.setDocument(document);
 
         //--8
         entry.setMaster("rent - from service");
         entry.setCode("rent code - from service");
         controller.listManager.docEntriesDescriptions.put(entry.getMaster(),"pistotiko wtf");
 
+        StoreBasedAttributes sba = new StoreBasedAttributes();
+        sba.setMasterCode("-2");
+        sba.setHope("-2");
+        sba.setDepartment("-2");
+        sba.setDescription("rent - from service");
+        sba.setFamily("-2");
 
+
+
+
+        /*
         ProductDAO productDAO = new ProductDAO();
         Product product = productDAO.getProductByMasterCode("009");
         if(product==null){
             product = new Product("009",lines[16],"009");
         }
-        entry.setProduct(product);
+         */
+
+        //entry.setProduct(product);
+        entry.setSba(sba);
 
         /*
         if(controller.listManager.getProduct("900")==null){
@@ -111,8 +136,6 @@ public class ABServiceInvoice {
     private static DocEntry getRentEntry(String[] lines){
         DocEntry de = new DocEntry();
         de.setVatPercent(new BigDecimal("24.0"));
-
-
         for(String line : lines){
             if (line.startsWith("ΚΑΘΑΡΗ ΑΞΙΑ ")){
                 String[] words = line.split("\\s+");
@@ -135,6 +158,7 @@ public class ABServiceInvoice {
                 break;
             }
         }
+
 
         return de;
     }

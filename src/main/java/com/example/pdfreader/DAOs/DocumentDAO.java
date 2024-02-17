@@ -1,5 +1,6 @@
 package com.example.pdfreader.DAOs;
 
+import com.example.pdfreader.Entities.Attributes.StoreBasedAttributes;
 import com.example.pdfreader.Entities.ChildEntities.DocEntry;
 import com.example.pdfreader.Entities.Main.Document;
 import com.example.pdfreader.Entities.Main.Product;
@@ -50,6 +51,8 @@ public class DocumentDAO {
             e.printStackTrace();
         }
     }
+    /*
+    old - save documents
     public List<DBError> saveDocuments(List<Document> documents) {
         List<DBError> errors = new ArrayList<>();
 
@@ -107,6 +110,57 @@ public class DocumentDAO {
 
         return errors;
     }
+     */
+    public List<DBError> saveDocuments(List<Document> documents) {
+        List<DBError> errors = new ArrayList<>();
+
+        for (Document document : documents) {
+            Transaction transaction = null;
+            Session session = null;
+            try {
+                session = HibernateUtil.getSessionFactory().openSession();
+                transaction = session.beginTransaction();
+
+                for (DocEntry entry : document.getEntries()) {
+                    // Assuming masterCode is used to associate DocEntry with StoreBasedAttributes
+                    String hql = "FROM StoreBasedAttributes WHERE masterCode = :masterCode";
+                    Query<StoreBasedAttributes> query = session.createQuery(hql, StoreBasedAttributes.class);
+                    query.setParameter("masterCode", entry.getMaster());
+                    StoreBasedAttributes managedSba = query.uniqueResult();
+
+                    if (managedSba != null) {
+                        // The SBA exists in the database, use the existing managed entity
+                        entry.setSba(managedSba);
+                    } else {
+                        // No matching SBA found; you might need to handle this case
+                        // Depending on your logic, you may create a new SBA, log an error, etc.
+                    }
+                }
+
+                session.persist(document);
+                transaction.commit();
+            } catch (Exception e) {
+                if (transaction != null && transaction.isActive()) {
+                    transaction.rollback();
+                }
+                DBError dbError = new DBError();
+                dbError.setErrorMessage(e.getMessage());
+                dbError.setTimestamp(new Date());
+                dbError.setDescription("@ importing Document - duplicate(?) \n " +
+                        "docId: " + document.getDocumentId() + " " +
+                        "\n " + document.getPath());
+                errors.add(dbError);
+                e.printStackTrace();
+            } finally {
+                if (session != null && session.isOpen()) {
+                    session.close();
+                }
+            }
+        }
+
+        return errors;
+    }
+
 
 
     public Document getDocument(Long id) {
