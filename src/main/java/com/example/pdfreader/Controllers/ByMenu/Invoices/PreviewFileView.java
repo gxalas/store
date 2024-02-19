@@ -449,7 +449,7 @@ public class PreviewFileView extends ChildController {
 
         TableColumn<DocEntryDTO,String> descriptionCol = new TableColumn<>("Description");
         descriptionCol.setCellValueFactory(cellData -> {
-            Product product = cellData.getValue().getDocEntry().getProduct();
+            Product product = cellData.getValue().getDocEntry().getSba().getProduct();
             return new ReadOnlyStringWrapper(product.getInvDescription());
         });
         //descriptionCol.setCellValueFactory(new PropertyValueFactory<>("description"));
@@ -465,9 +465,10 @@ public class PreviewFileView extends ChildController {
         departmentCol.setCellValueFactory(cellData->{
             String department = "";
             try {
-                department = cellData.getValue().getDocEntry().getProduct().getStoreBasedAttributes().get(0).getDepartment();
-            } catch (Exception e){
+                department = cellData.getValue().getDocEntry().getSba().getDepartment();
 
+            } catch (Exception e){
+                System.out.println("an exception happened");
             }
             return new ReadOnlyStringWrapper(department);
         });

@@ -3,6 +3,7 @@ package com.example.pdfreader.Sinartiseis;
 import com.example.pdfreader.Controllers.ByMenu.Invoices.InvoicesImportView;
 import com.example.pdfreader.DAOs.*;
 import com.example.pdfreader.Entities.Attributes.StoreBasedAttributes;
+import com.example.pdfreader.Entities.ChildEntities.DocEntry;
 import com.example.pdfreader.Entities.Main.Document;
 import com.example.pdfreader.Entities.Main.Product;
 import com.example.pdfreader.HelloController;
@@ -21,6 +22,7 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class ImportPdfFiles {
 
@@ -135,66 +137,86 @@ public class ImportPdfFiles {
             Document newDoc = parentDelegate.listManager.getToImportQueue().poll();
 
             TextExtractions.process(newDoc,parentDelegate);
-            /*
-            if(newDoc.getDocumentId().compareTo("9033568261")==0){
-                System.out.println("the document in focus is going to be checked for supplier");
-                System.out.println("the current relations are : "+currentRelations.size());
-            }
-            */
 
             newRelations.addAll(Document.inferSupplier(currentRelations, newDoc));
             currentRelations.addAll(newRelations);
-            /*
-            if(newDoc.getDocumentId().compareTo("9033568261")==0){
-                newDoc.addToErrorList("this is the one with the error");
-            }
-            */
         }
 
 
+        List<Document> toSaveDocuments = parentDelegate.listManager.getImported();
 
 
         StoreBasedAttributesDAO storeBasedAttributesDAO = new StoreBasedAttributesDAO();
         List<StoreBasedAttributes> sbas = storeBasedAttributesDAO.getAllStoreBasedAttributes();
+
         Map<String,Product> productMap = new HashMap<>();
-        sbas.forEach(sba -> {
-            if(sba.getFamily().compareTo("930")!=0){
-                productMap.put(sba.getMasterCode(),sba.getProduct());
+        Map<StoreNames,Map<String,StoreBasedAttributes>> storeMasterToSbaMap = new HashMap<>();
+
+        sbas.forEach(sba->{
+            if(sba.getProduct()!=null){
+                storeMasterToSbaMap.computeIfAbsent(sba.getStore(), k -> new HashMap<>());
+                storeMasterToSbaMap.get(sba.getStore()).putIfAbsent(sba.getMasterCode(), sba);
+                productMap.computeIfAbsent(sba.getMasterCode(), k -> sba.getProduct());
             }
         });
-        int temp = 0;
+
+        Set<Product> toSaveProducts = new HashSet<>();
+        Set<StoreBasedAttributes> toSaveSbas = new HashSet<>();
+        //Set<Product> toUpdateProducts = new HashSet<>();
+
+        toSaveDocuments.forEach(document -> {
+            for (DocEntry docEntry : document.getEntries()) {
+                if (storeMasterToSbaMap.get(document.getStore()) != null) {
+                    if (storeMasterToSbaMap.get(document.getStore()).get(docEntry.getMaster()) != null) {
+                        docEntry.setSba(storeMasterToSbaMap.get(document.getStore()).get(docEntry.getMaster()));
+                        //update sba
+                        continue;
+                    }
+                }
+                Product product = new Product();
+                product.setInvDescription(docEntry.getSba().getDescription());
+                product.setInvmaster(docEntry.getSba().getMasterCode());
+                product.setCode(docEntry.getCode());
+                docEntry.getSba().setProduct(product);
+                storeMasterToSbaMap.computeIfAbsent(document.getStore(), k -> new HashMap<>());
+                storeMasterToSbaMap.get(document.getStore()).computeIfAbsent(docEntry.getSba().getMasterCode(), k -> docEntry.getSba());
+                productMap.put(docEntry.getSba().getMasterCode(),product);
+                toSaveProducts.add(product);
+                toSaveSbas.add(docEntry.getSba());
+            }
+        });
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
         /*
-        temp = productMap.size();
-        ProductDAO productDAO = new ProductDAO();
-        List<Product> productList = productDAO.getAllProducts();
-        productList.forEach(product -> {
-            if(product.getInvmaster()!=null){
-                productMap.put(product.getInvmaster(),product);
-            }
-        });
-        if(productMap.size()!=temp){
-            System.out.println("\n\n\n\n we have a change at the map \n\n\n\n\n");
-        }
-        */
-
-
-
-        Set<Product> toSaveProducts = new HashSet<>();
-        Set<Product> toUpdateProducts = new HashSet<>();
-        Set<StoreBasedAttributes> toSaveSbas = new HashSet<>();
-
-
-        List<Document> toSaveDocuments = parentDelegate.listManager.getImported();
         toSaveDocuments.forEach(doc->{
             doc.getEntries().forEach(docEntry->{
-                if(productMap.get(docEntry.getMaster())!=null){
+                if(storeMasterToSba.get(docEntry.getSba().getStore()).get(docEntry.getMaster())!=null){
                     //docEntry.setProduct(productMap.get(docEntry.getMaster()));
-                    if(productMap.get(docEntry.getMaster()).getCode().compareTo("")==0){
-                        productMap.get(docEntry.getMaster()).setCode(docEntry.getCode());
-                        toUpdateProducts.add(productMap.get(docEntry.getMaster()));
-                    }
+                    docEntry.setSba(storeMasterToSba.get(docEntry.getSba().getStore()).get(docEntry.getSba().getMasterCode()));
+                    //if(productMap.get(docEntry.getMaster()).getCode().compareTo("")==0){
+                    //    productMap.get(docEntry.getMaster()).setCode(docEntry.getCode());
+                    //    toUpdateProducts.add(productMap.get(docEntry.getMaster()));
+                    // }
                 } else {
                     Product product = new Product();
                     product.setLog("from documents "+StoreNames.ALL);
@@ -235,44 +257,47 @@ public class ImportPdfFiles {
                     //docEntry.setProduct(product);
                     toSaveProducts.add(product);
                     toSaveSbas.add(docEntry.getSba());
-                    productMap.put(product.getInvmaster(),product);
+                    storeMasterToSba.get(docEntry.getSba().getStore()).put(docEntry.getSba().getMasterCode(),docEntry.getSba());
                 }
             });
         });
+         */
+
+
+
+
+
+
         toSaveProducts.forEach(product -> {
             if(product.getInvDescription().isEmpty()){
                 System.err.println("we are trying to save an empty product");
             }
         });
 
-
-
         ProductDAO productDAO = new ProductDAO();
         productDAO.saveProducts(toSaveProducts.stream().toList());
 
-
-
-        productDAO = new ProductDAO();
-        productDAO.updateProducts(toUpdateProducts.stream().toList());
 
         storeBasedAttributesDAO = new StoreBasedAttributesDAO();
         storeBasedAttributesDAO.saveSBAs(toSaveSbas.stream().toList());
 
 
-        newRelations.forEach(rel->{
-            if(productMap.get(rel.getProduct().getInvmaster())!=null){
-                rel.setProduct(productMap.get(rel.getProduct().getInvmaster()));
+        newRelations.forEach(relation->{
+            if(productMap.get(relation.getProduct().getInvmaster())!=null){
+                relation.setProduct(productMap.get(relation.getProduct().getInvmaster()));
             }
         });
 
         DBErrorDAO dbErrorDAO = new DBErrorDAO(new ErrorEventManager());
         DocumentDAO documentDAO = new DocumentDAO(dbErrorDAO);
 
+
         List<DBError> errors = documentDAO.saveDocuments(toSaveDocuments);
 
         if(!errors.isEmpty()){
             dbErrorDAO.saveDBErrors(errors);
         }
+
         System.out.println("the total new relations to be saved is "+newRelations.size());
         if(!newRelations.isEmpty()){
             relationDAO.saveAll(newRelations);

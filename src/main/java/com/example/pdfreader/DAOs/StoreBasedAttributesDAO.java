@@ -146,6 +146,17 @@ public class StoreBasedAttributesDAO {
 
         return query.getResultList();
     }
+
+    // Method to fetch all StoreBasedAttributes for a given StoreNames value
+    public List<StoreBasedAttributes> findByStoreName(StoreNames storeName) {
+        try (EntityManager em = HibernateUtil.getEntityManagerFactory().createEntityManager()){
+            TypedQuery<StoreBasedAttributes> query = em.createQuery(
+                    "SELECT sba FROM StoreBasedAttributes sba WHERE sba.store = :storeName", StoreBasedAttributes.class);
+            query.setParameter("storeName", storeName);
+            return query.getResultList();
+        }
+
+    }
     public List<StoreBasedAttributes> getStoreBasedAttributesByProducts(List<Product> products) {
         TypedQuery<StoreBasedAttributes> query = HibernateUtil.getEntityManagerFactory().createEntityManager().createQuery(
                 "SELECT sba FROM StoreBasedAttributes sba WHERE sba.product IN :products", StoreBasedAttributes.class);

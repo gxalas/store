@@ -4,6 +4,7 @@ import com.example.pdfreader.Entities.Attributes.StoreBasedAttributes;
 import com.example.pdfreader.Entities.Main.Product;
 import com.example.pdfreader.Entities.ChildEntities.PosEntry;
 import com.example.pdfreader.enums.StoreNames;
+import jakarta.persistence.EntityManager;
 import jakarta.persistence.NoResultException;
 import jakarta.persistence.TypedQuery;
 import org.hibernate.Session;
@@ -35,7 +36,15 @@ public class PosEntryDAO {
     }
      */
 
-
+    // Method to fetch all shaCode values
+    public List<String> findAllShaCodes() {
+        try (EntityManager em = HibernateUtil.getEntityManagerFactory().createEntityManager()) {
+            TypedQuery<String> query = em.createQuery(
+                    "SELECT pe.shaCode FROM PosEntry pe", String.class);
+            return query.getResultList();
+        }
+        // Ensure the EntityManager is closed
+    }
 
     public void savePosEntries(List<PosEntry> posEntries) {
         Session session = HibernateUtil.getSessionFactory().openSession();
@@ -104,7 +113,6 @@ public class PosEntryDAO {
             session.close();
         }
     }
-
 
     public List<PosEntry> getAllPosEntries() {
         Transaction transaction = null;

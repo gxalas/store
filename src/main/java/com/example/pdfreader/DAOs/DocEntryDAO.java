@@ -5,6 +5,8 @@ import com.example.pdfreader.Entities.ChildEntities.DocEntry;
 import com.example.pdfreader.Entities.Main.Document;
 import com.example.pdfreader.Entities.Main.Product;
 import com.example.pdfreader.Helpers.SupplierProductRelation;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.EntityTransaction;
 import jakarta.persistence.TemporalType;
 import jakarta.persistence.TypedQuery;
 import org.hibernate.Session;
@@ -43,6 +45,28 @@ public class DocEntryDAO {
                 transaction.rollback();
             }
             e.printStackTrace();
+        }
+    }
+
+    public void saveDocEntries(List<DocEntry> docEntries) {
+        EntityManager entityManager = HibernateUtil.getEntityManagerFactory().createEntityManager();
+        EntityTransaction transaction = null;
+        try {
+            transaction = entityManager.getTransaction();
+            transaction.begin();
+
+            for (DocEntry entry : docEntries) {
+                entityManager.persist(entry);
+            }
+
+            transaction.commit();
+        } catch (RuntimeException e) {
+            if (transaction != null && transaction.isActive()) {
+                transaction.rollback();
+            }
+            throw e; // Or handle it as required
+        } finally {
+            entityManager.close(); // Ensure the EntityManager is closed
         }
     }
 

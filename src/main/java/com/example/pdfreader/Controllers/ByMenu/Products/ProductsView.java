@@ -25,6 +25,8 @@ import javafx.event.EventHandler;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.text.Text;
+import javafx.util.Callback;
+
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Date;
@@ -253,6 +255,15 @@ public class ProductsView extends ChildController {
         tableProducts.getColumns().setAll(productIdCol,descriptionCol,descriptionsSizeCol,
                 masterCol,docCounterCol,numHopesCol,hopeCol);
         tableProducts.setItems(obsProducts);
+
+        tableProducts.getSelectionModel().selectedItemProperty().addListener(new ChangeListener<ProductDTO>() {
+            @Override
+            public void changed(ObservableValue<? extends ProductDTO> observableValue, ProductDTO productDTO, ProductDTO t1) {
+                t1.getStoreBasedAttributes().forEach(sba-> {
+                    System.out.println(sba.getDescription()+", "+sba.getHope());
+                });
+            }
+        });
 
 
     }

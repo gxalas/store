@@ -5,6 +5,8 @@ import com.example.pdfreader.Entities.ChildEntities.DocEntry;
 import com.example.pdfreader.Entities.Main.Document;
 import com.example.pdfreader.Entities.Main.Product;
 import com.example.pdfreader.enums.StoreNames;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.EntityTransaction;
 import org.hibernate.Hibernate;
 import org.hibernate.Session;
 import org.hibernate.Transaction;
@@ -111,6 +113,9 @@ public class DocumentDAO {
         return errors;
     }
      */
+
+
+    /*
     public List<DBError> saveDocuments(List<Document> documents) {
         List<DBError> errors = new ArrayList<>();
 
@@ -160,6 +165,47 @@ public class DocumentDAO {
 
         return errors;
     }
+     */
+
+    public List<DBError> saveDocuments(List<Document> documents) {
+        List<DBError> errors = new ArrayList<>();
+        EntityManager entityManager = HibernateUtil.getEntityManagerFactory().createEntityManager();
+        for (Document document : documents) {
+            EntityTransaction transaction = entityManager.getTransaction();
+            try {
+                transaction.begin();
+
+                // Handle associated StoreBasedAttributes for each DocEntry
+                document.getEntries().forEach(entry -> {
+                    if (entry.getSba() != null && entry.getSba().getId() == null) {
+                        // If SBA is not persisted, attempt to merge or persist based on your logic
+                        StoreBasedAttributes mergedSba = entityManager.merge(entry.getSba());
+                        entry.setSba(mergedSba); // Set the managed instance to the entry
+                    }
+                });
+
+                entityManager.persist(document);
+                transaction.commit();
+            } catch (Exception e) {
+                if (transaction.isActive()) {
+                    transaction.rollback();
+                }
+                // Capture and log the error for the current document
+                DBError dbError = new DBError();
+                dbError.setErrorMessage(e.getMessage());
+                dbError.setTimestamp(new Date());
+                dbError.setDescription("@ importing Document - duplicate(?) \n " +
+                        "docId: " + document.getDocumentId() + " " +
+                        "\n " + document.getFilePath());
+                errors.add(dbError);
+            }
+        }
+
+        return errors;
+    }
+
+
+
 
 
 
