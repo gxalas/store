@@ -188,22 +188,24 @@ public class DocEntryDAO {
     public List<DocEntry> getDocEntriesByProductMasterCode(String masterCode) {
         List<DocEntry> docEntries = new ArrayList<>();
         try (Session session = HibernateUtil.getSessionFactory().openSession()) {
-            // Ensure the correct path to access the master code of the product associated with a DocEntry
-            String hql = "FROM DocEntry DE WHERE DE.product.invmaster = :masterCode";
+            // Updated query to navigate through SBA to access the master code of the Product
+            String hql = "FROM DocEntry DE WHERE DE.sba.product.invmaster = :masterCode";
             Query<DocEntry> query = session.createQuery(hql, DocEntry.class);
             query.setParameter("masterCode", masterCode);
             docEntries = query.list();
         } catch (Exception e) {
-            e.printStackTrace();
+            e.printStackTrace();  // It's better to use a logging framework in real applications
             // Handle exception
         }
         return docEntries;
     }
 
     public List<DocEntry> findDocEntriesByProductAndDateRange(Long productId, Date startDate, Date endDate) {
+        // Updated JPQL to navigate through sba to access the Product
         String jpql = "SELECT de FROM DocEntry de " +
                 "JOIN de.document doc " +
-                "WHERE de.product.id = :productId " +
+                "JOIN de.sba sba " + // Join with StoreBasedAttributes
+                "WHERE sba.product.id = :productId " + // Use productId from the SBA's product
                 "AND doc.date BETWEEN :startDate AND :endDate";
 
         TypedQuery<DocEntry> query = HibernateUtil.getEntityManagerFactory().createEntityManager().createQuery(jpql, DocEntry.class);

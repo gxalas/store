@@ -27,10 +27,6 @@ public class StoreBasedAttributesDAO {
             transaction.begin();
             for (StoreBasedAttributes sba : sbas) {
                 if(sba.getProduct()!=null)
-                if(sba.getProduct().getInvDescription().toLowerCase().startsWith("επιλεγ")){
-                    System.err.println("WE ARE SAVING EPILEGMENO");
-                    System.err.println(sba.getProduct().getInvDescription()+" "+sba.getMasterCode());
-                }
                 entityManager.persist(sba);
             }
             transaction.commit();

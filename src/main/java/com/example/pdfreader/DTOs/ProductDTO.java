@@ -11,15 +11,15 @@ public class ProductDTO {
     private Long id;
     private String code;
     private String master;
-    private List <String> descriptions;
+    private String description;
     private Long documentCount; // Add this field
     private List<StoreBasedAttributes> storeBasedAttributes = new ArrayList<>();
 
     public ProductDTO(){}
-    public ProductDTO(Long id, String code, List<String> descriptions, String master, Long documentCount) {
+    public ProductDTO(Long id, String code, String description, String master, Long documentCount) {
         this.id = id;
         this.code = code;
-        this.descriptions = descriptions;
+        this.description = description;
         this.master = master;
         this.documentCount = documentCount;
     }
@@ -56,12 +56,12 @@ public class ProductDTO {
         this.master = master;
     }
 
-    public void setDescriptions(List<String> description) {
-        this.descriptions = description;
+    public void setDescription(String description) {
+        this.description = description;
     }
 
-    public List<String> getDescriptions() {
-        return descriptions;
+    public String getDescription() {
+        return description;
     }
 
     public void setStoreBasedAttributes(List<StoreBasedAttributes> storeBasedAttributes) {

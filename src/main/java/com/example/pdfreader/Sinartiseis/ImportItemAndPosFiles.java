@@ -32,6 +32,7 @@ public class ImportItemAndPosFiles {
     private final Map<StoreNames,Map<Date,Map<String, PosEntry>>> megaPosMap = new HashMap<>();
     private List<String> shaCodes = new ArrayList<>();
     private Map<String,StoreBasedAttributes> storeMasterToSba = new HashMap<>();
+    private Map<String,Product> globalMasterToProductMap = new HashMap<>();
     private Map<String,Product> globalBarcodeMap = new HashMap<>();
 
     private Set<StoreBasedAttributes> toUpdateSbas = new HashSet<>();
@@ -64,6 +65,7 @@ public class ImportItemAndPosFiles {
         PosEntryDAO posEntryDAO = new PosEntryDAO();
         shaCodes = posEntryDAO.findAllShaCodes();
         createBarcodeToProductMap();
+        globalMasterToProductMap = getGlobalMasterToProductMap();
 
 
 
@@ -75,11 +77,12 @@ public class ImportItemAndPosFiles {
         Map<File, StoreNames> storePosSaleFiles = new HashMap<>();
 
         storeSet.forEach(store->{
-
             System.out.println("- - starting store "+store.getName()+" - - - ");
 
             storeItemFiles.clear();
             storePosSaleFiles.clear();
+            storeMasterToSba = getStoreMasterToSba(store);
+
             itemFiles.keySet().forEach(key->{
                 if(itemFiles.get(key)==store){
                     storeItemFiles.put(key,store);
@@ -99,30 +102,47 @@ public class ImportItemAndPosFiles {
                 storeItemFiles.forEach(this::createTheMegaSbaMap);
                 storePosSaleFiles.forEach(this::createTheMegaPosMap);
                 Map<StoreBasedAttributes,List<PosEntry>> sbaToPosMap = getCandidatePoses(store);
-                storeMasterToSba = getStoreMasterToSba(store);
-
-
 
                 for (StoreBasedAttributes sba : sbaToPosMap.keySet()) {
                     toSavePosEntries.addAll(sbaToPosMap.get(sba));
+
+
+
                     if(storeMasterToSba.get(sba.getMasterCode())!=null){
+
+                        updateSba(storeMasterToSba.get(sba.getMasterCode()),sba);
                         sbaToPosMap.get(sba).forEach(posEntry -> {
-                            updateSba(storeMasterToSba.get(sba.getMasterCode()),sba);
                             posEntry.setSba(storeMasterToSba.get(sba.getMasterCode()));
                             toUpdateSbas.add(storeMasterToSba.get(sba.getMasterCode()));
                         });
                         continue;
                     }
+
+                    if(globalMasterToProductMap.get(sba.getMasterCode())!=null){
+
+
+
+                        sba.setProduct(globalMasterToProductMap.get(sba.getMasterCode()));
+
+                        continue;
+                    }
+
                     Set<Product> matchingProducts = getMatchingProducts(sba);
                     if(matchingProducts.size()>1){
+
+
                         toSaveSba.add(sba);
                         continue;
                     }
+
+
                     if(matchingProducts.size()==1){
+
                         sba.setProduct(matchingProducts.stream().toList().get(0));
                         sba.getBarcodes().forEach(barcode->{
                             globalBarcodeMap.put(barcode,matchingProducts.stream().toList().get(0));
                         });
+                        globalMasterToProductMap.put(sba.getMasterCode(),sba.getProduct());
                         toSaveSba.add(sba);
                         continue;
                     }
@@ -135,6 +155,7 @@ public class ImportItemAndPosFiles {
                         globalBarcodeMap.put(barcode,product);
                     });
                     sba.setProduct(product);
+                    globalMasterToProductMap.put(sba.getMasterCode(),sba.getProduct());
 
                     toSaveSba.add(sba);
                     toSaveProducts.add(product);
@@ -266,11 +287,6 @@ public class ImportItemAndPosFiles {
                     updateSba(sbaMegaMap.get(store).get(currentSba.getMasterCode()),currentSba);
                 }
 
-                if(currentSba.getHope().compareTo("3050325")==0){
-                    StoreBasedAttributes sba = sbaMegaMap.get(currentSba.getStore()).get(currentSba.getMasterCode());
-                    System.out.println(" :: "+newline+" :: ");
-                    System.out.println("we found "+sba.getDescription()+" "+sba.getBarcodes()+" "+sba.getHopeBarcodes());
-                }
                 //here we check if there is a conflict
                 //with the barcodes
                 //if(barcodeToProduct)
@@ -384,6 +400,18 @@ public class ImportItemAndPosFiles {
         });
         return masterToSba;
     }
+
+    private Map<String,Product> getGlobalMasterToProductMap(){
+        StoreBasedAttributesDAO storeBasedAttributesDAO = new StoreBasedAttributesDAO();
+        List<StoreBasedAttributes> allSbas = storeBasedAttributesDAO.getAllStoreBasedAttributes();
+        Map<String,Product> globalMasterMap = new HashMap<>();
+        allSbas.forEach(sba->{
+            if(globalMasterMap.get(sba.getMasterCode())==null&&sba.getProduct()!=null){
+                globalMasterMap.put(sba.getMasterCode(),sba.getProduct());
+            }
+        });
+        return globalMasterMap;
+    }
     private void createBarcodeToProductMap(){
         globalBarcodeMap.clear();
         StoreBasedAttributesDAO storeBasedAttributesDAO = new StoreBasedAttributesDAO();
@@ -407,8 +435,6 @@ public class ImportItemAndPosFiles {
         });
         return matchingProducts;
     }
-
-
 
     private void checkSba(StoreBasedAttributes dbSba, StoreBasedAttributes fileSba){
         dbSba.setHope(fileSba.getHope());
@@ -488,18 +514,20 @@ public class ImportItemAndPosFiles {
 
     private  void updateSba(StoreBasedAttributes oldSba,StoreBasedAttributes newSba){
         if(oldSba.getDepartment().compareTo(newSba.getDepartment())!=0){
+            if(oldSba.getDepartment().isEmpty()){
+                if(!newSba.getDepartment().isEmpty()){
+                    oldSba.setDepartment(newSba.getDepartment());
+                }
+            }
             oldSba.setDepartment(newSba.getDepartment());
-            System.out.println("the department got updated for "+oldSba.getMasterCode());
         }
         if(oldSba.getHope().compareTo(newSba.getHope())!=0){
-            System.out.println("the hope changed for '"+oldSba.getHope()+", new hope '"+newSba.getHope()+"'");
             oldSba.setHope(newSba.getHope());
 
         }
 
         if(oldSba.getDescription().compareTo(newSba.getDescription())!=0){
             oldSba.setDescription(newSba.getDescription());
-            System.out.println("the department changed for "+oldSba.getMasterCode());
         }
 
         newSba.getBarcodes().forEach(bar->{

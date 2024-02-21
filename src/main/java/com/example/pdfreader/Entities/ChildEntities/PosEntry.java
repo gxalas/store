@@ -150,7 +150,7 @@ public class PosEntry {
     @JsonIgnore
     public BigDecimal getPrice(){
         if(quantity.compareTo(BigDecimal.ZERO)==0){
-            System.out.println("zero entry : "+this.product.getInvDescription()+" date : "+this.getDate());
+            System.out.println("zero entry : "+this.getSba().getDescription()+" date : "+this.getDate());
             return BigDecimal.ZERO;
         }
         return money.setScale(2,RoundingMode.HALF_UP).divide(quantity, RoundingMode.HALF_UP);

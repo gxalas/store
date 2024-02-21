@@ -4,6 +4,7 @@ import com.example.pdfreader.Controllers.ChildController;
 import com.example.pdfreader.Controllers.States.ProductViewState;
 import com.example.pdfreader.DAOs.*;
 import com.example.pdfreader.DTOs.ProductDTO;
+import com.example.pdfreader.Entities.Attributes.StoreBasedAttributes;
 import com.example.pdfreader.Entities.ChildEntities.DocEntry;
 import com.example.pdfreader.HelloController;
 import com.example.pdfreader.Helpers.MyTask;
@@ -25,12 +26,12 @@ import javafx.event.EventHandler;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.text.Text;
-import javafx.util.Callback;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
 
 public class ProductsView extends ChildController {
     private final ObservableList<ProductDTO> obsProducts = FXCollections.observableArrayList();
@@ -49,12 +50,13 @@ public class ProductsView extends ChildController {
     private final ChangeListener<ProductDTO> productsChangeListener = new ChangeListener<ProductDTO>() {
         @Override
         public void changed(ObservableValue<? extends ProductDTO> observableValue, ProductDTO productDTO, ProductDTO t1) {
-            MyTask myTask = new MyTask(()->{
-                if(t1!=null){
+            if(t1!=null){
+                MyTask myTask = new MyTask(()->{
                     DocEntryDAO docEntryDao = new DocEntryDAO();
                     PosEntryDAO posEntryDao = new PosEntryDAO();
                     activeProductDocEntries = docEntryDao.getDocEntriesByProductMasterCode(t1.getMaster());
                     activeProductPosEntries = posEntryDao.getPosEntriesByProductMasterCode(t1.getMaster());
+                    System.out.println("active pos entries is "+activeProductPosEntries.size());
 
                     List<DocEntry> docResults = filterDocEntries();
                     List<PosEntry> posResults = filterPosEntries();
@@ -63,26 +65,28 @@ public class ProductsView extends ChildController {
                         obsDocEntries.setAll(docResults);
                         obsPosEntries.setAll(posResults);
                     });
-                }
-                return null;
-            });
+                    return null;
+                });
 
-            myTask.addEventHandler(WorkerStateEvent.WORKER_STATE_FAILED, new EventHandler<WorkerStateEvent>() {
-                @Override
-                public void handle(WorkerStateEvent workerStateEvent) {
-                    System.out.println("the fetching failed\n"+workerStateEvent.getSource().getMessage());
-                    workerStateEvent.getSource().getException().printStackTrace();
-                }
-            });
+                myTask.addEventHandler(WorkerStateEvent.WORKER_STATE_FAILED, new EventHandler<WorkerStateEvent>() {
+                    @Override
+                    public void handle(WorkerStateEvent workerStateEvent) {
+                        System.out.println("the fetching failed\n"+workerStateEvent.getSource().getMessage());
+                        workerStateEvent.getSource().getException().printStackTrace();
+                    }
+                });
 
 
-            parentDelegate.listManager.addTaskToActiveList(
-                    "loading Docs and Pos Entries - BREAK THEM - OR REMOVE THEM",
-                    "Fetching for "+t1.getDescriptions(),
-                    myTask
-            );
+                parentDelegate.listManager.addTaskToActiveList(
+                        "loading Docs and Pos Entries - BREAK THEM - OR REMOVE THEM",
+                        "Fetching for "+getBasicDescription(t1.getStoreBasedAttributes()),
+                        myTask
+                );
+            }
+
             //parentDelegate.listManager.getActiveTasksList().add(0,myTask);
             //parentDelegate.listManager.getActiveTasksList().add(0,myTask);
+
         }
     };
     private final EventHandler<ActionEvent> searchBarListener = new EventHandler<ActionEvent>() {
@@ -118,6 +122,13 @@ public class ProductsView extends ChildController {
     public void initialize(HelloController hc) {
         super.parentDelegate = hc;
         MyTask loadingProducts = loadingProductDtosTask();
+        loadingProducts.addEventHandler(WorkerStateEvent.WORKER_STATE_FAILED, new EventHandler<WorkerStateEvent>() {
+            @Override
+            public void handle(WorkerStateEvent workerStateEvent) {
+                System.out.println(workerStateEvent.getSource().getMessage());
+                workerStateEvent.getSource().getException().printStackTrace();
+            }
+        });
         parentDelegate.listManager.addTaskToActiveList(
                 "loading Products",
                 "fetching producrs with DTO (Document count and Descriptions)",
@@ -184,9 +195,9 @@ public class ProductsView extends ChildController {
                     tableProducts.requestFocus();
                     //tableProducts.getSelectionModel().clearAndSelect();
                     tableProducts.getSelectionModel().select(parentDelegate.productViewState.productDto());
-                    System.out.println(parentDelegate.productViewState.productDto().getDescriptions()+"is supposed to be selected");
+                    System.out.println(parentDelegate.productViewState.productDto().getDescription()+"is supposed to be selected");
                     tableProducts.getFocusModel().focus(0);
-                    System.out.println("the selected product is "+tableProducts.getSelectionModel().getSelectedItem().getDescriptions());
+                    System.out.println("the selected product is "+tableProducts.getSelectionModel().getSelectedItem().getDescription());
                 });
 
             }
@@ -213,22 +224,26 @@ public class ProductsView extends ChildController {
         return loadProductDtos;
     }
     private void initProductsTable(){
+        TableColumn<ProductDTO,String> productIdCol = new TableColumn<>("document code");
+        productIdCol.setCellValueFactory(cellData->{
+            String c = cellData.getValue().getCode();
+            return new ReadOnlyStringWrapper(c);
+        });
 
-        TableColumn<ProductDTO,String> productIdCol = new TableColumn<>("id");
-        productIdCol.setCellValueFactory(new PropertyValueFactory<>("code"));
 
         TableColumn<ProductDTO,String> descriptionCol = new TableColumn<>("description");
         descriptionCol.setCellValueFactory(cellValue ->{
-            if (cellValue.getValue().getDescriptions().isEmpty()){
+            if (cellValue.getValue().getDescription().isEmpty()){
                 return new ReadOnlyStringWrapper("");
             }
-            return new ReadOnlyStringWrapper(cellValue.getValue().getDescriptions().get(0));
+            return new ReadOnlyStringWrapper(cellValue.getValue().getDescription());
         });
 
-        TableColumn<ProductDTO, Number> descriptionsSizeCol = new TableColumn<>("Descriptions Size");
-        descriptionsSizeCol.setCellValueFactory(cellData -> {
+        TableColumn<ProductDTO, Number> numOfSbas = new TableColumn<>("sba's attached");
+        numOfSbas.setCellValueFactory(cellData -> {
             ProductDTO product = cellData.getValue();
-            int size = product.getDescriptions() != null ? product.getDescriptions().size() : 0;
+            int size = cellData.getValue().getStoreBasedAttributes().size();
+            //int size = product.getDescriptions() != null ? product.getDescriptions().size() : 0;
             return new ReadOnlyIntegerWrapper(size);
         });
 
@@ -246,26 +261,24 @@ public class ProductsView extends ChildController {
 
         TableColumn<ProductDTO,String> hopeCol = new TableColumn<>("hope");
         hopeCol.setCellValueFactory(cellData->{
-            String newValue = cellData.getValue().getHopeCodeByStrore(StoreNames.getStoreByName(cbStores.getValue()));
-            return new ReadOnlyObjectWrapper<>(newValue);
-        });
-
-
-
-        tableProducts.getColumns().setAll(productIdCol,descriptionCol,descriptionsSizeCol,
-                masterCol,docCounterCol,numHopesCol,hopeCol);
-        tableProducts.setItems(obsProducts);
-
-        tableProducts.getSelectionModel().selectedItemProperty().addListener(new ChangeListener<ProductDTO>() {
-            @Override
-            public void changed(ObservableValue<? extends ProductDTO> observableValue, ProductDTO productDTO, ProductDTO t1) {
-                t1.getStoreBasedAttributes().forEach(sba-> {
-                    System.out.println(sba.getDescription()+", "+sba.getHope());
+            AtomicReference<String> h = new AtomicReference<>("");
+            cellData.getValue().getStoreBasedAttributes().forEach(sba->{
+                if(sba.getStore().getName().compareTo(cbStores.getValue())==0){
+                    h.set(sba.getHope());
+                }
+            });
+            if(h.get().compareTo("")==0&& !cellData.getValue().getStoreBasedAttributes().isEmpty()){
+                cellData.getValue().getStoreBasedAttributes().forEach(sba->{
+                    if(!sba.getHope().isEmpty()&&h.get().compareTo("")==0){
+                        h.set("("+cellData.getValue().getStoreBasedAttributes().get(0).getHope()+")");
+                    }
                 });
             }
+            return new ReadOnlyObjectWrapper<>(h.get());
         });
-
-
+        tableProducts.getColumns().setAll(productIdCol,descriptionCol,
+                masterCol,docCounterCol,hopeCol,numOfSbas);
+        tableProducts.setItems(obsProducts);
     }
 
     private void initDocEntries(){
@@ -336,7 +349,7 @@ public class ProductsView extends ChildController {
 
         TableColumn<PosEntry,String> storeCol = new TableColumn<>("Store");
         storeCol.setCellValueFactory(cellData->{
-            return new ReadOnlyStringWrapper(cellData.getValue().storeName.getDescription());
+            return new ReadOnlyStringWrapper(cellData.getValue().storeName.getName());
         });
 
         tablePosEntries.getColumns().setAll(dateCol,storeCol,posDescCol,quantityCol,moneyCol,priceCol);
@@ -362,8 +375,8 @@ public class ProductsView extends ChildController {
         ArrayList<ProductDTO> filtered = new ArrayList<>();
         if(!searchBar.getText().trim().isEmpty()){
             for(ProductDTO product : productDtoList) {
-                if(!product.getDescriptions().isEmpty()){
-                    if(product.getDescriptions().get(0).toLowerCase().contains(searchBar.getText().toLowerCase())){
+                if(!product.getDescription().isEmpty()){
+                    if(product.getDescription().toLowerCase().contains(searchBar.getText().toLowerCase())){
                         filtered.add(product);
                     }
                 }
@@ -398,5 +411,16 @@ public class ProductsView extends ChildController {
             }
         }
         return toReturn;
+    }
+    private String getBasicDescription(List<StoreBasedAttributes> sbas){
+
+        AtomicReference<String> h = new AtomicReference<>("");
+        for (StoreBasedAttributes sba : sbas) {
+            if (!sba.getDescription().isEmpty()) {
+                h.set(sba.getDescription());
+                return h.get();
+            }
+        }
+        return h.get();
     }
 }

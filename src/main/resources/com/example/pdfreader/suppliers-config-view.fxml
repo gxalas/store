@@ -17,7 +17,11 @@
          <children>
             <HBox alignment="CENTER">
                <children>
-                  <Button fx:id="btnTest" mnemonicParsing="false" text="create new map" />
+                  <Button fx:id="btnTest" mnemonicParsing="false" text="create new map">
+                     <HBox.margin>
+                        <Insets right="20.0" />
+                     </HBox.margin>
+                  </Button>
                   <ComboBox fx:id="cbDepts" />
                   <ComboBox fx:id="cbFamily" />
                </children>

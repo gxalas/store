@@ -37,6 +37,7 @@ public class ImportTxtsView extends ChildController {
     public Button btnCalcPos;
     public Button btnLoadTxt;
     public Text txtPosErrors ;
+    public Text txtProducts;
     private ObservableList<StoreBasedAttributes> obsAllSbas = FXCollections.observableArrayList();
     private ObservableList<Product> obsAllProducts = FXCollections.observableArrayList();
     public TableView<StoreBasedAttributes> tableSbas;
@@ -48,8 +49,6 @@ public class ImportTxtsView extends ChildController {
 
 
     //second page
-
-
     public ComboBox<String> cbStores = new ComboBox<>();
     public TableView<StoreBasedAttributes> tableSbaConflicts = new TableView<>();
 
@@ -88,7 +87,6 @@ public class ImportTxtsView extends ChildController {
             obsFilteredSbas.setAll(filtered);
         }
     };
-
     @Override
     public void initialize(HelloController hc) {
 
@@ -112,6 +110,14 @@ public class ImportTxtsView extends ChildController {
                 } else {
                     obsProductsTable.setAll(obsAllProducts);
                 }
+            }
+        });
+        obsProductsTable.addListener(new ListChangeListener<Product>() {
+            @Override
+            public void onChanged(Change<? extends Product> change) {
+                Platform.runLater(()->{
+                    txtProducts.setText("The products are : "+obsProductsTable.size());
+                });
             }
         });
 
@@ -142,7 +148,6 @@ public class ImportTxtsView extends ChildController {
         obsMatchingSbas.clear();
         obsAllProducts.clear();
         obsAllSbasTable.clear();
-        System.out.println("here we are");
     }
 
     @Override

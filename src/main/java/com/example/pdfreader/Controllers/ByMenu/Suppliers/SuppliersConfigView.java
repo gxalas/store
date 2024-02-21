@@ -85,8 +85,6 @@ public class SuppliersConfigView extends ChildController {
      * @param hc
      */
 
-
-
     @Override
     public void initialize(HelloController hc) {
         super.parentDelegate = hc;
@@ -160,30 +158,19 @@ public class SuppliersConfigView extends ChildController {
                 );
             }
         });
-
-        //loadProducts();
-        //loadSuppliers();
-
     }
-
-
-
     @Override
     public void addMyListeners() {
         obsProductsTable.addListener(updTxtOfCountingProducts);
-
     }
-
     @Override
     public void removeListeners(HelloController hc) {
         obsProductsTable.removeListener(updTxtOfCountingProducts);
     }
-
     @Override
     public <T extends ChildController> T getControllerObject() {
         return (T) this;
     }
-
     @Override
     public void setState() {
         String dept = cbDepts.getValue();
@@ -241,12 +228,6 @@ public class SuppliersConfigView extends ChildController {
                 obsFamilyOptions.removeListener(this);
             }
         });
-
-
-
-
-
-
     }
     private void initButtons() {
         btnAddSupp.setOnAction(new EventHandler<ActionEvent>() {
@@ -336,13 +317,15 @@ public class SuppliersConfigView extends ChildController {
                         Supplier supplier = suppMap.get(supplierName);
                         System.out.println(supplierName+" "+productName);
 
+
+                        if (supplier == null) {
+                            supplier = new Supplier(supplierName);
+                            newSuppliers.add(supplier);
+                            System.out.println("adding supplier name "+supplierName);
+                            suppMap.put(supplierName, supplier);
+                        }
                         if (product != null) {
-                            if (supplier == null) {
-                                supplier = new Supplier(supplierName);
-                                newSuppliers.add(supplier);
-                                System.out.println("adding supplier name "+supplierName);
-                                suppMap.put(supplierName, supplier);
-                            }
+
                             SupplierProductRelation spr =  new SupplierProductRelation(product, supplier);
                             if (!checkRelation(existingRelations,spr)){
                                 newRelations.add(spr);
@@ -379,13 +362,23 @@ public class SuppliersConfigView extends ChildController {
 
                 SupplierProductRelationDAO sprDao = new SupplierProductRelationDAO();
                 List<SupplierProductRelation> sprList = sprDao.findAll();
+
+                Map<Supplier,Map<String,Product>> supplierProductMap = new HashMap<>();
+                sprList.forEach(spr->{
+                    supplierProductMap.computeIfAbsent(spr.getSupplier(), k -> new HashMap<>());
+                    supplierProductMap.get(spr.getSupplier()).put(spr.getProduct().getInvmaster(),spr.getProduct());
+                });
+
+
                 List<String> list1 = new ArrayList<>();
                 List<String> list2 = new ArrayList<>();
-                sprList.forEach(value->{
-                    list1.add(value.getSupplier().getName());
-                    list2.add(value.getProduct().getInvmaster());
-                    //System.out.println(+" + "+);
+                supplierProductMap.keySet().forEach(supplier -> {
+                    supplierProductMap.get(supplier).keySet().forEach(product -> {
+                        list1.add(supplier.getName());
+                        list2.add(product);
+                    });
                 });
+
                 System.out.println(sprList.size());
 
                 // File path
@@ -542,6 +535,7 @@ public class SuppliersConfigView extends ChildController {
                 }
             }
         }
+
         tempFamilyChoices.add(0,"all");
         Platform.runLater(()->{
             System.out.println("setting a different family options");
@@ -549,10 +543,10 @@ public class SuppliersConfigView extends ChildController {
             obsFamilyOptions.setAll(tempFamilyChoices);
             listen = true;
         });
-
-
-
     }
+
+
+
     private void initProductsTable() {
         TableColumn<ProductCompleteDTO,String> descCol = new TableColumn<>("description");
         descCol.setCellValueFactory(cellData->{
@@ -601,7 +595,7 @@ public class SuppliersConfigView extends ChildController {
         TableColumn<ProductCompleteDTO,String> hopeCol = new TableColumn<>("hope");
         hopeCol.setCellValueFactory(cellData->{
             if (cellData.getValue().getStoreBasedAttributesMap().isEmpty()){
-                return new ReadOnlyStringWrapper("-1");
+                return new ReadOnlyStringWrapper("no hop yet");
             }
             String value = cellData.getValue().getStoreBasedAttributesMap().values().stream().toList().get(0).getHope();
             return new ReadOnlyStringWrapper(value);
@@ -900,9 +894,6 @@ public class SuppliersConfigView extends ChildController {
        // documentDAO.saveAll(allDocuments);
         relationDAO.saveAll(allRelations);
     }
-
-
-
     private void fetchingTheData(){
         MyTask myTask = new MyTask(()->null);
         myTask.setTaskLogic(()->{

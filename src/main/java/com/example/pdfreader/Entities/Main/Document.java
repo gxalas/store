@@ -312,31 +312,10 @@ public class Document {
         if (newDoc.getType() != ABInvoiceTypes.TIMOLOGIO) {
             return Collections.emptyList();
         }
-        if(newDoc.getDocumentId().compareTo("9033568261")==0){
-            System.out.println("this is the document in question");
-            System.out.println("the current relations are : "+currentRelations.size());
-            newDoc.getProducts().forEach(product->{
-                System.out.print("the product "+product.getInvDescription()+", ");
-                currentRelations.forEach(relation->{
-                    if(relation.getProduct().getInvmaster().compareTo(product.getInvmaster())==0){
-                        System.out.print(" a supplier is : "+relation.getSupplier().getName()+", ");
-                        System.out.println();
-                    }
-                });
-            });
-        }
+
 
 
         List<SupplierProductRelation> newRelations = new ArrayList<>();
-
-        // Convert relations to a Map for easy access
-        /*
-        Map<Product, Set<Supplier>> productSupplierMap = currentRelations.stream()
-                .collect(Collectors.groupingBy(
-                        SupplierProductRelation::getProduct,
-                        Collectors.mapping(SupplierProductRelation::getSupplier, Collectors.toSet())
-                ));
-         */
 
 
         Map<Product,List<Supplier>> productSupplierMap  = currentRelations.stream()
@@ -385,10 +364,6 @@ public class Document {
 
         if (!newRelations.isEmpty()) {
             System.out.println("New relations to be added: " + newRelations.size());
-        }
-        if(newDoc.getDocumentId().compareTo("9033568261")==0){
-            System.out.println("the document in question ending processing");
-            System.out.println("the new relations for the document are : "+newRelations.size());
         }
 
         return newRelations;

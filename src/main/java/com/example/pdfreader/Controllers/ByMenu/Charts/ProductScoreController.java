@@ -229,9 +229,6 @@ public class ProductScoreController extends ChildController {
                     Platform.runLater(()->{
                         obsTableCompare.add(data);
                     });
-
-
-                    // Perform your action here
                 });
             }
 

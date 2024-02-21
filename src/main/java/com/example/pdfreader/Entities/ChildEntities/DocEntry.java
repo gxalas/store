@@ -88,6 +88,7 @@ public class DocEntry {
             StoreBasedAttributes sba = new StoreBasedAttributes();
             sba.setMasterCode(master);
             sba.setDescription(docLine.description);
+            sba.setStore(document.getStore());
             setSba(sba);
             //sba.setStore(docLine.document.getStore());
             listManager.invoicesMasterToSba.put(master,sba);
@@ -153,15 +154,27 @@ public class DocEntry {
         return this.code;
     }
     public BigDecimal getBoxes() {
+        if(boxes==null){
+            return BigDecimal.ZERO;
+        }
         return boxes;
     }
     public BigDecimal getUnitsPerBox() {
+        if(unitsPerBox==null){
+            return BigDecimal.ZERO;
+        }
         return unitsPerBox;
     }
     public BigDecimal getUnits() {
+        if(units==null){
+            return BigDecimal.ZERO;
+        }
         return units;
     }
     public BigDecimal getUnitPrice() {
+        if(unitPrice==null){
+            return BigDecimal.ZERO;
+        }
         return unitPrice;
     }
     public BigDecimal getTotalPrice() {

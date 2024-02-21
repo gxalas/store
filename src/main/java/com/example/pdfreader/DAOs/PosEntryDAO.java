@@ -103,14 +103,12 @@ public class PosEntryDAO {
         }
     }
     public List<PosEntry> getPosEntriesByProductMasterCode(String masterCode) {
-        Session session = HibernateUtil.getSessionFactory().openSession();
-        try {
-            Query<PosEntry> query = session.createQuery(
-                    "FROM PosEntry pe WHERE pe.product.invmaster = :masterCode", PosEntry.class);
+        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+            // Corrected the attribute name to "masterCode" in the WHERE clause
+            String hql = "FROM PosEntry pe WHERE pe.sba.masterCode = :masterCode";
+            Query<PosEntry> query = session.createQuery(hql, PosEntry.class);
             query.setParameter("masterCode", masterCode);
             return query.list();
-        } finally {
-            session.close();
         }
     }
 
@@ -165,7 +163,8 @@ public class PosEntryDAO {
     }
 
     public List<PosEntry> findEntriesByProductStoreAndDateRange(Product product, StoreNames storeName, Date start, Date end) {
-        String jpql = "SELECT pe FROM PosEntry pe WHERE pe.product = :product AND pe.storeName = :storeName AND pe.date BETWEEN :start AND :end";
+        // Adjusted JPQL to navigate through sba to match storeName
+        String jpql = "SELECT pe FROM PosEntry pe WHERE pe.sba.product = :product AND pe.sba.store = :storeName AND pe.date BETWEEN :start AND :end";
         TypedQuery<PosEntry> query = HibernateUtil.getEntityManagerFactory().createEntityManager().createQuery(jpql, PosEntry.class);
         query.setParameter("product", product);
         query.setParameter("storeName", storeName);

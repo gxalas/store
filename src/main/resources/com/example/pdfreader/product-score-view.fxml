@@ -30,7 +30,7 @@
                         <Insets right="5.0" />
                      </HBox.margin>
                   </Text>
-                  <TextField fx:id="txtDaysBefore" prefWidth="50.0" />
+                  <TextField fx:id="txtDaysBefore" prefWidth="50.0" text="7" />
                   <Button fx:id="btnCompareChart" mnemonicParsing="false" text="Show Chart">
                      <HBox.margin>
                         <Insets left="10.0" />

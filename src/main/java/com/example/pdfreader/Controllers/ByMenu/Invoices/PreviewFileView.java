@@ -485,6 +485,7 @@ public class PreviewFileView extends ChildController {
 
         TableColumn<DocEntryDTO,String> perBoxCol = new TableColumn<>("Units per Box");
         perBoxCol.setCellValueFactory(cellData->{
+
             String perBoxes = cellData.getValue().getDocEntry().getUnitsPerBox().toString();
             return new ReadOnlyStringWrapper(perBoxes);
         });

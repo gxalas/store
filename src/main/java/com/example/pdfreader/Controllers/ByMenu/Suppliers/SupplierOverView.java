@@ -87,6 +87,16 @@ public class SupplierOverView extends ChildController {
                 allProducts.forEach(product -> {
                     if(!product.getStoreBasedAttributes().isEmpty()){
                         product.getStoreBasedAttributes().forEach(sba->{
+                            if(sba.getDepartment().trim().isEmpty()){
+                                System.out.println("an empty department");
+                                System.out.println(sba.getDescription());
+                                if(sba.getProduct()!=null){
+                                    System.out.println(sba.getProduct().getInvDescription());
+                                } else {
+                                    System.out.println("null product on the sba");
+                                }
+
+                            }
                             if(sba.getDepartment()!=null){
                                 if(!deptOptions.contains(sba.getDepartment())){
                                     deptOptions.add(sba.getDepartment());

@@ -57,10 +57,6 @@ public class ProductDAO {
                     System.err.println("a null product attempted to get saved at position "+i);
                     continue;
                 }
-                if(products.get(i).getInvDescription().startsWith("επιλεγ")){
-                    System.err.println(" WE ARE SAVING THE PRODUCT EPILEGMENO ");
-                    System.err.println(" ");
-                }
                 entityManager.persist(products.get(i));
 
                 // Flush and clear the EntityManager in batches
@@ -169,7 +165,7 @@ public class ProductDAO {
 
             List<StoreBasedAttributes> sbasForProduct = sbaMap.getOrDefault(productId, Collections.emptyList());
 
-            ProductDTO dto = new ProductDTO(productId, code, List.of(invDescription), invmaster, docCount);
+            ProductDTO dto = new ProductDTO(productId, code, invDescription, invmaster, docCount);
             dto.setStoreBasedAttributes(sbasForProduct);
             return dto;
         }).collect(Collectors.toList());
@@ -177,8 +173,9 @@ public class ProductDAO {
     public List<Object[]> fetchProductsAndDocCount() {
         String query = "SELECT p.id, p.code, p.invDescription, p.invmaster, COUNT(de.id) as docCount " +
                 "FROM Product p " +
-                "LEFT JOIN DocEntry de ON de.product = p " +
-                "GROUP BY p.id";
+                "LEFT JOIN StoreBasedAttributes sba ON sba.product = p " +
+                "LEFT JOIN DocEntry de ON de.sba = sba " +
+                "GROUP BY p.id, p.code, p.invDescription, p.invmaster";
         return entityManager.createQuery(query, Object[].class).getResultList();
     }
     public Map<Long, List<StoreBasedAttributes>> fetchSBAsGroupedByProductId() {
