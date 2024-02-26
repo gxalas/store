@@ -13,10 +13,12 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
+import java.math.BigDecimal;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 /*
@@ -36,10 +38,13 @@ public class ImportItemAndPosFiles {
 
     private Map<StoreNames,Set<Date>> dateMap = new HashMap<>();
     private Map<StoreNames,Map<String,List<PosEntry>>> posEntriesOfAStore = new HashMap<>();
+    private Map<StoreNames,Map<StoreBasedAttributes,List<PosEntry>>> storeSbaToPosEntries = new HashMap<>();
 
     private Map<String,StoreBasedAttributes> storeMasterToSba = new HashMap<>();
     private Map<String,Product> globalMasterToProductMap = new HashMap<>();
     private Map<String,Product> globalBarcodeMap = new HashMap<>();
+
+    private Map<StoreNames,Map<Date,List<PosEntry>>> megaPosMap = new HashMap<>();
 
 
 
@@ -47,6 +52,7 @@ public class ImportItemAndPosFiles {
     private Set<StoreBasedAttributes> toSaveSba = new HashSet<>();
     private Set<Product> toSaveProducts = new HashSet<>();
     private Set<PosEntry> toSavePosEntries = new HashSet<>();
+    AtomicInteger posCounter = new AtomicInteger(0);
 
 
     private final HelloController hc;
@@ -75,6 +81,7 @@ public class ImportItemAndPosFiles {
 
         dateMap = posEntryDAO.getDatesByStoreName();
 
+
         HelpingFunctions.setEndAndPrint("getting the posEntries SHA codes list");
 
 
@@ -91,7 +98,12 @@ public class ImportItemAndPosFiles {
         Map<File, StoreNames> storeItemFiles = new HashMap<>();
         Map<File, StoreNames> storePosSaleFiles = new HashMap<>();
 
+
+
         storeSet.forEach(store->{
+            if(dateMap.get(store)==null){
+                dateMap.put(store,new HashSet<>());
+            }
             System.out.println("- - starting store "+store.getName()+" - - - ");
 
             storeItemFiles.clear();
@@ -113,21 +125,24 @@ public class ImportItemAndPosFiles {
 
                 storeMasterToSba = getStoreMasterToSba(store);
 
-
                 storePosSaleFiles.forEach(this::createTheMegaPosMap);
-
                 storeItemFiles.forEach(this::createTheMegaSbaMap);
 
-                Map<StoreBasedAttributes,List<PosEntry>> sbaToPosMap = getCandidatePoses(store);
-                System.out.println("got candidate poses");
+                //Map<StoreBasedAttributes,List<PosEntry>> sbaToPosMap = getCandidatePoses(store);
+                System.out.println("masters of store : "+posEntriesOfAStore.get(store).size());
 
-                for (StoreBasedAttributes sba : sbaToPosMap.keySet()) {
-                    toSavePosEntries.addAll(sbaToPosMap.get(sba));
+                for (String master : posEntriesOfAStore.get(store).keySet()) {
+
+                    StoreBasedAttributes sba = posEntriesOfAStore.get(store).get(master).get(0).getSba();
+
+                    toSavePosEntries.addAll(posEntriesOfAStore.get(store).get(master));
+
+
                     if(storeMasterToSba.get(sba.getMasterCode())!=null){
                         updateSba(storeMasterToSba.get(sba.getMasterCode()),sba);
-                        sbaToPosMap.get(sba).forEach(posEntry -> {
-                            posEntry.setSba(storeMasterToSba.get(sba.getMasterCode()));
-                            toUpdateSbas.add(storeMasterToSba.get(sba.getMasterCode()));
+                        posEntriesOfAStore.get(store).get(master).forEach(posEntry -> {
+                            posEntry.setSba(storeMasterToSba.get(master));
+                            toUpdateSbas.add(storeMasterToSba.get(master));
                         });
                         continue;
                     }
@@ -156,7 +171,7 @@ public class ImportItemAndPosFiles {
                     Product product = new Product();
                     product.setInvDescription(sba.getDescription());
                     product.setInvmaster(sba.getMasterCode());
-                    product.setLog(product.getLog()+"\nadded by file");
+                    product.setLog("added by file");
                     sba.getBarcodes().forEach(barcode->{
                         globalBarcodeMap.put(barcode,product);
                     });
@@ -173,17 +188,22 @@ public class ImportItemAndPosFiles {
 
         });
 
-        System.out.println("to save pos entries are "+toSavePosEntries.size());
+        System.out.println("to save pos entries are "+toSavePosEntries.size()+" and the counter says "+posCounter.get());
         System.out.println("the to save Products are "+toSaveProducts.size());
         System.out.println("the to save Sbas are "+toSaveSba.size());
         System.out.println("the to update sbas are "+toUpdateSbas.size());
 
-        if(toSavePosEntries.size()==1){
-            System.out.println("the "+toSavePosEntries.stream().toList().get(0).getDescription()+" ,"+
-                    toSavePosEntries.stream().toList().get(0).getMaster()+" : "+
-                    toSavePosEntries.stream().toList().get(0).getDate()+ " : "+
-                    toSavePosEntries.stream().toList().get(0).getStoreName().getName());
-        }
+
+        final BigDecimal[] sum = {BigDecimal.ZERO};
+        Date date = megaPosMap.get(StoreNames.DRAPETSONA).keySet().stream().toList().get(0);
+        megaPosMap.keySet().forEach(store->{
+            sum[0] = BigDecimal.ZERO;
+            megaPosMap.get(store).get(date).forEach(posEntry -> {
+                sum[0] = sum[0].add(posEntry.getMoney());
+                System.out.println("pos Entry = "+posEntry.getDate()+"::"+posEntry.getDescription()+" :: "+posEntry.getMoney());
+            });
+            System.out.println("the sum is "+sum[0]);
+        });
 
 
         ProductDAO productDAO = new ProductDAO();
@@ -240,9 +260,6 @@ public class ImportItemAndPosFiles {
         }
     }
 
-    private  void readFiles(){
-
-    }
 
     private void createTheMegaPosMap(File file, StoreNames storeName){
         System.out.println("- processing : "+file.getName()+", for store : "+storeName.getName());
@@ -252,7 +269,7 @@ public class ImportItemAndPosFiles {
             return;
         }
 
-        //megaPosMap.computeIfAbsent(storeName, k -> new HashMap<>());
+        megaPosMap.computeIfAbsent(storeName, k -> new HashMap<>());
         Date indexDate = null;
         int index =0;
         try{
@@ -260,8 +277,10 @@ public class ImportItemAndPosFiles {
             List<String> possales = Files.readAllLines(path, Charset.forName("ISO-8859-7"));
             try {
                 for (String possale : possales) {
+                    posCounter.getAndIncrement();
                     if (possale.trim().compareTo("") != 0) {
                         PosEntry temp = new PosEntry(possale, storeName);
+
                         if(indexDate==null){
                             indexDate=temp.date;
                         }
@@ -271,16 +290,22 @@ public class ImportItemAndPosFiles {
                         }
                         temp.setShaCode(temp.sha256(index));
                         index++;
-
                         if(!dateMap.get(storeName).contains(temp.getDate())){
-                            //megaPosMap.get(storeName).computeIfAbsent(temp.getDate(), k -> new HashMap<>());
-                            //megaPosMap.get(storeName).get(temp.getDate()).putIfAbsent(temp.getMaster(), temp);
+                            megaPosMap.computeIfAbsent(storeName, k -> new HashMap<>());
+                            megaPosMap.get(storeName).putIfAbsent(temp.getDate(), new ArrayList<>());
+                            megaPosMap.get(storeName).get(temp.getDate()).add(temp);
+
+
+                           // megaPosMap.get(storeName).computeIfAbsent(temp.getDate(), k -> new HashMap<>());
+                            // megaPosMap.get(storeName).get(temp.getDate()).putIfAbsent(temp.getMaster(), temp);
 
                             posEntriesOfAStore.computeIfAbsent(storeName, k -> new HashMap<>());
                             posEntriesOfAStore.get(storeName).computeIfAbsent(temp.getMaster(), k -> new ArrayList<>());
                             posEntriesOfAStore.get(storeName).get(temp.getMaster()).add(temp);
                             //mastersOfAStore.computeIfAbsent(storeName, k -> new HashSet<>());
                             //mastersOfAStore.get(storeName).add(temp.getMaster());
+                        } else {
+                            System.out.println(" a pos entry got rejected");
                         }
                     }
                 }
@@ -310,11 +335,19 @@ public class ImportItemAndPosFiles {
 
                 StoreBasedAttributes currentSba = sbaFromLine(newline);
 
+
+
+                /*
+                this is for reducing the sbas that we create from the file,
+                but it also may increase the time needed
+                 */
+                if(posEntriesOfAStore.get(store)==null){
+                    continue;
+                }
                 if(posEntriesOfAStore.get(store).get(currentSba.getMasterCode())==null){
                     continue;
                 }
 
-                //if(megaPosMap.get(store).get(currentSba.getMasterCode())!=null)
                 currentSba.setStore(store);
                 if(sbaMegaMap.get(store).get(currentSba.getMasterCode())==null){
                     //if current sba is not at the map
@@ -329,16 +362,19 @@ public class ImportItemAndPosFiles {
                 //if(barcodeToProduct)
             }
 
-
-            System.out.println("READJUSTING STARTS");
-            sbaMegaMap.keySet().forEach(key->{
-                sbaMegaMap.get(key).keySet().forEach(master->{
-                    StoreBasedAttributes sba = sbaMegaMap.get(key).get(master);
-                    if(sba.getBarcodes().isEmpty()){
-                        sba.getBarcodes().addAll(sba.getHopeBarcodes());
-                    }
+            sbaMegaMap.get(store).keySet().forEach(master->{
+                StoreBasedAttributes sba = sbaMegaMap.get(store).get(master);
+                if(sba.getBarcodes().isEmpty()){
+                    sba.getBarcodes().addAll(sba.getHopeBarcodes());
+                }
+            });
+            posEntriesOfAStore.computeIfAbsent(store, k -> new HashMap<>());
+            posEntriesOfAStore.get(store).keySet().forEach(master->{
+                posEntriesOfAStore.get(store).get(master).forEach(posEntry->{
+                    posEntry.setSba(sbaMegaMap.get(store).get(master));
                 });
             });
+
         } catch (IOException ex) {
             throw new RuntimeException(ex);
         } catch (Exception e){
@@ -387,39 +423,8 @@ public class ImportItemAndPosFiles {
 
         return sba;
     }
-    private  Map<StoreBasedAttributes,List<PosEntry>> getCandidatePoses(StoreNames store){
-        Map<StoreNames,Map<Date,Map<String, PosEntry>>> candidatePosEntries = new HashMap<>();
-        candidatePosEntries.put(store,new HashMap<>());
-        System.out.println("the size of mega pos map for that store "+megaPosMap.get(store).size());
 
-        megaPosMap.computeIfAbsent(store, k -> new HashMap<>());
-        for (Date date : megaPosMap.get(store).keySet()) {
-            candidatePosEntries.get(store).put(date, new HashMap<>());
-            if(dateMap.get(store)!=null){
-                if(dateMap.get(store).contains(date)){
-                    continue;
-                }
-            }
-            for (String master : megaPosMap.get(store).get(date).keySet()) {
-                /*
-                if (shaCodesSet.contains(megaPosMap.get(store).get(date).get(master).getShaCode())) {
-                    //the pos entry already exists in the database
-                    //System.out.println("pos already");
-                    continue;
-                }
-                */
 
-                candidatePosEntries.get(store).get(date).put(master, megaPosMap.get(store).get(date).get(master));
-                if (sbaMegaMap.get(store).get(master) != null) {
-                    candidatePosEntries.get(store).get(date).get(master).setSba(sbaMegaMap.get(store).get(master));
-                }
-            }
-        }
-        System.out.println("finishing the poses");
-        //megaPosMap.get(store).clear();
-        //sbaMegaMap.get(store).clear();
-        return convertToSbaToPosesMap(candidatePosEntries);
-    }
 
     private Map<StoreBasedAttributes,List<PosEntry>> convertToSbaToPosesMap(Map<StoreNames,Map<Date,Map<String,PosEntry>>> poses){
         Map<StoreBasedAttributes,List<PosEntry>> sbaToPosMap = new HashMap<>();
@@ -484,67 +489,6 @@ public class ImportItemAndPosFiles {
         dbSba.setFamily(fileSba.getFamily());
         dbSba.setDepartment(fileSba.getDepartment());
         dbSba.setDescription(fileSba.getDescription());
-    }
-    private void findProductOfSba(StoreBasedAttributes sba,
-                                   Map<String,Product> barcodeToProduct,
-                                   Map<StoreNames,Map<String,Product>> masterToProductMap){
-
-        Set<Product> matchingProducts = new HashSet<>();
-        sba.getBarcodes().forEach(barcode -> {
-            if (barcodeToProduct.get(barcode) != null) {
-                matchingProducts.add(barcodeToProduct.get(barcode));
-            }
-        });
-        if(sba.getProduct()!=null){
-            System.err.println("we are trying to find a product for an sba that already has an product");
-        }
-        if (matchingProducts.isEmpty()) {
-            //empties.getAndIncrement();
-            //asxeto check
-
-            Product product = new Product();
-            boolean found = false ;
-            if(masterToProductMap.get(sba.getStore())!=null){
-                if(masterToProductMap.get(sba.getStore()).get(sba.getMasterCode())!=null) {
-                    product = masterToProductMap.get(sba.getStore()).get(sba.getMasterCode());
-                    found = true;
-                    sba.setProduct(product);
-                    // here is the thing with the barcodes
-                    sba.getBarcodes().addAll(sbaMegaMap.get(sba.getStore()).get(sba.getMasterCode()).getBarcodes());
-                }
-            }
-
-            if(!found){
-                sba.setProduct(createNewProduct(sba));
-                sba.getBarcodes().forEach(barcode->{
-                    barcodeToProduct.put(barcode,sba.getProduct());
-                });
-                if(masterToProductMap.get(sba.getStore())==null){
-                    masterToProductMap.put(sba.getStore(),new HashMap<>());
-                    masterToProductMap.get(sba.getStore()).put(sba.getMasterCode(),sba.getProduct());
-                } else {
-                    masterToProductMap.get(sba.getStore()).put(sba.getMasterCode(),sba.getProduct());
-                }
-            }
-
-
-        } else if (matchingProducts.size() == 1) {
-            //one.getAndIncrement();
-            sba.setProduct(matchingProducts.stream().toList().get(0));
-            sba.getBarcodes().forEach(barcode -> {
-                barcodeToProduct.computeIfAbsent(barcode, k -> sba.getProduct());
-            });
-            masterToProductMap.computeIfAbsent(sba.getStore(), k -> new HashMap<>());
-            masterToProductMap.get(sba.getStore()).put(sba.getMasterCode(),sba.getProduct());
-        } else {
-            //other.getAndIncrement();
-            //if (other.get() < 10) {
-            //    matchingProducts.forEach(product -> {
-            //        System.out.println("a conflicting product " + product.getInvDescription());
-            //    });
-            //}
-            //conflict
-        }
     }
 
     private Product createNewProduct(StoreBasedAttributes sba){

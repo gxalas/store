@@ -200,38 +200,6 @@ public class PosEntry {
             return null;
         }
     }
-    public String localSha() {
-
-        String t = ABUsualInvoice.format.format(date)+master+storeName.getDescription();
-
-        try {
-            MessageDigest digest = MessageDigest.getInstance("SHA-256");
-            byte[] hash = digest.digest(t.getBytes(StandardCharsets.UTF_8));
-            StringBuilder hexString = new StringBuilder();
-
-            for (byte b : hash) {
-                String hex = Integer.toHexString(0xff & b);
-                if (hex.length() == 1) {
-                    hexString.append('0');
-                }
-                hexString.append(hex);
-            }
-            if (counter>0){
-                System.out.println("this is for sha encoding test"+t+" : "+hexString.toString());
-                counter--;
-            }
-
-            String result = hexString.toString();
-
-
-            localShaCode = result;
-
-            return result;
-        } catch (NoSuchAlgorithmException e) {
-            e.printStackTrace();
-            return null;
-        }
-    }
 
 
 }

@@ -82,7 +82,9 @@ public class DocEntry {
         listManager.docEntriesDescriptions.put(master,docLine.description);
 
 
-        if(listManager.invoicesMasterToSba.get(master)!=null){
+
+        if(listManager.invoicesMasterToSba.get(master)!=null
+                && listManager.invoicesMasterToSba.get(master).getStore().compareTo(document.getStore())==0){
             setSba(listManager.invoicesMasterToSba.get(master));
         } else {
             StoreBasedAttributes sba = new StoreBasedAttributes();
@@ -93,6 +95,7 @@ public class DocEntry {
             //sba.setStore(docLine.document.getStore());
             listManager.invoicesMasterToSba.put(master,sba);
         }
+
 
         /*
         Product tempProduct = listManager.getProductHashMap().get(docLine.getRetEan());

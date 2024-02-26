@@ -152,9 +152,12 @@ public class ImportPdfFiles {
         Map<StoreNames,Map<String,StoreBasedAttributes>> storeMasterToSbaMap = new HashMap<>();
 
         sbas.forEach(sba->{
+
             if(sba.getProduct()!=null){
+
                 storeMasterToSbaMap.computeIfAbsent(sba.getStore(), k -> new HashMap<>());
                 storeMasterToSbaMap.get(sba.getStore()).putIfAbsent(sba.getMasterCode(), sba);
+
 
                 if(globalMasterToSba.get(sba.getMasterCode())!=null){
                     if(!globalMasterToSba.get(sba.getMasterCode()).getDepartment().trim().isEmpty() ||
@@ -168,9 +171,14 @@ public class ImportPdfFiles {
                 //productMap.computeIfAbsent(sba.getMasterCode(), k -> sba.getProduct());
             }
         });
+        storeMasterToSbaMap.computeIfAbsent(StoreNames.DRAPETSONA, k -> new HashMap<>());
+        System.out.println("store master to sba size of drapetsona : "+storeMasterToSbaMap.get(StoreNames.DRAPETSONA).size());
+        System.out.println("the global master to sba size = "+globalMasterToSba.size());
 
         Set<Product> toSaveProducts = new HashSet<>();
         Set<StoreBasedAttributes> toSaveSbas = new HashSet<>();
+
+
         //Set<Product> toUpdateProducts = new HashSet<>();
 
         toSaveDocuments.forEach(document -> {
@@ -179,8 +187,8 @@ public class ImportPdfFiles {
                 StoreBasedAttributes currentSba = docEntry.getSba();
 
                 if (storeMasterToSbaMap.get(document.getStore()) != null) {
-
                     if (storeMasterToSbaMap.get(document.getStore()).get(docEntry.getMaster()) != null) {
+
                         docEntry.setSba(storeMasterToSbaMap.get(document.getStore()).get(docEntry.getMaster()));
                         //update sba
                         continue;
@@ -188,21 +196,32 @@ public class ImportPdfFiles {
                 }
 
                 if(globalMasterToSba.get(currentSba.getMasterCode())!=null){
-                    if(currentSba.getDepartment().trim().isEmpty()||currentSba.getDepartment().trim().startsWith("-")){
-                        currentSba.setDepartment(globalMasterToSba.get(currentSba.getMasterCode()).getDepartment());
-                    }
-                    if(currentSba.getDescription().trim().isEmpty()){
-                        currentSba.setDescription(globalMasterToSba.get(currentSba.getMasterCode()).getDescription());
-                    }
-                    if(currentSba.getHope().trim().isEmpty()){
-                        currentSba.setHope(globalMasterToSba.get(currentSba.getMasterCode()).getHope());
-                    }
-                    currentSba.setProduct(globalMasterToSba.get(currentSba.getMasterCode()).getProduct());
+                    StoreBasedAttributes dbSba = globalMasterToSba.get(currentSba.getMasterCode());
+                    StoreBasedAttributes newSba = new StoreBasedAttributes();
+
+                    newSba.setStore(currentSba.getStore());
+                    newSba.setDescription(dbSba.getDescription());
+                    newSba.setMasterCode(currentSba.getMasterCode());
+                    newSba.setHope(dbSba.getHope());
+                    newSba.setDepartment(dbSba.getDepartment());
+                    newSba.setProduct(dbSba.getProduct());
+                    newSba.getBarcodes().addAll(currentSba.getBarcodes());
+                    newSba.getHopeBarcodes().addAll(currentSba.getHopeBarcodes());
+                    newSba.getConflictingBarcodes().addAll(currentSba.getConflictingBarcodes());
+
+                    docEntry.setSba(newSba);
+                    toSaveSbas.add(newSba);
+
+                    storeMasterToSbaMap.computeIfAbsent(currentSba.getStore(), k -> new HashMap<>());
+                    storeMasterToSbaMap.get(currentSba.getStore()).put(currentSba.getMasterCode(),newSba);
+
                     continue;
                 }
                 if(currentSba.getDepartment().isEmpty()){
                     currentSba.setDepartment("-3");
                 }
+
+
                 Product product = new Product();
                 product.setInvDescription(currentSba.getDescription());
                 product.setInvmaster(currentSba.getMasterCode());
@@ -212,32 +231,24 @@ public class ImportPdfFiles {
 
                 //docEntry.getSba().setProduct(product);
                 storeMasterToSbaMap.computeIfAbsent(document.getStore(), k -> new HashMap<>());
-                storeMasterToSbaMap.get(document.getStore()).computeIfAbsent(docEntry.getSba().getMasterCode(), k -> docEntry.getSba());
+                storeMasterToSbaMap.get(document.getStore()).computeIfAbsent(docEntry.getSba().getMasterCode(), k -> {
+                    return currentSba;
+                });
                 globalMasterToSba.put(currentSba.getMasterCode(),currentSba);
                 toSaveProducts.add(product);
                 toSaveSbas.add(docEntry.getSba());
             }
         });
 
+        AtomicInteger i = new AtomicInteger();
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+        toSaveSbas.stream().toList().forEach(sba->{
+            if(sba.getMasterCode().compareTo("40747559900")==0){
+                i.getAndIncrement();
+                //System.out.println("The product we are looking for is found");
+            }
+        });
+        System.out.println("the sbas with the mastercode are "+i.get());
 
 
         /*
