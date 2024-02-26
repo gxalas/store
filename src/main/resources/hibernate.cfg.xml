@@ -26,6 +26,12 @@
         <!-- Batch fetch size -->
         <property name="hibernate.default_batch_fetch_size">250</property>
 
+        <property name="hibernate.jdbc.batch_size">50</property>
+        <property name="hibernate.order_inserts">true</property>
+        <property name="hibernate.order_updates">true</property>
+        <property name="hibernate.jdbc.batch_versioned_data">true</property>
+        <property name="hibernate.transaction.coordinator_class">jdbc</property>
+
         <!-- Update the database schema on startup -->
         <property name="hibernate.hbm2ddl.auto">update</property>
 

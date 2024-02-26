@@ -1,4 +1,6 @@
 package com.example.pdfreader.DAOs;
+import java.util.*;
+import java.util.logging.Logger;
 
 import com.example.pdfreader.Entities.Attributes.StoreBasedAttributes;
 import com.example.pdfreader.Entities.Main.Product;
@@ -7,20 +9,17 @@ import com.example.pdfreader.enums.StoreNames;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.NoResultException;
 import jakarta.persistence.TypedQuery;
-import org.hibernate.Session;
-import org.hibernate.Transaction;
+import org.hibernate.*;
 import org.hibernate.query.Query;
-
-import java.util.Collections;
-import java.util.Date;
-import java.util.List;
-import java.util.logging.Logger;
+import org.hibernate.resource.transaction.spi.TransactionStatus;
 
 public class PosEntryDAO {
 
     //private  SessionFactory sessionFactory;
     private static final int BATCH_SIZE = 50; // Adjust this size based on your requirements
     private static final Logger logger = Logger.getLogger(PosEntryDAO.class.getName());
+    private static final Logger LOGGER2 = Logger.getLogger(PosEntryDAO.class.getName());
+
 
     /*
     static {
@@ -46,6 +45,7 @@ public class PosEntryDAO {
         // Ensure the EntityManager is closed
     }
 
+    /*
     public void savePosEntries(List<PosEntry> posEntries) {
         Session session = HibernateUtil.getSessionFactory().openSession();
 
@@ -73,16 +73,7 @@ public class PosEntryDAO {
                 if (tx != null) {
                     tx.rollback();
                 }
-                /*
-                System.out.println("- - - - -  error at duplicate :: saving pos entries - - - - -");
-                System.out.println(e.hashCode() + " . " + e.getCause() + " . " + e.getMessage());
-                System.out.println("- - - - -  error at duplicate - - - - -");
-                System.out.println("hash " + posEntry.getShaCode());
-                System.out.println("store " + posEntry.getStoreName()); // Make sure this is the correct way to access storeName
-                System.out.println("master " + posEntry.getMaster());
-                System.out.println("date " + posEntry.getDate());
-                */
-                // Log the error properly
+
             } finally {
                 // Optionally clear the session to handle memory efficiently
                 session.clear();
@@ -90,6 +81,54 @@ public class PosEntryDAO {
         }
 
         session.close(); // Close the session after processing all entries
+    }
+     */
+
+    public void savePosEntries(List<PosEntry> posEntries) {
+        Session session = HibernateUtil.getSessionFactory().openSession();
+
+        for (PosEntry posEntry : posEntries) {
+            Transaction tx = null;
+
+            try {
+                tx = session.beginTransaction();
+
+
+                if (posEntry.getId() == null) {
+                    session.persist(posEntry);
+                } else {
+                    session.merge(posEntry);
+                }
+
+                tx.commit();
+            } catch (RuntimeException e) {
+                if (tx != null) {
+                    tx.rollback();
+                }
+
+            } finally {
+                // Optionally clear the session to handle memory efficiently
+                session.clear();
+            }
+        }
+
+        session.close(); // Close the session after processing all entries
+    }
+    public Map<StoreNames, Set<Date>> getDatesByStoreName() {
+        Map<StoreNames, Set<Date>> storeDatesMap = new HashMap<>();
+        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+            String hql = "SELECT pe.storeName, pe.date FROM PosEntry pe";
+            Query<Object[]> query = session.createQuery(hql, Object[].class);
+            List<Object[]> results = query.list();
+
+            for (Object[] result : results) {
+                StoreNames storeName = (StoreNames) result[0];
+                Date date = (Date) result[1];
+
+                storeDatesMap.computeIfAbsent(storeName, k -> new HashSet<>()).add(date);
+            }
+        }
+        return storeDatesMap;
     }
 
     public List<PosEntry> getPosEntriesByProduct(Product product) {

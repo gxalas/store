@@ -63,6 +63,8 @@ public class PosEntry {
 
     @Column(name = "sha_code", unique = true)
     private String shaCode;
+    @Column(name = "local_sha_code", unique = true)
+    private String localShaCode;
 
 
     static int counter = 1;
@@ -102,28 +104,6 @@ public class PosEntry {
             // Handle the case where stringValue is not a valid number
             // For example, log an error, set a default value, or skip this record
         }
-
-
-
-
-        String d = ABUsualInvoice.format.format(date);
-
-
-
-        //this.shaCode = sha256(t);
-        /*
-        if(test){
-            int hashcode2 = t.hashCode();
-            System.out.println(hashCode);
-            System.out.println(line+" "+store+" "+hashcode2);
-            System.out.println(d+" "+master+" "+storeName.getDescription());
-            test = false;
-        }
-         */
-
-
-
-
 
     }
     public Date retDate(String line){
@@ -190,7 +170,9 @@ public class PosEntry {
     }
 
     public String sha256(int index) {
+
         String t = index+ABUsualInvoice.format.format(date)+master+storeName.getDescription();
+
         try {
             MessageDigest digest = MessageDigest.getInstance("SHA-256");
             byte[] hash = digest.digest(t.getBytes(StandardCharsets.UTF_8));
@@ -208,11 +190,48 @@ public class PosEntry {
                 counter--;
             }
 
+            String result = hexString.toString();
 
-            return hexString.toString();
+
+
+            return result;
         } catch (NoSuchAlgorithmException e) {
             e.printStackTrace();
             return null;
         }
     }
+    public String localSha() {
+
+        String t = ABUsualInvoice.format.format(date)+master+storeName.getDescription();
+
+        try {
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            byte[] hash = digest.digest(t.getBytes(StandardCharsets.UTF_8));
+            StringBuilder hexString = new StringBuilder();
+
+            for (byte b : hash) {
+                String hex = Integer.toHexString(0xff & b);
+                if (hex.length() == 1) {
+                    hexString.append('0');
+                }
+                hexString.append(hex);
+            }
+            if (counter>0){
+                System.out.println("this is for sha encoding test"+t+" : "+hexString.toString());
+                counter--;
+            }
+
+            String result = hexString.toString();
+
+
+            localShaCode = result;
+
+            return result;
+        } catch (NoSuchAlgorithmException e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+
 }

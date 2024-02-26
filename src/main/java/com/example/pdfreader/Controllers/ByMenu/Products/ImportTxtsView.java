@@ -134,12 +134,10 @@ public class ImportTxtsView extends ChildController {
 
     @Override
     public void removeListeners(HelloController hc) {
-
         obsMatchingProducts.removeListener(btnVisibilityListener);
         obsAllSbas.removeListener(allSbasListener);
         obsAllProducts.removeListener(allProductsListener);
         tableProducts.getSelectionModel().selectedItemProperty().removeListener(filteringSbas);
-
 
         obsProductsTable.clear();
         obsMatchingProducts.clear();

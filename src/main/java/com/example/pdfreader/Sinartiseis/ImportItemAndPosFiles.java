@@ -26,14 +26,22 @@ if it is a 930 we use the barcodes to infer the product
  */
 
 public class ImportItemAndPosFiles {
-    private final Map<File, StoreNames> itemFiles = new HashMap<>();
-    private final Map<File, StoreNames> posSaleFiles = new HashMap<>();
-    private final Map<StoreNames,Map<String, StoreBasedAttributes>> sbaMegaMap= new HashMap<>();
-    private final Map<StoreNames,Map<Date,Map<String, PosEntry>>> megaPosMap = new HashMap<>();
-    private List<String> shaCodes = new ArrayList<>();
+    private Map<File, StoreNames> itemFiles = new HashMap<>();
+    private Map<File, StoreNames> posSaleFiles = new HashMap<>();
+    //private final Map<StoreNames,Map<String, StoreBasedAttributes>> sbaMegaMap= new HashMap<>();
+    //private Map<StoreNames,Map<Date,Map<String, PosEntry>>> megaPosMap = new HashMap<>();
+
+
+    //private Set<String> shaCodesSet = new HashSet<>();
+
+    private Map<StoreNames,Set<Date>> dateMap = new HashMap<>();
+    private Map<StoreNames,Map<String,List<PosEntry>>> posEntriesOfAStore = new HashMap<>();
+
     private Map<String,StoreBasedAttributes> storeMasterToSba = new HashMap<>();
     private Map<String,Product> globalMasterToProductMap = new HashMap<>();
     private Map<String,Product> globalBarcodeMap = new HashMap<>();
+
+
 
     private Set<StoreBasedAttributes> toUpdateSbas = new HashSet<>();
     private Set<StoreBasedAttributes> toSaveSba = new HashSet<>();
@@ -63,11 +71,18 @@ public class ImportItemAndPosFiles {
         // Method's heavy lifting is now wrapped within a lock in the public method `initiateLoadingProcess`
 
         PosEntryDAO posEntryDAO = new PosEntryDAO();
-        shaCodes = posEntryDAO.findAllShaCodes();
-        createBarcodeToProductMap();
-        globalMasterToProductMap = getGlobalMasterToProductMap();
+        HelpingFunctions.setStartTime();
+
+        dateMap = posEntryDAO.getDatesByStoreName();
+
+        HelpingFunctions.setEndAndPrint("getting the posEntries SHA codes list");
 
 
+        StoreBasedAttributesDAO storeBasedAttributesDAO = new StoreBasedAttributesDAO();
+        List<StoreBasedAttributes> allSbas = storeBasedAttributesDAO.getAllStoreBasedAttributes();
+
+        globalBarcodeToProductMap(allSbas);
+        createGlobalMasterToProductMap(allSbas);
 
         //hc.listManager.loadFileChecksums();
         getFilesFromFolder();
@@ -81,14 +96,12 @@ public class ImportItemAndPosFiles {
 
             storeItemFiles.clear();
             storePosSaleFiles.clear();
-            storeMasterToSba = getStoreMasterToSba(store);
 
             itemFiles.keySet().forEach(key->{
                 if(itemFiles.get(key)==store){
                     storeItemFiles.put(key,store);
                 }
             });
-
             posSaleFiles.keySet().forEach(file->{
                 if(posSaleFiles.get(file)==store){
                     storePosSaleFiles.put(file,store);
@@ -96,20 +109,21 @@ public class ImportItemAndPosFiles {
             });
 
             if(!storePosSaleFiles.isEmpty() && !storeItemFiles.isEmpty()){
-
                 System.out.println("- - - processing store "+store.getName()+" - - - ");
 
-                storeItemFiles.forEach(this::createTheMegaSbaMap);
+                storeMasterToSba = getStoreMasterToSba(store);
+
+
                 storePosSaleFiles.forEach(this::createTheMegaPosMap);
+
+                storeItemFiles.forEach(this::createTheMegaSbaMap);
+
                 Map<StoreBasedAttributes,List<PosEntry>> sbaToPosMap = getCandidatePoses(store);
+                System.out.println("got candidate poses");
 
                 for (StoreBasedAttributes sba : sbaToPosMap.keySet()) {
                     toSavePosEntries.addAll(sbaToPosMap.get(sba));
-
-
-
                     if(storeMasterToSba.get(sba.getMasterCode())!=null){
-
                         updateSba(storeMasterToSba.get(sba.getMasterCode()),sba);
                         sbaToPosMap.get(sba).forEach(posEntry -> {
                             posEntry.setSba(storeMasterToSba.get(sba.getMasterCode()));
@@ -119,25 +133,17 @@ public class ImportItemAndPosFiles {
                     }
 
                     if(globalMasterToProductMap.get(sba.getMasterCode())!=null){
-
-
-
                         sba.setProduct(globalMasterToProductMap.get(sba.getMasterCode()));
-
                         continue;
                     }
 
                     Set<Product> matchingProducts = getMatchingProducts(sba);
                     if(matchingProducts.size()>1){
-
-
                         toSaveSba.add(sba);
                         continue;
                     }
 
-
                     if(matchingProducts.size()==1){
-
                         sba.setProduct(matchingProducts.stream().toList().get(0));
                         sba.getBarcodes().forEach(barcode->{
                             globalBarcodeMap.put(barcode,matchingProducts.stream().toList().get(0));
@@ -159,28 +165,40 @@ public class ImportItemAndPosFiles {
 
                     toSaveSba.add(sba);
                     toSaveProducts.add(product);
-
-
                 }
                 System.out.println("- - - finishing store "+store.getName()+" - - - ");
+            } else {
+                System.out.println("the store "+store+" is not being processed");
             }
 
         });
+
         System.out.println("to save pos entries are "+toSavePosEntries.size());
         System.out.println("the to save Products are "+toSaveProducts.size());
         System.out.println("the to save Sbas are "+toSaveSba.size());
         System.out.println("the to update sbas are "+toUpdateSbas.size());
 
+        if(toSavePosEntries.size()==1){
+            System.out.println("the "+toSavePosEntries.stream().toList().get(0).getDescription()+" ,"+
+                    toSavePosEntries.stream().toList().get(0).getMaster()+" : "+
+                    toSavePosEntries.stream().toList().get(0).getDate()+ " : "+
+                    toSavePosEntries.stream().toList().get(0).getStoreName().getName());
+        }
+
+
         ProductDAO productDAO = new ProductDAO();
         productDAO.saveProducts(toSaveProducts.stream().toList());
 
-        StoreBasedAttributesDAO storeBasedAttributesDAO = new StoreBasedAttributesDAO();
+        storeBasedAttributesDAO = new StoreBasedAttributesDAO();
         storeBasedAttributesDAO.updateStoreBasedAttributes(toUpdateSbas.stream().toList());
         storeBasedAttributesDAO = new StoreBasedAttributesDAO();
         storeBasedAttributesDAO.saveSBAs(toSaveSba.stream().toList());
 
+
         posEntryDAO = new PosEntryDAO();
+        HelpingFunctions.setStartTime();
         posEntryDAO.savePosEntries(toSavePosEntries.stream().toList());
+        HelpingFunctions.setEndAndPrint("the saving process");
 
         System.out.println("\n\n\n we F i n i s h e d ! ! !");
 
@@ -188,14 +206,15 @@ public class ImportItemAndPosFiles {
     private void clearMaps() {
         itemFiles.clear();
         posSaleFiles.clear();
-        megaPosMap.clear();
-        sbaMegaMap.clear();
+        //megaPosMap.clear();
+        //sbaMegaMap.clear();
     }
 
 
 
     private  void getFilesFromFolder(){
         File parentFolder = SySettings.txtFolderPath.toFile();
+        System.out.println("the folder for txt files is: "+parentFolder.getName());
         if (parentFolder.exists() && parentFolder.isDirectory()) {
             File[] filesAndFolders = parentFolder.listFiles();
             if (filesAndFolders != null) {
@@ -206,8 +225,10 @@ public class ImportItemAndPosFiles {
                                 List<File> txtFiles = EntriesFile.getTxtFilesInFolder(file.getPath());
                                 for (File f : txtFiles) {
                                     if (f.getName().toLowerCase().contains("items")) {
+                                        System.out.println("the file is added to items "+f.getName());
                                         itemFiles.put(f, storeName);
                                     } else if (f.getName().toLowerCase().contains("possales")) {
+                                        System.out.println("the file is added to poses "+f.getName());
                                         posSaleFiles.put(f, storeName);
                                     }
                                 }
@@ -223,7 +244,7 @@ public class ImportItemAndPosFiles {
 
     }
 
-    private  void createTheMegaPosMap(File file, StoreNames storeName){
+    private void createTheMegaPosMap(File file, StoreNames storeName){
         System.out.println("- processing : "+file.getName()+", for store : "+storeName.getName());
         String fChecksum = TextExtractions.calculateChecksum(file);
         if(hc.listManager.getFileChecksums().contains(fChecksum)){
@@ -231,7 +252,7 @@ public class ImportItemAndPosFiles {
             return;
         }
 
-        megaPosMap.computeIfAbsent(storeName, k -> new HashMap<>());
+        //megaPosMap.computeIfAbsent(storeName, k -> new HashMap<>());
         Date indexDate = null;
         int index =0;
         try{
@@ -250,8 +271,17 @@ public class ImportItemAndPosFiles {
                         }
                         temp.setShaCode(temp.sha256(index));
                         index++;
-                        megaPosMap.get(storeName).computeIfAbsent(temp.getDate(), k -> new HashMap<>());
-                        megaPosMap.get(storeName).get(temp.getDate()).putIfAbsent(temp.getMaster(), temp);
+
+                        if(!dateMap.get(storeName).contains(temp.getDate())){
+                            //megaPosMap.get(storeName).computeIfAbsent(temp.getDate(), k -> new HashMap<>());
+                            //megaPosMap.get(storeName).get(temp.getDate()).putIfAbsent(temp.getMaster(), temp);
+
+                            posEntriesOfAStore.computeIfAbsent(storeName, k -> new HashMap<>());
+                            posEntriesOfAStore.get(storeName).computeIfAbsent(temp.getMaster(), k -> new ArrayList<>());
+                            posEntriesOfAStore.get(storeName).get(temp.getMaster()).add(temp);
+                            //mastersOfAStore.computeIfAbsent(storeName, k -> new HashSet<>());
+                            //mastersOfAStore.get(storeName).add(temp.getMaster());
+                        }
                     }
                 }
             } catch (Exception e){
@@ -272,12 +302,19 @@ public class ImportItemAndPosFiles {
     }
     private  void createTheMegaSbaMap(File file, StoreNames store){
         String newline = "";
-        Map<String,Product> barcodeToProduct = new HashMap<>();
+        Map<StoreNames,Map<String,StoreBasedAttributes>> sbaMegaMap = new HashMap<>();
         sbaMegaMap.computeIfAbsent(store, k -> new HashMap<>());
+
         try (BufferedReader br = new BufferedReader(new FileReader(file, Charset.forName("ISO-8859-7")))) {
             while (((newline = br.readLine()) != null) && (newline.length()>7)) { //to length megalitero tou 7 thelei allo elengxo
 
                 StoreBasedAttributes currentSba = sbaFromLine(newline);
+
+                if(posEntriesOfAStore.get(store).get(currentSba.getMasterCode())==null){
+                    continue;
+                }
+
+                //if(megaPosMap.get(store).get(currentSba.getMasterCode())!=null)
                 currentSba.setStore(store);
                 if(sbaMegaMap.get(store).get(currentSba.getMasterCode())==null){
                     //if current sba is not at the map
@@ -291,17 +328,13 @@ public class ImportItemAndPosFiles {
                 //with the barcodes
                 //if(barcodeToProduct)
             }
+
+
             System.out.println("READJUSTING STARTS");
             sbaMegaMap.keySet().forEach(key->{
                 sbaMegaMap.get(key).keySet().forEach(master->{
                     StoreBasedAttributes sba = sbaMegaMap.get(key).get(master);
-                    if(sba.getHope().compareTo("3050325")==0){
-                        System.out.println("we found it at readjusting ");
-                    }
                     if(sba.getBarcodes().isEmpty()){
-                        if(sba.getHope().compareTo("3050325")==0){
-                            System.out.println("bars are empty");
-                        }
                         sba.getBarcodes().addAll(sba.getHopeBarcodes());
                     }
                 });
@@ -357,24 +390,37 @@ public class ImportItemAndPosFiles {
     private  Map<StoreBasedAttributes,List<PosEntry>> getCandidatePoses(StoreNames store){
         Map<StoreNames,Map<Date,Map<String, PosEntry>>> candidatePosEntries = new HashMap<>();
         candidatePosEntries.put(store,new HashMap<>());
+        System.out.println("the size of mega pos map for that store "+megaPosMap.get(store).size());
 
-        megaPosMap.get(store).keySet().forEach(date -> {
-            candidatePosEntries.get(store).put(date,new HashMap<>());
-            for (String master : megaPosMap.get(store).get(date).keySet()) {
-                if(shaCodes.contains(megaPosMap.get(store).get(date).get(master).getShaCode())){
-                    //the pos entry already exists in the database
+        megaPosMap.computeIfAbsent(store, k -> new HashMap<>());
+        for (Date date : megaPosMap.get(store).keySet()) {
+            candidatePosEntries.get(store).put(date, new HashMap<>());
+            if(dateMap.get(store)!=null){
+                if(dateMap.get(store).contains(date)){
                     continue;
                 }
-                candidatePosEntries.get(store).get(date).put(master,megaPosMap.get(store).get(date).get(master));
-                if(sbaMegaMap.get(store).get(master)!=null){
+            }
+            for (String master : megaPosMap.get(store).get(date).keySet()) {
+                /*
+                if (shaCodesSet.contains(megaPosMap.get(store).get(date).get(master).getShaCode())) {
+                    //the pos entry already exists in the database
+                    //System.out.println("pos already");
+                    continue;
+                }
+                */
+
+                candidatePosEntries.get(store).get(date).put(master, megaPosMap.get(store).get(date).get(master));
+                if (sbaMegaMap.get(store).get(master) != null) {
                     candidatePosEntries.get(store).get(date).get(master).setSba(sbaMegaMap.get(store).get(master));
                 }
             }
-        });
-        megaPosMap.clear();
-        sbaMegaMap.clear();
+        }
+        System.out.println("finishing the poses");
+        //megaPosMap.get(store).clear();
+        //sbaMegaMap.get(store).clear();
         return convertToSbaToPosesMap(candidatePosEntries);
     }
+
     private Map<StoreBasedAttributes,List<PosEntry>> convertToSbaToPosesMap(Map<StoreNames,Map<Date,Map<String,PosEntry>>> poses){
         Map<StoreBasedAttributes,List<PosEntry>> sbaToPosMap = new HashMap<>();
         poses.keySet().forEach(store -> {
@@ -388,6 +434,7 @@ public class ImportItemAndPosFiles {
         return  sbaToPosMap;
     }
     private Map<String, StoreBasedAttributes> getStoreMasterToSba(StoreNames store){
+        storeMasterToSba.clear();
         StoreBasedAttributesDAO storeBasedAttributesDAO = new StoreBasedAttributesDAO();
         List<StoreBasedAttributes> storesSbas = storeBasedAttributesDAO.findByStoreName(store);
         Map<String,StoreBasedAttributes> masterToSba = new HashMap<>();
@@ -401,21 +448,17 @@ public class ImportItemAndPosFiles {
         return masterToSba;
     }
 
-    private Map<String,Product> getGlobalMasterToProductMap(){
-        StoreBasedAttributesDAO storeBasedAttributesDAO = new StoreBasedAttributesDAO();
-        List<StoreBasedAttributes> allSbas = storeBasedAttributesDAO.getAllStoreBasedAttributes();
-        Map<String,Product> globalMasterMap = new HashMap<>();
+    private void createGlobalMasterToProductMap(List<StoreBasedAttributes> allSbas){
+
         allSbas.forEach(sba->{
-            if(globalMasterMap.get(sba.getMasterCode())==null&&sba.getProduct()!=null){
-                globalMasterMap.put(sba.getMasterCode(),sba.getProduct());
+            if(globalMasterToProductMap.get(sba.getMasterCode())==null&&sba.getProduct()!=null){
+                globalMasterToProductMap.put(sba.getMasterCode(),sba.getProduct());
             }
         });
-        return globalMasterMap;
+
     }
-    private void createBarcodeToProductMap(){
+    private void globalBarcodeToProductMap(List<StoreBasedAttributes> allSbas){
         globalBarcodeMap.clear();
-        StoreBasedAttributesDAO storeBasedAttributesDAO = new StoreBasedAttributesDAO();
-        List<StoreBasedAttributes> allSbas = storeBasedAttributesDAO.getAllStoreBasedAttributes();
         allSbas.forEach(sba->{
             sba.getBarcodes().forEach(barcode->{
                 if(sba.getProduct()!=null){

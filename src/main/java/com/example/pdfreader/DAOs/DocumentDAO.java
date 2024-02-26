@@ -169,10 +169,11 @@ public class DocumentDAO {
 
     public List<DBError> saveDocuments(List<Document> documents) {
         List<DBError> errors = new ArrayList<>();
-        EntityManager entityManager = HibernateUtil.getEntityManagerFactory().createEntityManager();
+        //EntityManager entityManager = HibernateUtil.getEntityManagerFactory().createEntityManager();
         for (Document document : documents) {
-            EntityTransaction transaction = entityManager.getTransaction();
-            try {
+            EntityTransaction transaction = null ;
+            try (EntityManager entityManager = HibernateUtil.getEntityManagerFactory().createEntityManager()){
+                transaction = entityManager.getTransaction();
                 transaction.begin();
 
                 // Handle associated StoreBasedAttributes for each DocEntry

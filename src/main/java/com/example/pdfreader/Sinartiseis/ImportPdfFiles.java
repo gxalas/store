@@ -324,8 +324,9 @@ public class ImportPdfFiles {
         DBErrorDAO dbErrorDAO = new DBErrorDAO(new ErrorEventManager());
         DocumentDAO documentDAO = new DocumentDAO(dbErrorDAO);
 
-
+        HelpingFunctions.setStartTime();
         List<DBError> errors = documentDAO.saveDocuments(toSaveDocuments);
+        HelpingFunctions.setEndAndPrint("saving documents");
 
         if(!errors.isEmpty()){
             dbErrorDAO.saveDBErrors(errors);
