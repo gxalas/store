@@ -65,6 +65,7 @@ public class HelloController {
     public ListManager listManager;
     public SplitPane splitPane;
 
+
     private boolean tracingActive = false;
     @FXML
     public MenuItem actSaveFile;
@@ -93,6 +94,7 @@ public class HelloController {
     public MenuItem actProductSuppliers;
     public MenuItem actSuppOverview;
     public MenuItem actProductScore;
+    public MenuItem actDateReview;
     public DirectoryChooser directoryChooser = new DirectoryChooser();
     @FXML
     public AnchorPane parentContainer;
@@ -480,6 +482,8 @@ public class HelloController {
         actProductSuppliers.setOnAction(actionEvent -> loadController("product-supplier-relations.fxml"));
         actSuppOverview.setOnAction(actionEvent -> loadController("supplier-overview.fxml"));
         actProductScore.setOnAction(actionEvent -> loadController("product-score-view.fxml"));
+        actDateReview.setOnAction(actionEvent -> loadController("results-date-review.fxml"));
+
 
 
     }

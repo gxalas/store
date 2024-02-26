@@ -63,8 +63,6 @@ public class PosEntry {
 
     @Column(name = "sha_code", unique = true)
     private String shaCode;
-    @Column(name = "local_sha_code", unique = true)
-    private String localShaCode;
 
 
     static int counter = 1;

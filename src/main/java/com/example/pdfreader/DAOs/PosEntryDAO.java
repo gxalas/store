@@ -87,12 +87,40 @@ public class PosEntryDAO {
     public void savePosEntries(List<PosEntry> posEntries) {
         Session session = HibernateUtil.getSessionFactory().openSession();
 
+        Calendar cal = Calendar.getInstance();
+        cal.set(Calendar.YEAR,2021);
+        cal.set(Calendar.MONTH,11);
+        cal.set(Calendar.DATE,21);
+        cal.set(Calendar.HOUR,12);
+        cal.set(Calendar.MINUTE,0);
+        cal.set(Calendar.SECOND,0);
+        cal.set(Calendar.MILLISECOND,0);
+        Date testDate = cal.getTime();
+
+        Calendar calD = Calendar.getInstance();
+        calD.set(Calendar.YEAR,2022);
+        calD.set(Calendar.MONTH,6);
+        calD.set(Calendar.DATE,4);
+        calD.set(Calendar.HOUR,12);
+        calD.set(Calendar.MINUTE,0);
+        calD.set(Calendar.SECOND,0);
+        calD.set(Calendar.MILLISECOND,0);
+        Date testDateD = calD.getTime();
+
+
         for (PosEntry posEntry : posEntries) {
             Transaction tx = null;
 
+            if(posEntry.getStoreName().compareTo(StoreNames.PERISTERI)==0&& posEntry.getDate().compareTo(testDate)==0){
+                System.out.println("trying to save "+posEntry.getDescription()+" "+posEntry.getMoney()+" "+posEntry.getStoreName());
+            }
+
+            if(posEntry.getStoreName().compareTo(StoreNames.DRAPETSONA)==0&& posEntry.getDate().compareTo(testDateD)==0){
+                System.out.println("trying to save "+posEntry.getDescription()+" "+posEntry.getMoney()+" "+posEntry.getStoreName());
+            }
+
             try {
                 tx = session.beginTransaction();
-
 
                 if (posEntry.getId() == null) {
                     session.persist(posEntry);
@@ -113,6 +141,42 @@ public class PosEntryDAO {
         }
 
         session.close(); // Close the session after processing all entries
+    }
+
+
+
+    public void savePosEntriesNew(List<PosEntry> posEntries) {
+        Session session = HibernateUtil.getSessionFactory().openSession();
+
+        try {
+            // Start a transaction
+            Transaction tx = session.beginTransaction();
+
+            for (PosEntry posEntry : posEntries) {
+                // Check if StoreBasedAttributes instance is transient
+                if (posEntry.getSba() != null && (posEntry.getSba().getId() == null || session.get(StoreBasedAttributes.class, posEntry.getSba().getId()) == null)) {
+                    // Save the transient StoreBasedAttributes instance
+                    session.saveOrUpdate(posEntry.getSba());
+                }
+
+                // Now save or merge the PosEntry instance
+                if (posEntry.getId() == null) {
+                    session.persist(posEntry);
+                } else {
+                    session.merge(posEntry);
+                }
+            }
+
+            // Commit the transaction
+            tx.commit();
+        } catch (RuntimeException e) {
+            System.err.println("Transaction failed! " + e.getMessage());
+            e.printStackTrace();
+        } finally {
+            if (session.isOpen()) {
+                session.close();
+            }
+        }
     }
     public Map<StoreNames, Set<Date>> getDatesByStoreName() {
         Map<StoreNames, Set<Date>> storeDatesMap = new HashMap<>();
@@ -147,6 +211,15 @@ public class PosEntryDAO {
             String hql = "FROM PosEntry pe WHERE pe.sba.masterCode = :masterCode";
             Query<PosEntry> query = session.createQuery(hql, PosEntry.class);
             query.setParameter("masterCode", masterCode);
+            return query.list();
+        }
+    }
+    public List<PosEntry> getPosEntriesByDateAndStoreName(Date date, StoreNames storeName) {
+        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+            String hql = "FROM PosEntry pe WHERE pe.date = :date AND pe.storeName = :storeName";
+            Query<PosEntry> query = session.createQuery(hql, PosEntry.class);
+            query.setParameter("date", date);
+            query.setParameter("storeName", storeName);
             return query.list();
         }
     }
