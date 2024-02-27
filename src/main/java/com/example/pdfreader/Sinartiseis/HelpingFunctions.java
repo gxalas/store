@@ -7,6 +7,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.text.SimpleDateFormat;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.Date;
@@ -14,6 +15,7 @@ import java.util.Date;
 public class HelpingFunctions {
     private static Long start;
     private static Long end;
+    public static SimpleDateFormat format = new SimpleDateFormat("dd.MM.yyyy");
     public static void printAllDocumentIds(HelloController controller){
         System.out.println(" - - - - PRINTING DOCUMENT IDS - - - -");
         for (Document doc:controller.listManager.getImported()){

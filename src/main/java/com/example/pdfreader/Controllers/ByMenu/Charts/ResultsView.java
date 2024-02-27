@@ -448,7 +448,6 @@ public class ResultsView extends ChildController {
             seriesInvoices.setData(tempSeries.getData());
             seriesInvoicrsRunningAverage.setData(tempRunSeries.getData());
             seriesInvoicrsRunningAverage.setName("Invoices Running Average "+cbStore.getValue()+" "+cbYear.getValue());
-            //System.out.println("\n\n\nthe series invoices "+seriesInvoices.getData().size()+" \n\n\n"+numericToDate(seriesInvoices.getData().get(0).getXValue().longValue()));
             myLineChart.layout();
         });
 
