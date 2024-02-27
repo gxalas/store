@@ -54,9 +54,16 @@ public class ProductsView extends ChildController {
                 MyTask myTask = new MyTask(()->{
                     DocEntryDAO docEntryDao = new DocEntryDAO();
                     PosEntryDAO posEntryDao = new PosEntryDAO();
-                    activeProductDocEntries = docEntryDao.getDocEntriesByProductMasterCode(t1.getMaster());
-                    activeProductPosEntries = posEntryDao.getPosEntriesByProductMasterCode(t1.getMaster());
-                    System.out.println("active pos entries is "+activeProductPosEntries.size());
+
+                    List<String> masters = new ArrayList<>();
+                    t1.getStoreBasedAttributes().forEach(sba->{
+                        if (!masters.contains(sba.getMasterCode())){
+                            masters.add(sba.getMasterCode());
+                        }
+                    });
+
+                    activeProductDocEntries = docEntryDao.getDocEntriesByProductMasterCodes(masters);
+                    activeProductPosEntries = posEntryDao.getPosEntriesByProductMasterCodes(masters);
 
                     List<DocEntry> docResults = filterDocEntries();
                     List<PosEntry> posResults = filterPosEntries();
@@ -276,8 +283,22 @@ public class ProductsView extends ChildController {
             }
             return new ReadOnlyObjectWrapper<>(h.get());
         });
+
+        TableColumn<ProductDTO,Number> sbaMastersCol = new TableColumn<>("sba's masters");
+        sbaMastersCol.setCellValueFactory(cellData->{
+            List<String> masters = new ArrayList<>();
+            cellData.getValue().getStoreBasedAttributes().forEach(sba->{
+                if(!masters.contains(sba.getMasterCode())){
+                    masters.add(sba.getMasterCode());
+                }
+            });
+            int size = masters.size();
+            return new ReadOnlyIntegerWrapper(size);
+        });
+
+
         tableProducts.getColumns().setAll(productIdCol,descriptionCol,
-                masterCol,docCounterCol,hopeCol,numOfSbas);
+                masterCol,docCounterCol,hopeCol,numOfSbas,sbaMastersCol);
         tableProducts.setItems(obsProducts);
     }
 
@@ -315,7 +336,14 @@ public class ProductsView extends ChildController {
         TableColumn<DocEntry,BigDecimal> unitsCol = new TableColumn<>("Units");
         unitsCol.setCellValueFactory(new PropertyValueFactory<>("units"));
 
-        tableDocEntries.getColumns().setAll(docIdCol,docDateCol,unitPriceCol,unitsCol,totalValueCol);
+        TableColumn<DocEntry,String> descriptionCol = new TableColumn<>("description");
+        descriptionCol.setCellValueFactory(cellData->{
+            String d = cellData.getValue().getSba().getDescription();
+            return new ReadOnlyStringWrapper(d);
+        });
+
+        tableDocEntries.getColumns().setAll(docIdCol,docDateCol,unitPriceCol,unitsCol,
+                totalValueCol,descriptionCol);
         tableDocEntries.setItems(obsDocEntries);
     }
     private void initPosEntries() {
@@ -352,7 +380,13 @@ public class ProductsView extends ChildController {
             return new ReadOnlyStringWrapper(cellData.getValue().storeName.getName());
         });
 
-        tablePosEntries.getColumns().setAll(dateCol,storeCol,posDescCol,quantityCol,moneyCol,priceCol);
+        TableColumn<PosEntry,String> masterCol = new TableColumn<>("master");
+        masterCol.setCellValueFactory(cellData->{
+            return new ReadOnlyStringWrapper(cellData.getValue().getMaster());
+        });
+
+        tablePosEntries.getColumns().setAll(dateCol,storeCol,posDescCol,quantityCol,
+                moneyCol,priceCol,masterCol);
         tablePosEntries.setItems(obsPosEntries);
     }
 

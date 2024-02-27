@@ -40,7 +40,7 @@ public class ImportTxtsView extends ChildController {
     public Text txtProducts;
     private ObservableList<StoreBasedAttributes> obsAllSbas = FXCollections.observableArrayList();
     private ObservableList<Product> obsAllProducts = FXCollections.observableArrayList();
-    public TableView<StoreBasedAttributes> tableSbas;
+    public TableView<StoreBasedAttributes> tableSbas = new TableView<>();
     private ObservableList<StoreBasedAttributes> obsAllSbasTable = FXCollections.observableArrayList();
     public TableView<Product> tableProducts = new TableView<>();
     public TableView<StoreBasedAttributes> tableFilteredSbas = new TableView<>();
@@ -418,10 +418,7 @@ public class ImportTxtsView extends ChildController {
 
         TableColumn<StoreBasedAttributes,String> masterCol = new TableColumn<>("master");
         masterCol.setCellValueFactory(cellData->{
-            String d = "";
-            if(cellData.getValue().getProduct()!=null){
-                d = cellData.getValue().getMasterCode();
-            }
+            String d = cellData.getValue().getMasterCode();
             return new ReadOnlyStringWrapper(d);
         });
 
@@ -448,6 +445,16 @@ public class ImportTxtsView extends ChildController {
             }
             return new ReadOnlyStringWrapper(d);
         });
+
+        TableColumn<StoreBasedAttributes,String> productMasterCol = new TableColumn<>("assigned master");
+        productMasterCol.setCellValueFactory(cellData->{
+            String d = "";
+            if(cellData.getValue().getProduct()!=null){
+                d = cellData.getValue().getProduct().getInvmaster();
+            }
+            return new ReadOnlyStringWrapper(d);
+        });
+
         TableColumn<StoreBasedAttributes,String> hopeCol = new TableColumn<>("hope");
         hopeCol.setCellValueFactory(cellData->{
             String h = cellData.getValue().getHope();
@@ -455,7 +462,8 @@ public class ImportTxtsView extends ChildController {
         });
 
         tableSbas.getColumns().setAll(barcodeCol,hopeCol,storeCol,
-                descriptionCol,masterCol,conBarsCol,hopeBarcodesCol,productCol);
+                descriptionCol,masterCol,conBarsCol,hopeBarcodesCol,
+                productCol,productMasterCol);
         tableSbas.setItems(obsAllSbasTable);
 
 

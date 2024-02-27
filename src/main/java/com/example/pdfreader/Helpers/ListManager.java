@@ -19,7 +19,7 @@ public class ListManager {
     private final ObservableQueue<Document> toImportQueue = new ObservableQueue<>();
     private final HashMap<UUID, PosEntry> posEntriesMap = new HashMap<>();
     //private final HashMap<String,Product> productHashMap = new HashMap<>();
-    private List<String> checksums = new ArrayList<>();
+    private Set<String> checksums = new HashSet<>();
     private final ObservableList<MyTask> activeTasksList = FXCollections.observableArrayList();
     private List<String> fileChecksums = new ArrayList<>();
 
@@ -83,9 +83,10 @@ public class ListManager {
         System.out.println("- - - - - - - - -  the checksums are being initialised - - - - - - - - - - ");
         DBErrorDAO dbErrorDAO = new DBErrorDAO(new ErrorEventManager());
         DocumentDAO ddao = new DocumentDAO(dbErrorDAO);
-        checksums = ddao.getAllChecksums();
+        List<String> checkSumList = ddao.getAllChecksums();
+        checksums.addAll(checkSumList);
     }
-    public List<String> getChecksums(){
+    public Set<String> getChecksums(){
         return checksums;
     }
 

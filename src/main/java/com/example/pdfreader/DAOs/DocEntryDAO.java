@@ -199,6 +199,25 @@ public class DocEntryDAO {
         }
         return docEntries;
     }
+    public List<DocEntry> getDocEntriesByProductMasterCodes(List<String> masterCodes) {
+        List<DocEntry> docEntries = new ArrayList<>();
+        if (masterCodes == null || masterCodes.isEmpty()) {
+            return docEntries; // Return an empty list if the input is empty to avoid unnecessary database query
+        }
+
+        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+            // Updated query to navigate through SBA to access the master code of the Product
+            // and to use the IN clause for a list of master codes
+            String hql = "FROM DocEntry DE WHERE DE.sba.product.invmaster IN (:masterCodes)";
+            Query<DocEntry> query = session.createQuery(hql, DocEntry.class);
+            query.setParameter("masterCodes", masterCodes);
+            docEntries = query.list();
+        } catch (Exception e) {
+            e.printStackTrace(); // It's better to use a logging framework in real applications
+            // Handle exception
+        }
+        return docEntries;
+    }
 
     public List<DocEntry> findDocEntriesByProductAndDateRange(Long productId, Date startDate, Date endDate) {
         // Updated JPQL to navigate through sba to access the Product

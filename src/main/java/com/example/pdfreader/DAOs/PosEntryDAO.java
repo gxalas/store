@@ -6,10 +6,9 @@ import com.example.pdfreader.Entities.Attributes.StoreBasedAttributes;
 import com.example.pdfreader.Entities.Main.Product;
 import com.example.pdfreader.Entities.ChildEntities.PosEntry;
 import com.example.pdfreader.enums.StoreNames;
-import jakarta.persistence.EntityManager;
-import jakarta.persistence.NoResultException;
-import jakarta.persistence.TypedQuery;
+import jakarta.persistence.*;
 import org.hibernate.*;
+import org.hibernate.exception.ConstraintViolationException;
 import org.hibernate.query.Query;
 import org.hibernate.resource.transaction.spi.TransactionStatus;
 
@@ -144,9 +143,48 @@ public class PosEntryDAO {
     }
 
 
+    public void savePosEntriesNew(List<PosEntry> posEntries) {
+        Session session = null;
+        Transaction tx = null;
 
+        for (PosEntry posEntry : posEntries) {
+            try {
+                session = HibernateUtil.getSessionFactory().openSession();
+                tx = session.beginTransaction();
+
+                if (posEntry.getSba() != null && (posEntry.getSba().getId() == null || session.get(StoreBasedAttributes.class, posEntry.getSba().getId()) == null)) {
+                    session.saveOrUpdate(posEntry.getSba());
+                }
+
+                session.saveOrUpdate(posEntry);
+                tx.commit();
+            } catch (HibernateException e) {
+                if (tx != null) tx.rollback();
+
+                Throwable cause = e.getCause();
+                while (cause != null) {
+                    if (cause instanceof ConstraintViolationException) {
+                        System.out.println("Skipping due to unique constraint violation: " + posEntry.getShaCode());
+                        break; // Found the specific exception we were looking for
+                    }
+                    cause = cause.getCause();
+                }
+
+                if (cause == null) { // If we didn't find our specific exception in the cause chain
+                    System.out.println("An error occurred, not related to unique constraint violation: " + e.getMessage());
+                }
+            } finally {
+                if (session != null) {
+                    session.close();
+                }
+            }
+        }
+    }
+
+    /*
     public void savePosEntriesNew(List<PosEntry> posEntries) {
         Session session = HibernateUtil.getSessionFactory().openSession();
+
 
         try {
             // Start a transaction
@@ -169,6 +207,12 @@ public class PosEntryDAO {
 
             // Commit the transaction
             tx.commit();
+        } catch (ConstraintViolationException e) {
+            // Catch the ConstraintViolationException and skip the object
+            if (tx != null) tx.rollback();
+            System.out.println("Skipping entry due to constraint violation: " + posEntry.getShaCode());
+            // Optionally log the exception or handle it as needed
+
         } catch (RuntimeException e) {
             System.err.println("Transaction failed! " + e.getMessage());
             e.printStackTrace();
@@ -178,6 +222,9 @@ public class PosEntryDAO {
             }
         }
     }
+    */
+
+
     public Map<StoreNames, Set<Date>> getDatesByStoreName() {
         Map<StoreNames, Set<Date>> storeDatesMap = new HashMap<>();
         try (Session session = HibernateUtil.getSessionFactory().openSession()) {
@@ -211,6 +258,18 @@ public class PosEntryDAO {
             String hql = "FROM PosEntry pe WHERE pe.sba.masterCode = :masterCode";
             Query<PosEntry> query = session.createQuery(hql, PosEntry.class);
             query.setParameter("masterCode", masterCode);
+            return query.list();
+        }
+    }
+    public List<PosEntry> getPosEntriesByProductMasterCodes(List<String> masterCodes) {
+        if (masterCodes == null || masterCodes.isEmpty()) {
+            return Collections.emptyList(); // Return an empty list if the input is empty to avoid unnecessary database query
+        }
+
+        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+            String hql = "FROM PosEntry pe WHERE pe.sba.masterCode IN (:masterCodes)";
+            Query<PosEntry> query = session.createQuery(hql, PosEntry.class);
+            query.setParameter("masterCodes", masterCodes);
             return query.list();
         }
     }

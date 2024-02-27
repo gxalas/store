@@ -251,67 +251,6 @@ public class ImportPdfFiles {
         System.out.println("the sbas with the mastercode are "+i.get());
 
 
-        /*
-        toSaveDocuments.forEach(doc->{
-            doc.getEntries().forEach(docEntry->{
-                if(storeMasterToSba.get(docEntry.getSba().getStore()).get(docEntry.getMaster())!=null){
-                    //docEntry.setProduct(productMap.get(docEntry.getMaster()));
-                    docEntry.setSba(storeMasterToSba.get(docEntry.getSba().getStore()).get(docEntry.getSba().getMasterCode()));
-                    //if(productMap.get(docEntry.getMaster()).getCode().compareTo("")==0){
-                    //    productMap.get(docEntry.getMaster()).setCode(docEntry.getCode());
-                    //    toUpdateProducts.add(productMap.get(docEntry.getMaster()));
-                    // }
-                } else {
-                    Product product = new Product();
-                    product.setLog("from documents "+StoreNames.ALL);
-                    //StoreBasedAttributes sba = new StoreBasedAttributes();
-
-                    String d = "";
-                    if(parentDelegate.listManager.docEntriesDescriptions.get(docEntry.getMaster())==null){
-                        System.out.println("here we have a null when we try to get the description of a doc Entry");
-                        d = "the null happened";
-                        System.out.println("the master"+docEntry.getMaster());
-                    } else {
-                        d = parentDelegate.listManager.docEntriesDescriptions.get(docEntry.getMaster());
-                    }
-                    product.setInvmaster(docEntry.getMaster());
-                    product.setInvDescription(d);
-                    product.setCode(docEntry.getCode());
-
-                    if(docEntry.getSba()!=null){
-                        docEntry.getSba().setProduct(product);
-                        docEntry.getSba().setDescription(d);
-                        docEntry.getSba().setMasterCode(docEntry.getMaster());
-                        try {
-                            docEntry.getSba().setStore(docEntry.getDocument().getStore());
-                        } catch (Exception e){
-                            e.printStackTrace();
-                            System.out.println(e.getMessage());
-                            System.out.println(docEntry.getMaster());
-                            System.out.println(docEntry.getSba().getDescription());
-                        }
-
-                    } else {
-                        System.out.println(docEntry.getMaster()+" "+docEntry.getDocument().getDocumentId());
-                    }
-
-
-
-
-                    //docEntry.setProduct(product);
-                    toSaveProducts.add(product);
-                    toSaveSbas.add(docEntry.getSba());
-                    storeMasterToSba.get(docEntry.getSba().getStore()).put(docEntry.getSba().getMasterCode(),docEntry.getSba());
-                }
-            });
-        });
-         */
-
-
-
-
-
-
         toSaveProducts.forEach(product -> {
             if(product.getInvDescription().isEmpty()){
                 System.err.println("we are trying to save an empty product");

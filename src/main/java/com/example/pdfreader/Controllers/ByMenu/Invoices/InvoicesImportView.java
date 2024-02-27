@@ -10,6 +10,7 @@ import com.example.pdfreader.MyCustomEvents.DocumentsImportedListener;
 import com.example.pdfreader.MyCustomEvents.DocumentsImportedEvent;
 import com.example.pdfreader.MyCustomEvents.TracingFolderEvent;
 import com.example.pdfreader.MyCustomEvents.TracingFolderListener;
+import com.example.pdfreader.Sinartiseis.HelpingFunctions;
 import com.example.pdfreader.Sinartiseis.ImportPdfFiles;
 import javafx.application.Platform;
 import javafx.beans.property.SimpleStringProperty;
@@ -81,12 +82,15 @@ public class InvoicesImportView extends ChildController {
         @Override
         public void tracingFolderStarts(TracingFolderEvent evt) {
             btnLoadFolder.setVisible(false);
+            //HelpingFunctions.setStartTime();
             System.out.println(" the tracing folder started ");
         }
 
         @Override
         public void tracingFolderEnds(TracingFolderEvent evt) {
+            //HelpingFunctions.setEndAndPrint("tracing time");
             if(!InvoicesImportView.super.parentDelegate.listManager.getToImportQueue().isEmpty()) {
+
                 btnLoadFolder.setVisible(true);
             }
             // - - - - - - - - - - - - - - - nice line that i don't know how it still works
@@ -113,8 +117,6 @@ public class InvoicesImportView extends ChildController {
     @Override
     public void initialize(HelloController hc) {
         super.parentDelegate = hc;
-
-
 
         initLoadFolderButton();
         initDocumentsImportedTable();
