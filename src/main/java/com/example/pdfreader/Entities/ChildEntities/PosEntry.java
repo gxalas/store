@@ -2,7 +2,7 @@ package com.example.pdfreader.Entities.ChildEntities;
 
 import com.example.pdfreader.Entities.Attributes.StoreBasedAttributes;
 import com.example.pdfreader.Entities.Main.Product;
-import com.example.pdfreader.TypesOfDocuments.ABUsualInvoice;
+import com.example.pdfreader.Sinartiseis.TypesOfDocuments.ABUsualInvoice;
 import com.example.pdfreader.enums.StoreNames;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;

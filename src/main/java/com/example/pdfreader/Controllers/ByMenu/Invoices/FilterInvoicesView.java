@@ -17,7 +17,7 @@ import com.example.pdfreader.MyCustomEvents.DBError.ErrorEventManager;
 import com.example.pdfreader.MyCustomEvents.DocumentsImportedListener;
 import com.example.pdfreader.MyCustomEvents.DocumentsImportedEvent;
 import com.example.pdfreader.Sinartiseis.TextExtractions;
-import com.example.pdfreader.TypesOfDocuments.ABUsualInvoice;
+import com.example.pdfreader.Sinartiseis.TypesOfDocuments.ABUsualInvoice;
 import com.example.pdfreader.enums.ABInvoiceTypes;
 import com.example.pdfreader.enums.PromTypes;
 import com.example.pdfreader.enums.StoreNames;

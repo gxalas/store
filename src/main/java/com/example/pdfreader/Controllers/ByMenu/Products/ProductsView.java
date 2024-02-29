@@ -9,7 +9,7 @@ import com.example.pdfreader.Entities.ChildEntities.DocEntry;
 import com.example.pdfreader.HelloController;
 import com.example.pdfreader.Helpers.MyTask;
 import com.example.pdfreader.Entities.ChildEntities.PosEntry;
-import com.example.pdfreader.TypesOfDocuments.ABUsualInvoice;
+import com.example.pdfreader.Sinartiseis.TypesOfDocuments.ABUsualInvoice;
 import com.example.pdfreader.enums.StoreNames;
 import javafx.application.Platform;
 import javafx.beans.property.ReadOnlyIntegerWrapper;
@@ -397,8 +397,10 @@ public class ProductsView extends ChildController {
             public void handle(ActionEvent actionEvent) {
                 Platform.runLater(()->{
                     System.out.println("this is a test button currently doing nothing");
-                    //listManager.productMap.put("123123",new Product(listManager,"123123","the description","1210001212"));
-                    //products.add(new Product(parentDelegate.listManager, "testCode","test desc","test ean"));
+                    String line = "01780620220623000100018793020244600    ΛΕΚΑΝΗ ΠΛΑΣΤΙΚΗ Ν65/15L.KIBX25     000000000001000000000000000000000000000000000040    3068109151     2022020000000000901986575500000ΤΕΜΑΧΙΟ";
+                    String id = line.substring(126,126+15);
+                    String refId = line.substring(152,152+15);
+                    System.out.println("id :"+id+", ref id :"+refId);
                 });
             }
         });

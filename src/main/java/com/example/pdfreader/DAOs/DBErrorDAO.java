@@ -1,7 +1,6 @@
 package com.example.pdfreader.DAOs;
 
 import com.example.pdfreader.MyCustomEvents.DBError.ErrorEventManager;
-import com.example.pdfreader.Sinartiseis.Serialization;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 import org.hibernate.Transaction;

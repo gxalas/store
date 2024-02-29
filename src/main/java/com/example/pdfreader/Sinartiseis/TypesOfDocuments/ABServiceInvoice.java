@@ -1,11 +1,9 @@
-package com.example.pdfreader.TypesOfDocuments;
+package com.example.pdfreader.Sinartiseis.TypesOfDocuments;
 
-import com.example.pdfreader.DAOs.ProductDAO;
 import com.example.pdfreader.Entities.Attributes.StoreBasedAttributes;
 import com.example.pdfreader.Entities.ChildEntities.DocEntry;
 import com.example.pdfreader.Entities.Main.Document;
 import com.example.pdfreader.HelloController;
-import com.example.pdfreader.Entities.Main.Product;
 import com.example.pdfreader.Sinartiseis.TextExtractions;
 import com.example.pdfreader.enums.ABInvoiceTypes;
 import com.example.pdfreader.enums.PromTypes;

@@ -3,7 +3,7 @@ package com.example.pdfreader.Sinartiseis;
 import com.example.pdfreader.Entities.Main.Document;
 import com.example.pdfreader.HelloController;
 import com.example.pdfreader.Helpers.ListManager;
-import com.example.pdfreader.TypesOfDocuments.*;
+import com.example.pdfreader.Sinartiseis.TypesOfDocuments.*;
 import com.itextpdf.text.pdf.PdfReader;
 import com.itextpdf.text.pdf.parser.PdfTextExtractor;
 import org.apache.pdfbox.pdmodel.PDDocument;

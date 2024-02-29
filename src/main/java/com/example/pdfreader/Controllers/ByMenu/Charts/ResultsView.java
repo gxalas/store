@@ -12,7 +12,7 @@ import com.example.pdfreader.MyCustomEvents.Example.CustomEventListener;
 import com.example.pdfreader.MyCustomEvents.Example.EventManager;
 import com.example.pdfreader.Entities.ChildEntities.PosEntry;
 import com.example.pdfreader.Sinartiseis.HelpingFunctions;
-import com.example.pdfreader.TypesOfDocuments.ABUsualInvoice;
+import com.example.pdfreader.Sinartiseis.TypesOfDocuments.ABUsualInvoice;
 import com.example.pdfreader.enums.StoreNames;
 import javafx.application.Platform;
 import javafx.beans.property.ReadOnlyObjectWrapper;

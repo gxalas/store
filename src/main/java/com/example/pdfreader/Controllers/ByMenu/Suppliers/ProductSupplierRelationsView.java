@@ -23,6 +23,7 @@ public class ProductSupplierRelationsView extends ChildController {
 
     @Override
     public void initialize(HelloController hc) {
+        System.out.println(" product supplier relation view is initializing");
         txtFilter.setOnAction(event->{
             if(txtFilter.getText().compareTo("")!=0){
                 List<SupplierProductRelation> temp = new ArrayList<>();
@@ -74,7 +75,7 @@ public class ProductSupplierRelationsView extends ChildController {
 
         hc.listManager.addTaskToActiveList(
                 "getting relations",
-                "getting all the relations from the databas",
+                "getting all the relations from the database",
                 getRelations
         );
 

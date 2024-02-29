@@ -29,9 +29,6 @@ public class HelpingFunctions {
         System.out.println(" - - - - - - - - - - - - - - - - - - -");
     }
 
-    public static boolean isNumeric(String text){
-        return text.matches("\\d+");
-    }
 
     public static void setStartTime(){
         start = System.nanoTime();
@@ -67,6 +64,13 @@ public class HelpingFunctions {
     public static LocalDate convertDateToLocalDate(Date date) {
         // Convert Date to LocalDate at the system's default timezone
         return date.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
+    }
+
+    public static boolean isNumeric(String str) {
+        return str != null && str.matches("[0-9]+");
+    }
+    public static boolean isDecimalNumeric(String text) {
+        return text != null && text.matches("\\d+([.,]\\d+)?");
     }
 
 }

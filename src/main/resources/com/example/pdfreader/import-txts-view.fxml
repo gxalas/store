@@ -26,8 +26,16 @@
                           <items>
                             <AnchorPane minHeight="0.0" minWidth="0.0">
                                  <children>
-                                    <VBox AnchorPane.bottomAnchor="5.0" AnchorPane.leftAnchor="5.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="5.0">
+                                    <VBox alignment="TOP_CENTER" AnchorPane.bottomAnchor="5.0" AnchorPane.leftAnchor="5.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="5.0">
                                        <children>
+                                          <HBox alignment="CENTER">
+                                             <children>
+                                                <TextField fx:id="txtFSba" />
+                                             </children>
+                                             <padding>
+                                                <Insets bottom="5.0" top="5.0" />
+                                             </padding>
+                                          </HBox>
                                           <TableView fx:id="tableSbas" VBox.vgrow="SOMETIMES">
                                             <columns>
                                               <TableColumn prefWidth="75.0" text="C1" />
@@ -37,6 +45,7 @@
                                                 <Insets top="5.0" />
                                              </VBox.margin>
                                           </TableView>
+                                          <Text fx:id="txtSbaCounter" strokeType="OUTSIDE" strokeWidth="0.0" text="sbas counter" />
                                        </children>
                                     </VBox>
                                  </children>

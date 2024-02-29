@@ -128,7 +128,7 @@ public class ImportPdfFiles {
         SupplierProductRelationDAO relationDAO = new SupplierProductRelationDAO();
         List<SupplierProductRelation> currentRelations = relationDAO.findAll();
 
-        List<SupplierProductRelation> newRelations = new ArrayList<>();
+        //List<SupplierProductRelation> newRelations = new ArrayList<>();
 
         while (!parentDelegate.listManager.getToImportQueue().isEmpty()){
             invoicesImportView.updateProgressBarFolderLoading(size-parentDelegate.listManager.getToImportQueue().size()+1,size);
@@ -137,8 +137,8 @@ public class ImportPdfFiles {
 
             TextExtractions.process(newDoc,parentDelegate);
 
-            newRelations.addAll(Document.inferSupplier(currentRelations, newDoc));
-            currentRelations.addAll(newRelations);
+            //newRelations.addAll(Document.inferSupplier(currentRelations, newDoc));
+            //currentRelations.addAll(newRelations);
         }
 
 
@@ -265,27 +265,37 @@ public class ImportPdfFiles {
         storeBasedAttributesDAO.saveSBAs(toSaveSbas.stream().toList());
 
 
+        /*
         newRelations.forEach(relation->{
             if(globalMasterToSba.get(relation.getProduct().getInvmaster())!=null){
                 relation.setProduct(globalMasterToSba.get(relation.getProduct().getInvmaster()).getProduct());
             }
         });
+         */
+
 
         DBErrorDAO dbErrorDAO = new DBErrorDAO(new ErrorEventManager());
         DocumentDAO documentDAO = new DocumentDAO(dbErrorDAO);
 
         HelpingFunctions.setStartTime();
+        List<Document> toInferDocuments = toSaveDocuments;
         List<DBError> errors = documentDAO.saveDocuments(toSaveDocuments);
         HelpingFunctions.setEndAndPrint("saving documents");
 
         if(!errors.isEmpty()){
             dbErrorDAO.saveDBErrors(errors);
         }
+        parentDelegate.fireDocumentProcessedEvent(new DocumentsImportedEvent(invoicesImportView));
+        System.out.println("start to infer suppliers for the new documents "+toInferDocuments.size());
+        InferingSuppliers.infer(toInferDocuments);
 
+        /*
         System.out.println("the total new relations to be saved is "+newRelations.size());
         if(!newRelations.isEmpty()){
             relationDAO.saveAll(newRelations);
         }
+         */
+
 
         System.out.println("the imported are "+parentDelegate.listManager.getImported().size());
         parentDelegate.listManager.getImported().clear();
@@ -293,7 +303,7 @@ public class ImportPdfFiles {
         parentDelegate.listManager.docEntriesDescriptions.clear();
         parentDelegate.listManager.getChecksums().clear();
 
-        parentDelegate.fireDocumentProcessedEvent(new DocumentsImportedEvent(invoicesImportView));
+
     }
 
 

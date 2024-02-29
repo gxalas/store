@@ -14,6 +14,7 @@ public class ProductCompleteDTO {
     private Product product;
     private Map<StoreNames, StoreBasedAttributes> storeBasedAttributesMap = new HashMap<>();
     private List<String> supplierNames;
+    private int suppCounter =0 ;
 
     public ProductCompleteDTO(Product product) {
         this.product = product;
@@ -41,8 +42,17 @@ public class ProductCompleteDTO {
     }
 
     public void setSupplierNames(List<String> supplierNames) {
+        setSuppCounter(supplierNames.size());
         this.supplierNames = supplierNames;
     }
+
+    public void setSuppCounter(int num){
+        suppCounter = num;
+    }
+    public int getSuppCounter(){
+        return suppCounter;
+    }
+
     public static List<ProductCompleteDTO> fetchAllProductDetails(EntityManager entityManager) {
         // Fetch Products
         List<Product> products = entityManager.createQuery("SELECT p FROM Product p", Product.class).getResultList();
@@ -78,6 +88,39 @@ public class ProductCompleteDTO {
 
         return productCompleteDTOs;
     }
+
+    public static ProductCompleteDTO fetchProductDetailsByProduct(EntityManager entityManager, Product product) {
+        if (product == null || product.getId() == null) {
+            return null; // Or throw an IllegalArgumentException depending on how you want to handle this case.
+        }
+
+        // Fetch StoreBasedAttributes for the given Product
+        List<StoreBasedAttributes> sbas = entityManager.createQuery(
+                        "SELECT sba FROM StoreBasedAttributes sba WHERE sba.product.id = :productId", StoreBasedAttributes.class)
+                .setParameter("productId", product.getId())
+                .getResultList();
+        Map<StoreNames, StoreBasedAttributes> sbaMap = sbas.stream()
+                .collect(Collectors.toMap(
+                        StoreBasedAttributes::getStore,
+                        sba -> sba,
+                        (existing, replacement) -> existing // In case of duplicates, keep the existing
+                ));
+
+        // Fetch Suppliers for the given Product
+        List<String> supplierNames = entityManager.createQuery(
+                        "SELECT s.name FROM SupplierProductRelation spr JOIN spr.supplier s WHERE spr.product.id = :productId", String.class)
+                .setParameter("productId", product.getId())
+                .getResultList();
+
+        // Assemble DTO
+        ProductCompleteDTO dto = new ProductCompleteDTO(product);
+        //dto.setProduct(product);
+        dto.setStoreBasedAttributesMap(sbaMap);
+        dto.setSupplierNames(supplierNames);
+
+        return dto;
+    }
+
 
     // Additional methods to manipulate the maps and lists can be added as necessary
 }

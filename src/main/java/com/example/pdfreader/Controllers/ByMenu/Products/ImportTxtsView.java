@@ -5,11 +5,9 @@ import com.example.pdfreader.DAOs.*;
 import com.example.pdfreader.DTOs.ProductWithAttributes;
 import com.example.pdfreader.Entities.Attributes.StoreBasedAttributes;
 import com.example.pdfreader.Entities.Main.Product;
-import com.example.pdfreader.Entities.Main.Supplier;
 import com.example.pdfreader.HelloController;
 import com.example.pdfreader.Helpers.MyTask;
-import com.example.pdfreader.Entities.ChildEntities.PosEntry;
-import com.example.pdfreader.Helpers.SupplierProductRelation;
+import com.example.pdfreader.Sinartiseis.HelpingFunctions;
 import com.example.pdfreader.Sinartiseis.ImportItemAndPosFiles;
 import com.example.pdfreader.enums.StoreNames;
 import javafx.application.Platform;
@@ -26,8 +24,6 @@ import javafx.scene.control.*;
 import javafx.scene.text.Text;
 
 import java.util.*;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 public class ImportTxtsView extends ChildController {
@@ -38,8 +34,11 @@ public class ImportTxtsView extends ChildController {
     public Button btnLoadTxt;
     public Text txtPosErrors ;
     public Text txtProducts;
-    private ObservableList<StoreBasedAttributes> obsAllSbas = FXCollections.observableArrayList();
+    public TextField txtFSba;
+    public Text txtSbaCounter;
+
     private ObservableList<Product> obsAllProducts = FXCollections.observableArrayList();
+    private ObservableList<StoreBasedAttributes> obsAllSbas = FXCollections.observableArrayList();
     public TableView<StoreBasedAttributes> tableSbas = new TableView<>();
     private ObservableList<StoreBasedAttributes> obsAllSbasTable = FXCollections.observableArrayList();
     public TableView<Product> tableProducts = new TableView<>();
@@ -66,7 +65,6 @@ public class ImportTxtsView extends ChildController {
         Platform.runLater(()->{
             obsProductsTable.setAll(obsAllProducts);
         });
-
     };
     private ChangeListener<Product> filteringSbas = (observableValue, product, t1) -> {
         if(t1!=null){
@@ -117,6 +115,20 @@ public class ImportTxtsView extends ChildController {
             public void onChanged(Change<? extends Product> change) {
                 Platform.runLater(()->{
                     txtProducts.setText("The products are : "+obsProductsTable.size());
+                });
+            }
+        });
+        txtFSba.setOnAction(new EventHandler<ActionEvent>() {
+            @Override
+            public void handle(ActionEvent actionEvent) {
+                filterAllSbasTable(txtFSba.getText());
+            }
+        });
+        obsAllSbasTable.addListener(new ListChangeListener<StoreBasedAttributes>() {
+            @Override
+            public void onChanged(Change<? extends StoreBasedAttributes> change) {
+                Platform.runLater(()->{
+                    txtSbaCounter.setText("the sbas are : "+obsAllSbasTable.size());
                 });
             }
         });
@@ -381,6 +393,12 @@ public class ImportTxtsView extends ChildController {
                         workerStateEvent.getSource().getException().printStackTrace();
                     }
                 });
+                readingFiles.addEventHandler(WorkerStateEvent.WORKER_STATE_SUCCEEDED, new EventHandler<WorkerStateEvent>() {
+                    @Override
+                    public void handle(WorkerStateEvent workerStateEvent) {
+                        loadContent();
+                    }
+                });
 
                 parentDelegate.listManager.addTaskToActiveList(
                         "reading item and text",
@@ -437,6 +455,7 @@ public class ImportTxtsView extends ChildController {
             });
             return new ReadOnlyStringWrapper(r.toString());
         });
+
         TableColumn<StoreBasedAttributes,String> productCol = new TableColumn<>("assigned Product");
         productCol.setCellValueFactory(cellData->{
             String d ="";
@@ -465,8 +484,6 @@ public class ImportTxtsView extends ChildController {
                 descriptionCol,masterCol,conBarsCol,hopeBarcodesCol,
                 productCol,productMasterCol);
         tableSbas.setItems(obsAllSbasTable);
-
-
     }
     private void initTableProducts(){
         //table Products
@@ -571,7 +588,6 @@ public class ImportTxtsView extends ChildController {
                 refreshTableConflicts();
             }
         });
-
         tableSbaConflicts.getSelectionModel().selectedItemProperty().addListener(new ChangeListener<StoreBasedAttributes>() {
             @Override
             public void changed(ObservableValue<? extends StoreBasedAttributes> observableValue, StoreBasedAttributes storeBasedAttributes, StoreBasedAttributes t1) {
@@ -656,8 +672,6 @@ public class ImportTxtsView extends ChildController {
                 setBtnVisibility();
             }
         });
-
-
     }
     private void initTableMatchingSbas(){
         TableColumn<StoreBasedAttributes,String> descCol = new TableColumn<>("description");
@@ -787,16 +801,28 @@ public class ImportTxtsView extends ChildController {
         });
         obsSbaConflicts.setAll(inConflict);
     }
+    private void filterAllSbasTable(String term){
+        List<StoreBasedAttributes> filtered = new ArrayList<>();
+        if(term.trim().isEmpty()){
+            obsAllSbasTable.setAll(obsAllSbas);
+            return;
+        }
+        if(HelpingFunctions.isNumeric(term.trim())){
+            obsAllSbas.forEach(sba->{
+                if(sba.getHope().contains(term)){
+                    filtered.add(sba);
+                }
+            });
+            obsAllSbasTable.setAll(filtered);
+            return;
+        }
+        obsAllSbas.forEach(sba->{
+            if(sba.getDescription().toLowerCase().contains(term.trim().toLowerCase())){
+                filtered.add(sba);
+            }
+        });
+        obsAllSbasTable.setAll(filtered);
 
-
-
+    }
 }
 
-//String kouta = line.substring(53, 60);
-//String fpaCode = line.substring(60, 61);
-//String costPrice = line.substring(61,70);
-//String salePrice = line.substring(70,78);
-//String availability = line.substring(78, 79);
-
-//String unit = line.substring(95,96);
-//String status = line.substring(96,97);

@@ -1,4 +1,4 @@
-package com.example.pdfreader.TypesOfDocuments;
+package com.example.pdfreader.Sinartiseis.TypesOfDocuments;
 
 import com.example.pdfreader.Entities.Main.Document;
 import com.example.pdfreader.Sinartiseis.TextExtractions;
